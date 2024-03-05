@@ -1,0 +1,68 @@
+name: titantic-daily-feature-and-batch-inference
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '11 */12 * * *'
+
+jobs:
+  schedule_pipelines:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
+
+        #environment:
+        #name: github-pages
+        #url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: install python packages
+        run: |
+          cd notebooks/ch02
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: execute python workflows from bash script
+        env: 
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          cd notebooks/ch02
+          jupyter nbconvert --to notebook --execute titanic-daily-feature-pipeline.ipynb 
+          jupyter nbconvert --to notebook --execute titanic-daily-batch-inference-pipeline.ipynb 
+
+      - name: github pages publish
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Titanic Dashboard published"
+          commit_options: '--no-verify --signoff'
+      
+          # Optional glob pattern of files which should be added to the commit
+          # Defaults to all (.)
+          file_pattern: docs/assets/img/latest_titanic_survival.jpg
+            #repository: .
+      
+          status_options: '--untracked-files=no'
+      
+          skip_dirty_check: true    
+          
+          skip_fetch: false
+          
+          skip_checkout: false
+      
+          # Optional. Prevents the shell from expanding filenames. 
+          # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+          disable_globbing: true
+      
+          # Optional. Create given branch name in local and remote repository.
+          create_branch: false
