@@ -1,4 +1,4 @@
-name: titantic-daily-feature-and-batch-inference
+name: air-quality-daily-feature-and-batch-inference
 
 on:
   workflow_dispatch:
