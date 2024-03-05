@@ -36,6 +36,8 @@ jobs:
       - name: execute python workflows from bash script
         env: 
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_HOST: ${{ secrets.HOPSWORKS_HOST }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
         run: |
           cd notebooks/ch02
           jupyter nbconvert --to notebook --execute titanic-feature-pipeline-daily.ipynb
