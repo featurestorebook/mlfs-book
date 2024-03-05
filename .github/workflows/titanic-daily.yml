@@ -51,7 +51,7 @@ jobs:
       
           # Optional glob pattern of files which should be added to the commit
           # Defaults to all (.)
-          file_pattern: docs/assets/img/latest_titanic_survival.jpg, docs/_includes/titanic.html
+          file_pattern: 'docs/assets/img/* docs/_includes/*'
             #repository: .
       
           status_options: '--untracked-files=no'
@@ -64,7 +64,7 @@ jobs:
       
           # Optional. Prevents the shell from expanding filenames. 
           # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
-          disable_globbing: true
+          #disable_globbing: true
       
           # Optional. Create given branch name in local and remote repository.
           create_branch: false
