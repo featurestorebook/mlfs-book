@@ -1,7 +1,8 @@
 Titanic Survival Dashboard
 
 Todays' Passenger Details:
-{% include_relative ./assets/includes/titanic-passenger.html %}
+
+{% include titanic.html %}
 
 Did they survive?
 
