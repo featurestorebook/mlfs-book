@@ -1,0 +1,59 @@
+name: titantic-daily-feature-and-batch-inference
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '11 */12 * * *'
+
+jobs:
+  schedule_pipelines:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      contents: write
+
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: install python packages
+        run: |
+          cd notebooks/ch03
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: execute python workflows from bash script
+        env: 
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_HOST: ${{ secrets.HOPSWORKS_HOST }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+        run: |
+          cd notebooks/ch03
+          jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb  
+          jupyter nbconvert --to notebook --execute 4_air_quality_batch_inference.ipynb
+
+      - name: github pages publish
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Titanic Dashboard published"
+          commit_options: '--no-verify --signoff'
+      
+          file_pattern: '/docs/air-quality/assets/img/* /docs/_includes/*'
+          
+          repository: .
+      
+          status_options: '--untracked-files=no'
+      
+          skip_dirty_check: true    
+          
+          skip_fetch: true
+          
+          skip_checkout: true
+     
+          push_options: '--force'
