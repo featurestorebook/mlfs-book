@@ -52,13 +52,8 @@ jobs:
       
           skip_dirty_check: true    
           
-          skip_fetch: false
+          skip_fetch: true
           
-          skip_checkout: false
-      
-          # Optional. Prevents the shell from expanding filenames. 
-          # Details: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
-          #disable_globbing: true
-      
-          # Optional. Create given branch name in local and remote repository.
-          create_branch: false
+          skip_checkout: true
+     
+          push_options: '--force'
