@@ -38,8 +38,8 @@ jobs:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           cd notebooks/ch02
-          jupyter nbconvert --to notebook --execute titanic-daily-feature-pipeline.ipynb 
-          jupyter nbconvert --to notebook --execute titanic-daily-batch-inference-pipeline.ipynb 
+          jupyter nbconvert --to notebook --execute titanic-feature-pipeline-daily.ipynb
+          jupyter nbconvert --to notebook --execute titanic-batch-inference-pipeline-daily.ipynb 
 
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
