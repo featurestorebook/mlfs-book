@@ -12,9 +12,9 @@ openmeteo-requests
 requests-cache
 retry-requests
 
-# ML framework library
+# ML framework libraries
 xgboost
-
+scikit-learn
 
 # Plot beautiful charts
 plotly
