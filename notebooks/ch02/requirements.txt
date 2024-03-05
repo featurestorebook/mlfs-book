@@ -1,7 +1,14 @@
+# Feature store and model registry
 hsfs==3.7.0rc5
 hopsworks==3.7.0rc1
-plotly
+
+# ML framework libraries
 xgboost
 scikit-learn
+
+# Chart creation, plotting
+plotly
 seaborn
+
+# User Interfaces in Python
 gradio

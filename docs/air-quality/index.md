@@ -1,11 +1,15 @@
-Titanic Survival Dashboard
+### Air Quality Dashboard
 
-Todays' Passenger Details:
-{% include titanic.html %}
+## Location: Hornsgatan 108, Stockholm, Sweden
 
+{% include air-quality.html %}
 
-Did they survive?
+![Forecast](./assets/img/pm25_forecast.png)
 
-![Titanic Survival](./assets/img/latest_titanic_survival.jpg)
+## Model Performance Monitoring
+
+1-Day Hindcast: Predictions vs Outcomes
+
+![Hindcast](./assets/img/pm25_hindcast_1day.png)
 
 

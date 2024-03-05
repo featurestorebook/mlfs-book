@@ -41,7 +41,7 @@ jobs:
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Titanic Dashboard published"
+          commit_message: "Air Quality Dashboard published"
           commit_options: '--no-verify --signoff'
       
           file_pattern: '/docs/air-quality/assets/img/* /docs/_includes/*'

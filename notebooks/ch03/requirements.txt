@@ -1,2 +1,23 @@
-hopsworks
+# Feature store and model registry
+hsfs==3.7.0rc5
+hopsworks==3.7.0rc1
+
+# Resolve city names from (longitude, latitude) coordinates
+geopy
+
+# Read weather data
+openmeteo-requests
+
+# Be more efficient when making REST (Http) requests
+requests-cache
+retry-requests
+
+# ML framework library
+xgboost
+
+
+# Plot beautiful charts
 plotly
+
+# Save charts as files
+kaleido
