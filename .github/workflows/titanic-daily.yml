@@ -11,12 +11,7 @@ jobs:
 
     permissions:
       pages: write
-      id-token: write
       contents: write
-
-        #environment:
-        #name: github-pages
-        #url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: checkout repo content
@@ -49,10 +44,9 @@ jobs:
           commit_message: "Titanic Dashboard published"
           commit_options: '--no-verify --signoff'
       
-          # Optional glob pattern of files which should be added to the commit
-          # Defaults to all (.)
           file_pattern: 'docs/assets/img/* docs/_includes/*'
-            #repository: .
+          
+          repository: .
       
           status_options: '--untracked-files=no'
       
