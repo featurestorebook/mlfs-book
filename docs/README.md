@@ -1,8 +1,8 @@
 Titanic Survival Dashboard
 
 Todays' Passenger Details:
-
 {% include titanic.html %}
+
 
 Did they survive?
 
