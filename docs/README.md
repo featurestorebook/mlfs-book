@@ -2,4 +2,8 @@ Titanic Survival Dashboard
 
 Todays' Passenger:
 
-![Book logo](/mlfs-book/docs/assets/img/titanic_survival_latest.jpg)
+{% include_relative ./assets/txt/titanic-features.md %}
+
+![Titanic Survival](./assets/img/latest_titanic_survival.jpg)
+
+
