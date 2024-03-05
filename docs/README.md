@@ -1,11 +1,6 @@
-Titanic Survival Dashboard
+ML Systems Dashboard
 
-Todays' Passenger Details:
-{% include titanic.html %}
-
-
-Did they survive?
-
-![Titanic Survival](./assets/img/latest_titanic_survival.jpg)
+![Titanic](./titanic)
+![Air Quality](./air-quality)
 
 
