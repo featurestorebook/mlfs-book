@@ -3,7 +3,7 @@ name: air-quality-daily-feature-and-batch-inference
 on:
   workflow_dispatch:
   schedule:
-    - cron: '11 */12 * * *'
+    - cron: '11 */15 * * *'
 
 jobs:
   schedule_pipelines:
