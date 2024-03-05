@@ -44,7 +44,7 @@ jobs:
           commit_message: "Titanic Dashboard published"
           commit_options: '--no-verify --signoff'
       
-          file_pattern: 'docs/titanic/assets/img/* docs/titanic/_includes/*'
+          file_pattern: 'docs/titanic/assets/img/* docs/_includes/*'
           
           repository: .
       
