@@ -49,7 +49,7 @@ jobs:
       
           # Optional glob pattern of files which should be added to the commit
           # Defaults to all (.)
-          file_pattern: docs/assets/img/latest_titanic_survival.jpg
+          file_pattern: docs/assets/img/latest_titanic_survival.jpg, docs/_includes/titanic.html
             #repository: .
       
           status_options: '--untracked-files=no'
