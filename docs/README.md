@@ -1,8 +1,9 @@
 Titanic Survival Dashboard
 
-Todays' Passenger:
+Todays' Passenger Details:
+{% include_relative ./assets/includes/titanic-passenger.md %}
 
-{% include_relative ./assets/txt/titanic-features.md %}
+Did they survive?
 
 ![Titanic Survival](./assets/img/latest_titanic_survival.jpg)
 
