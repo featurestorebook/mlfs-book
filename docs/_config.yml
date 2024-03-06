@@ -1,3 +1,4 @@
 theme: jekyll-theme-minimal
 title: Building ML Systems Book Dashboards
-description: Dashboards for ML Systems you build with the O'Reilly book
+description: Dashboards for ML Systems built from exmaples in the O'Reilly book
+logo: /docs/titanic/assets/img/logo.png
