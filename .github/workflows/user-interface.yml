@@ -5,24 +5,18 @@ on:
     branches:
       - lex_test 
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: GitHub Pages Publish
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: actions/checkout@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          commit_message: "Update GitHub Pages"
-          commit_options: '--no-verify --signoff'
-          file_pattern: 'docs/**/*'
-          repository: .
-          skip_dirty_check: true    
-          skip_fetch: true
-          skip_checkout: true
-          push_options: '--force'
+          ruby-version: 3.0.0
+      - name: Install dependencies
+        run: bundle install
+      - name: Build the site with Jekyll
+        run: bundle exec jekyll build
