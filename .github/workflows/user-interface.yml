@@ -7,16 +7,8 @@ on:
 
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.0.0
-      - name: Install dependencies
-        run: bundle install
-      - name: Build the site with Jekyll
-        run: bundle exec jekyll build
