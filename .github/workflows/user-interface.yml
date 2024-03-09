@@ -1,23 +1,23 @@
+name: Deploy to GitHub Pages
+
 on:
   push:
     branches:
-      - lex_test
-jobs:
-  github_pages_publish:
-    runs-on: ubuntu-latest
+      - lex_test 
 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pages: write
 
     steps:
-      - name: checkout repo content
+      - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: github pages publish
-        uses: stefanzweifel/git-auto-commit-action@v5
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          commit_message: "Update GitHub Pages"
-          file_pattern: 'docs/**/*'
-          repository: .
-          skip_dirty_check: true 
-          push_options: '--force'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs 
