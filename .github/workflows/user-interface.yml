@@ -1,0 +1,24 @@
+on:
+  push:
+    branches:
+      - lex_test
+jobs:
+  github_pages_publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pages: write
+
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v4
+      
+      - name: github pages publish
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update GitHub Pages"
+          file_pattern: 'docs/**/*'
+          repository: .
+          skip_dirty_check: true    
+          push_options: '--force'
