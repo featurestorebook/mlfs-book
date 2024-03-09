@@ -13,7 +13,6 @@ jobs:
     steps:
       - name: checkout repo content
         uses: actions/checkout@v4
-      
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -21,5 +20,4 @@ jobs:
           file_pattern: 'docs/**/*'
           repository: .
           skip_dirty_check: true 
-          allow_empty_commit: true   
           push_options: '--force'
