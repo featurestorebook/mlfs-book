@@ -15,9 +15,14 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: GitHub Pages Publish
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs 
+          commit_message: "Update GitHub Pages"
+          commit_options: '--no-verify --signoff'
+          file_pattern: 'docs/**/*'
+          repository: .
+          skip_dirty_check: true    
+          skip_fetch: true
+          skip_checkout: true
+          push_options: '--force'
