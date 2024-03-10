@@ -187,7 +187,7 @@ def plot_air_quality_forecast(df: pd.DataFrame, file_path: str, hindcast=False):
 
     # Add a legend for the different Air Quality Categories
     patches = [Patch(color=colors[i], label=f"{labels[i]}: {ranges[i][0]}-{ranges[i][1]}") for i in range(len(colors))]
-    legend1 = ax.legend(handles=patches, loc='upper right', title="Air Quality Categories", fontsize='xx-small')
+    legend1 = ax.legend(handles=patches, loc='upper right', title="Air Quality Categories", fontsize='x-small')
     
     # Aim for ~10 annotated values on x-axis, will work for both forecasts ans hindcasts
     if len(df.index) > 11:
