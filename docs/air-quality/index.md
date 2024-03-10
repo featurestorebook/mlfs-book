@@ -1,5 +1,7 @@
 # Air Quality Dashboard
 
+![Hopsworks Logo](../titanic/assets/img/logo.png)
+
 ### Location: Hornsgatan 108, Stockholm, Sweden
 
 {% include air-quality.html %}

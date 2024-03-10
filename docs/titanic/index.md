@@ -1,5 +1,7 @@
 ### Titanic Survival Dashboard
 
+![Hopsworks Logo](./assets/img/logo.png)
+
 Todays' Passenger Details:
 {% include titanic.html %}
 
