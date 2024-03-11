@@ -152,7 +152,6 @@ def generate_response(
     model_llm, 
     tokenizer, 
     model_air_quality, 
-    encoder, 
     llm_chain,
     verbose: bool = False,
 ) -> str:
@@ -165,7 +164,6 @@ def generate_response(
         model_llm: Language model for text generation.
         tokenizer: Tokenizer for processing text.
         model_air_quality: Model for predicting air quality.
-        encoder: Label Encoder for the city_name column.
         llm_chain: LLM Chain.
         verbose (bool): Whether to print verbose information. Defaults to False.
         

@@ -59,7 +59,7 @@ You are a helpful assistant with access to the following functions:
 ###INSTRUCTIONS:
 - You need to choose one function to use and retrieve paramenters for this function from the user input.
 - If the user query contains 'will', it is very likely that you will need to use the get_future_data function.
-- Do not include feature_view, model and encoder parameters.
+- Do not include feature_view and model parameters.
 - Dates should be provided in the format YYYY-MM-DD.
 - Generate an 'No Function needed' string if the user query does not require function calling.
 
@@ -128,7 +128,7 @@ def extract_function_calls(completion: str) -> List[Dict[str, Any]]:
     return [json.loads(fn.text) for fn in functions]
 
 
-def invoke_function(function, feature_view, model, encoder) -> pd.DataFrame:
+def invoke_function(function, feature_view, model) -> pd.DataFrame:
     """Invoke a function with given arguments."""
     # Extract function name and arguments from input_data
     function_name = function['name']
@@ -138,8 +138,7 @@ def invoke_function(function, feature_view, model, encoder) -> pd.DataFrame:
     function_output = getattr(sys.modules[__name__], function_name)(
         **arguments, 
         feature_view=feature_view, 
-        model=model, 
-        encoder=encoder,
+        model=model
     )
     
     if type(function_output) == str:
@@ -150,7 +149,7 @@ def invoke_function(function, feature_view, model, encoder) -> pd.DataFrame:
     return function_output
 
 
-def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_air_quality, encoder) -> str:
+def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_air_quality) -> str:
     """
     Retrieve context data based on user query.
 
@@ -160,7 +159,6 @@ def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_
         model_llm: The language model.
         tokenizer: The tokenizer.
         model_air_quality: The air quality model.
-        encoder: The encoder.
 
     Returns:
         str: The context data.
@@ -178,7 +176,7 @@ def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
-        data = invoke_function(functions[0], feature_view, model_air_quality, encoder)
+        data = invoke_function(functions[0], feature_view, model_air_quality)
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):
             return f'Air Quality Measurements for {functions[0]["arguments"]["city_name"]}:\n' + '\n'.join(
