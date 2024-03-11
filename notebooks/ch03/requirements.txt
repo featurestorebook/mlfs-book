@@ -16,8 +16,6 @@ retry-requests
 xgboost
 scikit-learn
 
-# Plot beautiful charts
-plotly
+# Plot charts
+matplotlib
 
-# Save charts as files
-kaleido
