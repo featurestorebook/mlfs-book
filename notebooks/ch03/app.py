@@ -36,7 +36,13 @@ def connect_to_hopsworks():
     saved_model_dir = retrieved_model.download()
 
     # Load the XGBoost regressor model and label encoder from the saved model directory
-    model_air_quality = joblib.load(saved_model_dir + "/xgboost_regressor.pkl")
+    # model_air_quality = joblib.load(saved_model_dir + "/xgboost_regressor.pkl")
+    # Loading the XGBoost regressor model and label encoder from the saved model directory
+    # retrieved_xgboost_model = joblib.load(saved_model_dir + "/xgboost_regressor.pkl")
+    model_air_quality = XGBRegressor()
+    
+    model_air_quality.load_model(saved_model_dir + "/model.json")
+    
     encoder = joblib.load(saved_model_dir + "/label_encoder.pkl")
 
     return feature_view, model_air_quality, encoder
