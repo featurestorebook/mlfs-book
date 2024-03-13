@@ -178,7 +178,6 @@ def generate_response(
         model_llm, 
         tokenizer, 
         model_air_quality, 
-        encoder,
     )
         
     # Get today's date in a readable format

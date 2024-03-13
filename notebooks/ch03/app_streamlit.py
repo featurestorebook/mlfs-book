@@ -1,6 +1,7 @@
 import streamlit as st
 import hopsworks
 import joblib
+from xgboost import XGBRegressor
 from functions.llm_chain import load_model, get_llm_chain, generate_response
 import warnings
 warnings.filterwarnings('ignore')
@@ -11,7 +12,10 @@ st.title("🌤️ AirQuality AI assistant 💬")
 @st.cache_resource()
 def connect_to_hopsworks():
     # Initialize Hopsworks feature store connection
-    project = hopsworks.login()
+    project = hopsworks.login(
+        host="snurran.hops.works",
+        project="AirQuality_Book",
+    )
     fs = project.get_feature_store()
     
     # Retrieve the model registry
@@ -20,7 +24,7 @@ def connect_to_hopsworks():
     # Retrieve the 'air_quality_fv' feature view
     feature_view = fs.get_feature_view(
         name="air_quality_fv", 
-        version=1,
+        version=2,
     )
 
     # Initialize batch scoring
@@ -43,9 +47,7 @@ def connect_to_hopsworks():
     
     model_air_quality.load_model(saved_model_dir + "/model.json")
     
-    encoder = joblib.load(saved_model_dir + "/label_encoder.pkl")
-
-    return feature_view, model_air_quality, encoder
+    return feature_view, model_air_quality
 
 
 @st.cache_resource()
@@ -64,7 +66,7 @@ def retrieve_llm_chain():
 
 
 # Retrieve the feature view, air quality model and encoder for the city_name column
-feature_view, model_air_quality, encoder = connect_to_hopsworks()
+feature_view, model_air_quality = connect_to_hopsworks()
 
 # Load the LLM and its corresponding tokenizer and configure a language model chain
 model_llm, tokenizer, llm_chain = retrieve_llm_chain()
@@ -94,7 +96,6 @@ if user_query := st.chat_input("How can I help you?"):
         model_llm,
         tokenizer,
         model_air_quality,
-        encoder,
         llm_chain,
         verbose=False,
     )

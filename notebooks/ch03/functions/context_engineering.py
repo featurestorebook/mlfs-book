@@ -45,7 +45,7 @@ def serialize_function_to_json(func: Any) -> str:
 def generate_hermes(prompt: str, model_llm, tokenizer) -> str:
     """Retrieves a function name and extracts function parameters based on the user query."""
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
-    example = """{"name": "get_data_in_date_range", "arguments": {"date_start": "2024-01-10", "date_end": "2024-01-14", "city_name": "New York"}}"""
+    example = """{"name": "get_data_in_date_range", "arguments": {"date_start": "2024-01-10", "date_end": "2024-01-14"}}"""
     
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
@@ -81,7 +81,7 @@ EXAMPLE 2:
 - AI Assiatant: No Function needed.
 
 EXAMPLE 3:
-- User: When and what was the minimum air quality from 2024-01-10 till 2024-01-14 in New York?
+- User: When and what was the minimum air quality from 2024-01-10 till 2024-01-14?
 - AI Assistant:
 <onefunctioncall>
     <functioncall> {example} </functioncall>
@@ -144,8 +144,8 @@ def invoke_function(function, feature_view, model) -> pd.DataFrame:
     if type(function_output) == str:
         return function_output
     
-    # Round the 'pm2_5' value to 2 decimal places
-    function_output['pm2_5'] = function_output['pm2_5'].apply(round, ndigits=2)
+    # Round the 'pm25' value to 2 decimal places
+    function_output['pm25'] = function_output['pm25'].apply(round, ndigits=2)
     return function_output
 
 
@@ -169,19 +169,20 @@ def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_
         model_llm, 
         tokenizer,
     )
-        
+    
     # Extract function calls from the completion
     functions = extract_function_calls(completion)
-
+    
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
         data = invoke_function(functions[0], feature_view, model_air_quality)
+        
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):
-            return f'Air Quality Measurements for {functions[0]["arguments"]["city_name"]}:\n' + '\n'.join(
-                [f'Date: {row["date"]}; Air Quality: {row["pm2_5"]}' for _, row in data.iterrows()]
-            ) 
+            return f'Air Quality Measurements:\n' + '\n'.join(
+                [f'Date: {row["date"]}; Air Quality: {row["pm25"]}' for _, row in data.iterrows()]
+            )
         # Return message if data is not updated
         return data
     

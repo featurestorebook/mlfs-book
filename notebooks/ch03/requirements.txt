@@ -19,3 +19,9 @@ scikit-learn
 # Plot charts
 matplotlib
 
+# LLM libraries
+transformers==4.38.2
+sentencepiece==0.2.0
+langchain==0.1.11
+accelerate==0.28.0
+bitsandbytes==0.43.0
