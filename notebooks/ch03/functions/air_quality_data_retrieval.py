@@ -50,7 +50,8 @@ def get_data_in_date_range(date_start: str, date_end: str, feature_view, model) 
     # Retrieve batch data for the specified date range
     batch_data = feature_view.get_batch_data(
         start_time=date_start_dt - datetime.timedelta(days=1),
-        end_time=date_end_dt,
+        end_time=date_end_dt, 
+        event_time=True
     )
     
     batch_data['date'] = batch_data['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
