@@ -2,9 +2,9 @@ import pandas as pd
 from typing import Any, Dict, List
 import datetime
 import pandas as pd
+import hopsworks
 
-
-def get_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
+def get_historical_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
     """
     Retrieve data for a specific date from a feature view.
 
@@ -19,20 +19,24 @@ def get_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
     # Convert date string to datetime object
     date_datetime = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     
-    # Retrieve batch data for the specified date range
-    batch_data = feature_view.get_batch_data(
+    features_df, labels_df = feature_view.training_data(
         start_time=date_datetime - datetime.timedelta(days=1),
-        end_time=date_datetime,
+        end_time=date_datetime, 
+        event_time=True,
+        statistics_config=False
     )
-    
+    # bugfix line, shouldn't need to cast to datetime
+    features_df['date'] = pd.to_datetime(features_df['date'])    
+    batch_data = features_df
+    batch_data['pm25'] = labels_df['pm25']    
     batch_data['date'] = batch_data['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
     
     return batch_data[['date', 'pm25']].sort_values('date').reset_index(drop=True)
 
 
-def get_data_in_date_range(date_start: str, date_end: str, feature_view, model) -> pd.DataFrame:
+def get_historical_data_in_date_range(date_start: str, date_end: str, feature_view, model) -> pd.DataFrame:
     """
-    Retrieve data for a specific date range from a feature view.
+    Retrieve data for a specific date range from a time in the past from a feature view.
 
     Args:
         date_start (str): The start date in the format "%Y-%m-%d".
@@ -48,73 +52,91 @@ def get_data_in_date_range(date_start: str, date_end: str, feature_view, model) 
     date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d").date()
     
     # Retrieve batch data for the specified date range
-    batch_data = feature_view.get_batch_data(
+    features_df, labels_df = feature_view.training_data(
         start_time=date_start_dt - datetime.timedelta(days=1),
-        end_time=date_end_dt, 
-        event_time=True
+        end_time=date_end_dt + datetime.timedelta(days=1), 
+        event_time=True,
+        statistics_config=False
     )
+    # bugfix line, shouldn't need to cast to datetime
+    features_df['date'] = pd.to_datetime(features_df['date'])    
+    batch_data = features_df
+    batch_data['pm25'] = labels_df['pm25']
     
     batch_data['date'] = batch_data['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
         
     return batch_data[['date', 'pm25']].sort_values('date').reset_index(drop=True)
 
-
-def get_future_data(date: str, feature_view, model) -> pd.DataFrame:
+def get_future_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
     """
     Predicts future PM2.5 data for a specified date using a given feature view and model.
-
+    
     Args:
-        date (str): The target future date in the format 'YYYY-MM-DD'.
-        feature_view: The feature view used to retrieve batch data.
+        date (str): The date in the format "%Y-%m-%d".
+        feature_view: The feature view object.
         model: The machine learning model used for prediction.
 
     Returns:
-        pd.DataFrame: A DataFrame containing predicted PM2.5 values for each day starting from the target date.
-
+        pd.DataFrame: A DataFrame containing data for the specified date.
     """
-    # Get today's date
-    today = datetime.date.today()
-
-    # Convert the target date string to a datetime object
-    date_in_future = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-
-    # Calculate the difference in days between today and the target date
-    difference_in_days = (date_in_future - today).days
-    
-    # Retrieve batch data for the specified date range
-    batch_data = feature_view.get_batch_data(
-        start_time=today - datetime.timedelta(days=1),
-        end_time=today,
+    date_start_dt = datetime.datetime.strptime(date, "%Y-%m-%d") #.date()
+#     batch_data = feature_view.get_batch_data(
+#         start_time=date_start_dt,
+#         end_time=date_end_dt,
+#     )
+    fs = hopsworks.login().get_feature_store()
+    weather_fg = fs.get_feature_group(
+        name='weather',
+        version=1,
     )
-                
-    # Initialize a DataFrame to store predicted PM2.5 values
-    try:
-        pm25_value = batch_data['pm25'].values[0]
-    except (IndexError, TypeError):
-        # If accessing pm25 values fails, return a message indicating the feature pipeline needs updating
-        return "Data is not available. Ask user to run the feature pipeline to update data."
+    fg_data = weather_fg.read()
+
+    # Couldn't get our filters to work, so filter in memory
+    df = fg_data[fg_data.date == date_start_dt]
+    batch_data = df.drop(['date', 'city'], axis=1)
+
+    df['pm25'] = model.predict(batch_data)
+
+    return df[['date', 'pm25']].sort_values('date').reset_index(drop=True)
+
+
+
+def get_future_data_in_date_range(date_start: str, date_end: str, feature_view, model) -> pd.DataFrame:
+    """
+    Predicts future PM2.5 data for a specified start and end date range using a given feature view and model.
     
-    # Initialize a DataFrame to store predicted PM2.5 values
-    predicted_pm25_df = pd.DataFrame({
-        'date': [today.strftime("%Y-%m-%d")],
-        'pm25': pm25_value,
-    })
+    Args:
+        date_start (str): The start date in the format "%Y-%m-%d".
+        date_end (str): The end date in the format "%Y-%m-%d".
+        feature_view: The feature view object.
+        model: The machine learning model used for prediction.
 
-    batch_data.drop(['date', 'pm25'] , axis=1, inplace=True)
-        
-    # Iterate through each day starting from tomorrow up to the target date
-    for day_number in range(1, difference_in_days + 1):
+    Returns:
+        pd.DataFrame: A DataFrame containing data for the specified date range.
+    """
+    date_start_dt = datetime.datetime.strptime(date_start, "%Y-%m-%d") #.date()
+    if date_end == None:
+        date_end = date_start
+    date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d") #.date()
+    
+#     batch_data = feature_view.get_batch_data(
+#         start_time=date_start_dt,
+#         end_time=date_end_dt,
+#     )
+    fs = hopsworks.login().get_feature_store()
+    weather_fg = fs.get_feature_group(
+        name='weather',
+        version=1,
+    )
+    fg_data = weather_fg.read()
+    # Fix bug: Cannot compare tz-naive and tz-aware datetime-like objects
+    fg_data['date'] = pd.to_datetime(fg_data['date']).dt.tz_localize(None)
 
-        # Calculate the date for the current future day
-        date_future_day = (today + datetime.timedelta(days=day_number)).strftime("%Y-%m-%d")
-        
-        # Predict PM2.5 for the current day
-        predicted_pm2_5 = model.predict(batch_data)
-        
-        # Append the predicted PM2.5 value for the current day to the DataFrame
-        predicted_pm25_df = predicted_pm25_df._append(
-            {'date': date_future_day, 'pm25': predicted_pm2_5[0],}, 
-            ignore_index=True,
-        )
-        
-    return predicted_pm25_df
+    # Couldn't get our filters to work, so filter in memory
+    df = fg_data[(fg_data['date'] >= date_start_dt) & (fg_data['date'] <= date_end_dt)]
+    batch_data = df.drop(['date', 'city'], axis=1)
+
+    df['pm25'] = model.predict(batch_data)
+
+    return df[['date', 'pm25']].sort_values('date').reset_index(drop=True)
+

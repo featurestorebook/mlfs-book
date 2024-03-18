@@ -7,7 +7,7 @@ import datetime
 import torch
 import sys
 import pandas as pd
-from functions.air_quality_data_retrieval import get_data_for_date, get_data_in_date_range, get_future_data
+from functions.air_quality_data_retrieval import get_historical_data_for_date, get_historical_data_in_date_range, get_future_data_in_date_range, get_future_data_for_date
 from typing import Any, Dict, List
 
 
@@ -45,20 +45,23 @@ def serialize_function_to_json(func: Any) -> str:
 def generate_hermes(prompt: str, model_llm, tokenizer) -> str:
     """Retrieves a function name and extracts function parameters based on the user query."""
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
-    example = """{"name": "get_data_in_date_range", "arguments": {"date_start": "2024-01-10", "date_end": "2024-01-14"}}"""
+    example = """{"name": "get_historical_data_in_date_range", "arguments": {"date_start": "2024-01-10", "date_end": "2024-01-14"}}"""
     
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
 
-{serialize_function_to_json(get_data_for_date)}
+{serialize_function_to_json(get_historical_data_for_date)}
 
-{serialize_function_to_json(get_data_in_date_range)}
+{serialize_function_to_json(get_historical_data_in_date_range)}
 
-{serialize_function_to_json(get_future_data)}
+{serialize_function_to_json(get_future_data_for_date)}
+
+{serialize_function_to_json(get_future_data_in_date_range)}
 
 ###INSTRUCTIONS:
 - You need to choose one function to use and retrieve paramenters for this function from the user input.
-- If the user query contains 'will', it is very likely that you will need to use the get_future_data function.
+- If the user query contains 'will', it is very likely that you will need to use either the get_future_data_for_date or get_future_data_in_date_range function. 
+- If the user query is for future data, but only includes a single date, use the get_future_data_for_date function.
 - Do not include feature_view and model parameters.
 - Dates should be provided in the format YYYY-MM-DD.
 - Generate an 'No Function needed' string if the user query does not require function calling.
