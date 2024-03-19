@@ -3,7 +3,7 @@ name: titantic-daily-feature-and-batch-inference
 on:
   workflow_dispatch:
   schedule:
-    - cron: '11 */12 * * *'
+    - cron: '11 8 * * *'
 
 jobs:
   schedule_pipelines:
