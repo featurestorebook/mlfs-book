@@ -71,7 +71,7 @@ INSTRUCTIONS:
 - Use the provided table with air quality indicators for city provided by user to generate your answer.
 - You answer should be at least one sentence.
 - Do not show any calculations to the user.
-- If the user asks for the air quality level in specific range, you can calculate an average air quality level.
+- If the user asks for the air quality level in a specific range, you can calculate an average air quality level.
 - Make sure that you use correct air quality indicators for the required date.
 - Add a description of the air quality level, such as whether it is safe, whether to go for a walk, etc.
 - If user asks more general question, use your last responses in the chat history as a context.

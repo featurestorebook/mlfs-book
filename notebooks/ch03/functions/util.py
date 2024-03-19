@@ -162,7 +162,7 @@ def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_K
     return aq_today_df
 
 
-def plot_air_quality_forecast(df: pd.DataFrame, file_path: str, hindcast=False):
+def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_path: str, hindcast=False):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     day = pd.to_datetime(df['date']).dt.date
@@ -177,7 +177,7 @@ def plot_air_quality_forecast(df: pd.DataFrame, file_path: str, hindcast=False):
     
     # Set the labels and title
     ax.set_xlabel('Date')
-    ax.set_title('PM2.5 Predicted vs Actual Values Over Time (Logarithmic Scale)')
+    ax.set_title(f"PM2.5 Predicted (Logarithmic Scale) for {city}, {street}")
     
     colors = ['green', 'yellow', 'orange', 'red', 'purple', 'darkred']
     labels = ['Good', 'Moderate', 'Unhealthy for Some', 'Unhealthy', 'Very Unhealthy', 'Hazardous']

@@ -60,8 +60,10 @@ You are a helpful assistant with access to the following functions:
 
 ###INSTRUCTIONS:
 - You need to choose one function to use and retrieve paramenters for this function from the user input.
-- If the user query contains 'will', it is very likely that you will need to use either the get_future_data_for_date or get_future_data_in_date_range function. 
-- If the user query is for future data, but only includes a single date, use the get_future_data_for_date function.
+- If the user query contains 'will', and specifies a single day or date, use get_future_data_for_date function
+- If the user query contains 'will', and specifies a range of days or dates, use or get_future_data_in_date_range function. 
+- If the user query is for future data, but only includes a single day or date, use the get_future_data_for_date function.
+- If the user says a day of the week, assume the date of that day is when that day next arrives
 - Do not include feature_view and model parameters.
 - Dates should be provided in the format YYYY-MM-DD.
 - Generate an 'No Function needed' string if the user query does not require function calling.
