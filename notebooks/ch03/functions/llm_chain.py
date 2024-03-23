@@ -1,5 +1,5 @@
 import transformers
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, AutoConfig, AutoModel
 from langchain.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains.llm import LLMChain
@@ -8,7 +8,8 @@ import torch
 import datetime
 from typing import Any, Dict, Union
 from functions.context_engineering import get_context_data
-
+import os
+from safetensors.torch import load_model, save_model
 
 def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
     """
@@ -22,10 +23,13 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
     """
     
     # Load the tokenizer for Mistral-7B-Instruct model
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_id,
-    )
-
+    tokenizer_path = "./mistral/tokenizer"
+    if os.path.isdir(tokenizer_path) == False:
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        tokenizer.save_pretrained(tokenizer_path)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        
     # Set the pad token to the unknown token to handle padding
     tokenizer.pad_token = tokenizer.unk_token
 
@@ -40,12 +44,19 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
-    # Load the Mistral-7B-Instruct model with quantization configuration
-    model_llm = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        device_map="auto",
-        quantization_config=bnb_config,
-    )
+    model_path = "/tmp/jim/mistral/model"
+    if os.path.exists(model_path):
+        print("Loading model from disk")
+        model_llm = AutoModelForCausalLM.from_pretrained(model_path)
+    else:
+        # Load the Mistral-7B-Instruct model with quantization configuration
+        model_llm = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            device_map="auto",
+            quantization_config=bnb_config,
+        )
+        model_llm.save_pretrained(model_path)
+
 
     # Configure the pad token ID in the model to match the tokenizer's pad token ID
     model_llm.config.pad_token_id = tokenizer.pad_token_id
