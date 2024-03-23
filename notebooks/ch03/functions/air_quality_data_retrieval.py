@@ -22,7 +22,7 @@ def get_historical_data_for_date(date: str, feature_view, model) -> pd.DataFrame
     features_df, labels_df = feature_view.training_data(
         start_time=date_datetime - datetime.timedelta(days=1),
         end_time=date_datetime, 
-        event_time=True,
+        # event_time=True,
         statistics_config=False
     )
     # bugfix line, shouldn't need to cast to datetime
@@ -55,7 +55,7 @@ def get_historical_data_in_date_range(date_start: str, date_end: str, feature_vi
     features_df, labels_df = feature_view.training_data(
         start_time=date_start_dt - datetime.timedelta(days=1),
         end_time=date_end_dt + datetime.timedelta(days=1), 
-        event_time=True,
+        # event_time=True,
         statistics_config=False
     )
     # bugfix line, shouldn't need to cast to datetime
