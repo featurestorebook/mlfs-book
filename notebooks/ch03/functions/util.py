@@ -178,6 +178,7 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     # Set the labels and title
     ax.set_xlabel('Date')
     ax.set_title(f"PM2.5 Predicted (Logarithmic Scale) for {city}, {street}")
+    ax.set_ylabel('PM2.5')
     
     colors = ['green', 'yellow', 'orange', 'red', 'purple', 'darkred']
     labels = ['Good', 'Moderate', 'Unhealthy for Some', 'Unhealthy', 'Very Unhealthy', 'Hazardous']
@@ -198,7 +199,6 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
         
     if hindcast == True:
         ax.plot(day, df['pm25'], label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
-        ax.set_ylabel('PM2.5')
         legend2 = ax.legend(loc='upper left', fontsize='x-small')
         ax.add_artist(legend1)
         
