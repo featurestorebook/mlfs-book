@@ -1,10 +1,12 @@
-geopy
-transformers
-sentencepiece
-protobuf==3.20.0
-langchain
-flask-sqlalchemy==3.1.1
-bitsandbytes==0.42.0
+#protobuf==3.20.0
+#flask-sqlalchemy==3.1.1
+
+# LLM libraries
+transformers==4.38.2
+sentencepiece==0.2.0
+langchain==0.1.12
 accelerate==0.27.2
-joblib
+bitsandbytes==0.42.0
+
+# UI in python
 gradio== 4.21.0
