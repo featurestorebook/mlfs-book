@@ -1,9 +1,0 @@
-# LLM libraries
-transformers==4.38.2
-sentencepiece==0.2.0
-langchain==0.1.12
-accelerate==0.27.2
-bitsandbytes==0.42.0
-
-# UI in python
-gradio== 4.21.0
