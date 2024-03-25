@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 import datetime
 import pandas as pd
 import hopsworks
+from hsfs.feature import Feature
 
 def get_historical_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
     """
@@ -48,20 +49,11 @@ def get_historical_data_in_date_range(date_start: str, date_end: str, feature_vi
         pd.DataFrame: A DataFrame containing data for the specified date range.
     """
     # Convert date strings to datetime objects
-    date_start_dt = datetime.datetime.strptime(date_start, "%Y-%m-%d").date()
-    date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d").date()
-    
-    # Retrieve batch data for the specified date range
-    features_df, labels_df = feature_view.training_data(
-        start_time=date_start_dt - datetime.timedelta(days=1),
-        end_time=date_end_dt + datetime.timedelta(days=1), 
-        # event_time=True,
-        statistics_config=False
-    )
-    # bugfix line, shouldn't need to cast to datetime
-    features_df['date'] = pd.to_datetime(features_df['date'])    
-    batch_data = features_df
-    batch_data['pm25'] = labels_df['pm25']
+#     date_start_dt = datetime.datetime.strptime(date_start, "%Y-%m-%d").date()
+#     date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d").date()
+  
+    batch_data = feature_view.query.read()
+    batch_data = batch_data[(batch_data['date'] >= date_start) & (batch_data['date'] <= date_end)]
     
     batch_data['date'] = batch_data['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
         
@@ -80,10 +72,6 @@ def get_future_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing data for the specified date.
     """
     date_start_dt = datetime.datetime.strptime(date, "%Y-%m-%d") #.date()
-#     batch_data = feature_view.get_batch_data(
-#         start_time=date_start_dt,
-#         end_time=date_end_dt,
-#     )
     fs = hopsworks.login().get_feature_store()
     weather_fg = fs.get_feature_group(
         name='weather',
@@ -119,10 +107,6 @@ def get_future_data_in_date_range(date_start: str, date_end: str, feature_view, 
         date_end = date_start
     date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d") #.date()
     
-#     batch_data = feature_view.get_batch_data(
-#         start_time=date_start_dt,
-#         end_time=date_end_dt,
-#     )
     fs = hopsworks.login().get_feature_store()
     weather_fg = fs.get_feature_group(
         name='weather',

@@ -44,7 +44,7 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
-    model_path = "/tmp/jim/mistral/model"
+    model_path = "/tmp/mistral/model"
     if os.path.exists(model_path):
         print("Loading model from disk")
         model_llm = AutoModelForCausalLM.from_pretrained(model_path)
