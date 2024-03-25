@@ -1,5 +1,6 @@
 # Feature store and model registry
-hopsworks
+hsfs==3.7.0rc8
+hopsworks==3.7.0rc1
 
 # Resolve city names from (longitude, latitude) coordinates
 geopy
@@ -18,6 +19,3 @@ scikit-learn
 # Plot charts
 matplotlib
 
-# Github Action
-nbconvert
-ipykernel
