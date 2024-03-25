@@ -1,4 +1,4 @@
-name: air-quality-daily-feature-and-batch-inference
+name: air-quality-daily
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.9'
           cache: 'pip'
       - name: install python packages
         run: |
