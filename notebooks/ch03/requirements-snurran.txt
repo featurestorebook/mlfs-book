@@ -1,5 +1,5 @@
 # Feature store and model registry
-hsfs==3.7.0rc5
+hsfs==3.7.0rc8
 hopsworks==3.7.0rc1
 
 # Resolve city names from (longitude, latitude) coordinates
