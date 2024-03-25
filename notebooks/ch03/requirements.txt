@@ -18,3 +18,5 @@ scikit-learn
 # Plot charts
 matplotlib
 
+# Github Action
+nbconvert
