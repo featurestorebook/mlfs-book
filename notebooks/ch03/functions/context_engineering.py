@@ -133,7 +133,7 @@ def extract_function_calls(completion: str) -> List[Dict[str, Any]]:
     return [json.loads(fn.text) for fn in functions]
 
 
-def invoke_function(function, feature_view, model) -> pd.DataFrame:
+def invoke_function(function, feature_view, weather_fg,model) -> pd.DataFrame:
     """Invoke a function with given arguments."""
     # Extract function name and arguments from input_data
     function_name = function['name']
@@ -143,6 +143,7 @@ def invoke_function(function, feature_view, model) -> pd.DataFrame:
     function_output = getattr(sys.modules[__name__], function_name)(
         **arguments, 
         feature_view=feature_view, 
+        weather_fg=weather_fg,
         model=model
     )
     
@@ -154,7 +155,7 @@ def invoke_function(function, feature_view, model) -> pd.DataFrame:
     return function_output
 
 
-def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_air_quality) -> str:
+def get_context_data(user_query: str, feature_view, weather_fg, model_llm, tokenizer, model_air_quality) -> str:
     """
     Retrieve context data based on user query.
 
@@ -181,7 +182,7 @@ def get_context_data(user_query: str, feature_view, model_llm, tokenizer, model_
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
-        data = invoke_function(functions[0], feature_view, model_air_quality)
+        data = invoke_function(functions[0], feature_view, weather_fg, model_air_quality)
         
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):

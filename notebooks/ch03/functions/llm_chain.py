@@ -153,6 +153,7 @@ def get_llm_chain(model_llm, tokenizer):
         verbose=False,
         memory=memory,
     )
+    llm_chain.verbose = False
 
     return llm_chain
 
@@ -160,6 +161,7 @@ def get_llm_chain(model_llm, tokenizer):
 def generate_response(
     user_query: str, 
     feature_view, 
+    weather_fg,
     model_llm, 
     tokenizer, 
     model_air_quality, 
@@ -186,6 +188,7 @@ def generate_response(
     context = get_context_data(
         user_query,
         feature_view,
+        weather_fg,
         model_llm, 
         tokenizer, 
         model_air_quality, 
@@ -198,7 +201,7 @@ def generate_response(
     if verbose:
         print(f"🗓️ Today's date: {date_today}")
         print(f'📖 {context}')
-        
+       
     # Invoke the language model chain with relevant context
     model_output = llm_chain.invoke({
         "context": context, 

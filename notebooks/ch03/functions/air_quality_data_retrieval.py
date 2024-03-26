@@ -5,7 +5,7 @@ import pandas as pd
 import hopsworks
 from hsfs.feature import Feature
 
-def get_historical_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
+def get_historical_data_for_date(date: str, feature_view, weather_fg, model) -> pd.DataFrame:
     """
     Retrieve data for a specific date from a feature view.
 
@@ -35,7 +35,7 @@ def get_historical_data_for_date(date: str, feature_view, model) -> pd.DataFrame
     return batch_data[['date', 'pm25']].sort_values('date').reset_index(drop=True)
 
 
-def get_historical_data_in_date_range(date_start: str, date_end: str, feature_view, model) -> pd.DataFrame:
+def get_historical_data_in_date_range(date_start: str, date_end: str, feature_view,  weather_fg, model) -> pd.DataFrame:
     """
     Retrieve data for a specific date range from a time in the past from a feature view.
 
@@ -59,7 +59,7 @@ def get_historical_data_in_date_range(date_start: str, date_end: str, feature_vi
         
     return batch_data[['date', 'pm25']].sort_values('date').reset_index(drop=True)
 
-def get_future_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
+def get_future_data_for_date(date: str, feature_view,  weather_fg, model) -> pd.DataFrame:
     """
     Predicts future PM2.5 data for a specified date using a given feature view and model.
     
@@ -72,11 +72,6 @@ def get_future_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
         pd.DataFrame: A DataFrame containing data for the specified date.
     """
     date_start_dt = datetime.datetime.strptime(date, "%Y-%m-%d") #.date()
-    fs = hopsworks.login().get_feature_store()
-    weather_fg = fs.get_feature_group(
-        name='weather',
-        version=1,
-    )
     fg_data = weather_fg.read()
 
     # Couldn't get our filters to work, so filter in memory
@@ -89,7 +84,7 @@ def get_future_data_for_date(date: str, feature_view, model) -> pd.DataFrame:
 
 
 
-def get_future_data_in_date_range(date_start: str, date_end: str, feature_view, model) -> pd.DataFrame:
+def get_future_data_in_date_range(date_start: str, date_end: str, feature_view,  weather_fg, model) -> pd.DataFrame:
     """
     Predicts future PM2.5 data for a specified start and end date range using a given feature view and model.
     
@@ -107,11 +102,6 @@ def get_future_data_in_date_range(date_start: str, date_end: str, feature_view, 
         date_end = date_start
     date_end_dt = datetime.datetime.strptime(date_end, "%Y-%m-%d") #.date()
     
-    fs = hopsworks.login().get_feature_store()
-    weather_fg = fs.get_feature_group(
-        name='weather',
-        version=1,
-    )
     fg_data = weather_fg.read()
     # Fix bug: Cannot compare tz-naive and tz-aware datetime-like objects
     fg_data['date'] = pd.to_datetime(fg_data['date']).dt.tz_localize(None)
