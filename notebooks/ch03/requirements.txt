@@ -3,19 +3,19 @@ hsfs==3.7.0rc8
 hopsworks==3.7.0rc1
 
 # Resolve city names from (longitude, latitude) coordinates
-geopy
+geopy==2.4.1
 
-# Read weather data
+# Read weather data. Unpinned version - if we don't update, we won't get the weather data
 openmeteo-requests
 
 # Be more efficient when making REST (Http) requests
-requests-cache
-retry-requests
+requests-cache==1.2.0
+retry-requests==2.0.0
 
 # ML framework libraries
-xgboost
-scikit-learn
+xgboost==2.0.3
+scikit-learn==1.4.1.post1
 
 # Plot charts
-matplotlib
+matplotlib==3.8.3
 
