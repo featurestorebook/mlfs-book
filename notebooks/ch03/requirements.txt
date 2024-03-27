@@ -13,9 +13,21 @@ requests-cache==1.2.0
 retry-requests==2.0.0
 
 # ML framework libraries
+joblib==1.2.0
 xgboost==2.0.3
 scikit-learn==1.4.1.post1
 
 # Plot charts
 matplotlib==3.8.3
 
+transformers==4.38.2
+protobuf==3.20.0
+langchain==0.1.10
+flask-sqlalchemy==3.1.1
+bitsandbytes==0.42.0
+accelerate==0.27.2
+streamlit==1.31.1
+sentencepiece==0.2.0
+gradio==4.21.0
+openai==1.14.3
+getpass4==0.0.14.1
