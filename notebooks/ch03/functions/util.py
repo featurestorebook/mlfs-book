@@ -132,7 +132,7 @@ def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_K
     Returns DataFrame with air quality (pm25) as dataframe
     """
     # The API endpoint URL
-    url = f"https://api.waqi.info/feed/{country}/{street}/?token={AQI_API_KEY}"
+    url = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
     
     # Make a GET request to fetch the data from the API
     response = requests.get(url)
@@ -150,9 +150,11 @@ def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_K
             aq_today_df['pm25'] = [aqi_data['iaqi'].get('pm25', {}).get('v', None)]
             aq_today_df['pm25'] = aq_today_df['pm25'].astype('float32')
         else:
-            print("Error: The API response does not contain data.")
+            print("Error: The API response does not contain data. Error message:", data['data'])
+            raise requests.exceptions.RequestException(response.status_code)
     else:
         print("Failed to retrieve data. Status Code:", response.status_code)
+        raise requests.exceptions.RequestException(response.status_code)        
         
     aq_today_df['country'] = country
     aq_today_df['city'] = city
