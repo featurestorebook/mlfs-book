@@ -201,8 +201,8 @@ def generate_response(
 def generate_response_openai(
     user_query: str, 
     feature_view, 
+    weather_fg,
     model_air_quality, 
-    encoder, 
     client,
     verbose=True,
 ):
@@ -210,8 +210,8 @@ def generate_response_openai(
     context = get_context_data(
         user_query,
         feature_view,
+        weather_fg,
         model_air_quality,
-        encoder,
         client=client,
     )
     
