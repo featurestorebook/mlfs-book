@@ -12,6 +12,14 @@ The output is a forecast for air quality, like this one:
 
 This air quality forecasting service has been augmented with LLM capabilities. You can ask it both future (forecasting) and historical questions about air quality at your location via a microphone or text input dialog.
 
+The RAG in this application augments the prompt with: 
+ * your location, 
+ * today’s date,
+ * predicted air quality (from a ML model),
+ * historical air quality (from the feature store),
+ * are you in a sensitive group (coming soon).
+
+
 ![Personalized Air Quality with LLMs Architecture](personalized-air-quality-with-llms.png)
 
 
