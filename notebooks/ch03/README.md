@@ -15,6 +15,7 @@ This air quality forecasting service has been augmented with LLM capabilities. Y
 ![Personalized Air Quality with LLMs Architecture](personalized-air-quality-with-llms.png)
 
 
+## Application Architecture
 
 ![Application Architecture Air Quality with LLMs Architecture](app-air-quality-with-llms.png)
 
