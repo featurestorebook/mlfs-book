@@ -207,9 +207,8 @@ def get_context_data(user_query: str, feature_view, weather_fg, model_air_qualit
     Args:
         user_query (str): The user query.
         feature_view: Feature View for data retrieval.
-        model_llm: The language model.
-        tokenizer: The tokenizer.
         model_air_quality: The air quality model.
+        tokenizer: The tokenizer.
 
     Returns:
         str: The context data.
