@@ -126,41 +126,50 @@ def get_city_coordinates(city_name: str):
     
     return latitude, longitude
 
+def trigger_request(url:str):
+    response = requests.get(url)
+    if response.status_code == 200:
+        # Extract the JSON content from the response
+        data = response.json()
+    else:        
+        print("Failed to retrieve data. Status Code:", response.status_code)
+        raise requests.exceptions.RequestException(response.status_code)
+        
+    return data
+
 
 def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_KEY: str):
     """
     Returns DataFrame with air quality (pm25) as dataframe
     """
     # The API endpoint URL
-    url = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
+    url = f"https://api.waqi.info/feed/{country}/{street}/?token={AQI_API_KEY}"
     
     # Make a GET request to fetch the data from the API
-    response = requests.get(url)
+    data = trigger_request(url)
     
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Extract the JSON content from the response
-        data = response.json()
+    # if we get 'Unknown station' response then retry with city in url
+    if data['data'] == "Unknown station": 
+        url2 = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
+        data = trigger_request(url2)
+
+    # Check if the API response contains the data
+    if data['status'] == 'ok':
+        # Extract the air quality data
+        aqi_data = data['data']
+        aq_today_df = pd.DataFrame()  
+        aq_today_df['pm25'] = [aqi_data['iaqi'].get('pm25', {}).get('v', None)]
+        aq_today_df['pm25'] = aq_today_df['pm25'].astype('float32')
         
-        # Check if the API response contains the data
-        if data['status'] == 'ok':
-            # Extract the air quality data
-            aqi_data = data['data']
-            aq_today_df = pd.DataFrame()  
-            aq_today_df['pm25'] = [aqi_data['iaqi'].get('pm25', {}).get('v', None)]
-            aq_today_df['pm25'] = aq_today_df['pm25'].astype('float32')
-        else:
-            print("Error: The API response does not contain data. Error message:", data['data'])
-            raise requests.exceptions.RequestException(response.status_code)
-    else:
-        print("Failed to retrieve data. Status Code:", response.status_code)
-        raise requests.exceptions.RequestException(response.status_code)        
-        
-    aq_today_df['country'] = country
-    aq_today_df['city'] = city
-    aq_today_df['street'] = street
-    aq_today_df['date'] = day
-    aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])
+        aq_today_df['country'] = country
+        aq_today_df['city'] = city
+        aq_today_df['street'] = street
+        aq_today_df['date'] = day
+        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])        
+    else:        
+        print("Error: The API response does not contain data. Error message:", data['data'])
+        raise requests.exceptions.RequestException(data['data'])
+    
     return aq_today_df
 
 
