@@ -11,6 +11,7 @@ from matplotlib.ticker import MultipleLocator
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
+import hopsworks
 
 def get_historical_weather(city, start_date,  end_date):
     latitude, longitude = get_city_coordinates(city)
@@ -138,21 +139,26 @@ def trigger_request(url:str):
     return data
 
 
-def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_KEY: str):
+def get_pm25(aqicn_url: str, country: str, city: str, street: str, day: datetime.date, AQI_API_KEY: str):
     """
     Returns DataFrame with air quality (pm25) as dataframe
     """
     # The API endpoint URL
-    url = f"https://api.waqi.info/feed/{country}/{street}/?token={AQI_API_KEY}"
+    url = f"{aqicn_url}/?token={AQI_API_KEY}"
     
     # Make a GET request to fetch the data from the API
     data = trigger_request(url)
     
     # if we get 'Unknown station' response then retry with city in url
     if data['data'] == "Unknown station": 
+        url1 = f"https://api.waqi.info/feed/{country}/{street}/?token={AQI_API_KEY}"
+        data = trigger_request(url1)
+
+    if data['data'] == "Unknown station": 
         url2 = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
         data = trigger_request(url2)
 
+    
     # Check if the API response contains the data
     if data['status'] == 'ok':
         # Extract the air quality data
@@ -165,9 +171,10 @@ def get_pm25(country: str, city: str, street: str, day: datetime.date, AQI_API_K
         aq_today_df['city'] = city
         aq_today_df['street'] = street
         aq_today_df['date'] = day
-        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])        
+        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])       
+        aq_today_df['url'] = aqicn_url
     else:        
-        print("Error: The API response does not contain data. Error message:", data['data'])
+        print("Error: There may be an incorrect  URL for your Sensor or it is not contactable right now. The API response does not contain data.  Error message:", data['data'])
         raise requests.exceptions.RequestException(data['data'])
     
     return aq_today_df
@@ -219,3 +226,52 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     # # Save the figure, overwriting any existing file with the same name
     plt.savefig(file_path)
     return plt
+
+
+def delete_feature_groups(fs, name):
+    try:
+        for fg in fs.get_feature_groups(name):
+            fg.delete()
+            print(f"Deleted {fg.name}/{fg.version}")
+    except hsfs.client.exceptions.RestAPIError:
+        print(f"No {name} feature group found")
+
+def delete_feature_views(fs, name):
+    try:
+        for fv in fs.get_feature_views(name):
+            fv.delete()
+            print(f"Deleted {fv.name}/{fv.version}")
+    except hsfs.client.exceptions.RestAPIError:
+        print(f"No {name} feature view found")
+    
+def delete_models(mr, name):
+    models = mr.get_models(name)
+    if not models:
+        print(f"No {name} model found")
+    for model in models:
+        model.delete()
+        print(f"Deleted model {model.name}/{model.version}")
+
+# WARNING - this will wipe out all your feature data and models
+def purge_project(proj):
+    fs = proj.get_feature_store()
+    mr = proj.get_model_registry()
+
+    # Delete ALL Feature Groups
+    delete_feature_groups(fs, "air_quality")
+    delete_feature_groups(fs, "weather")
+    delete_feature_groups(fs, "aq_monitoring")
+    
+    # Delete Feature Views
+    delete_feature_views(fs, "air_quality_fv")
+
+    # Delete all Models
+    delete_models(mr, "air_quality_xgboost_model")
+
+
+def secrets_api():
+    host = os.environ.get('HOPSWORKS_HOST')
+    proj = os.environ.get('HOPSWORKS_PROJECT')
+    api_key = os.environ.get('HOPSWORKS_API_KEY')
+    conn = hopsworks.connection(host=host, project=proj, api_key_value=api_key)
+    return conn.get_secrets_api()
