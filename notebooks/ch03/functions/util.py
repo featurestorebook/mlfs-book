@@ -12,6 +12,7 @@ import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import hopsworks
+import hsfs
 
 def get_historical_weather(city, start_date,  end_date):
     latitude, longitude = get_city_coordinates(city)
@@ -257,21 +258,20 @@ def purge_project(proj):
     fs = proj.get_feature_store()
     mr = proj.get_model_registry()
 
+    # Delete Feature Views before deleting the feature groups
+    delete_feature_views(fs, "air_quality_fv")
+    
     # Delete ALL Feature Groups
     delete_feature_groups(fs, "air_quality")
     delete_feature_groups(fs, "weather")
     delete_feature_groups(fs, "aq_monitoring")
     
-    # Delete Feature Views
-    delete_feature_views(fs, "air_quality_fv")
-
     # Delete all Models
     delete_models(mr, "air_quality_xgboost_model")
 
 
-def secrets_api():
-    host = os.environ.get('HOPSWORKS_HOST')
-    proj = os.environ.get('HOPSWORKS_PROJECT')
+def secrets_api(proj):
+    host = "c.app.hopsworks.ai"
     api_key = os.environ.get('HOPSWORKS_API_KEY')
     conn = hopsworks.connection(host=host, project=proj, api_key_value=api_key)
     return conn.get_secrets_api()
