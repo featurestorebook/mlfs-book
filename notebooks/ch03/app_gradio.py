@@ -16,10 +16,7 @@ transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-bas
 
 def connect_to_hopsworks():
     # Initialize Hopsworks feature store connection
-    project = hopsworks.login(
-        host="snurran.hops.works",
-        project="AirQuality_Book",
-    )
+    project = hopsworks.login()
     fs = project.get_feature_store()
     
     # Retrieve the model registry
@@ -28,7 +25,7 @@ def connect_to_hopsworks():
     # Retrieve the 'air_quality_fv' feature view
     feature_view = fs.get_feature_view(
         name="air_quality_fv", 
-        version=2,
+        version=1,
         )
 
     # Initialize batch scoring
