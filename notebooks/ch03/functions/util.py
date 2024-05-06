@@ -14,8 +14,8 @@ from retry_requests import retry
 import hopsworks
 import hsfs
 
-def get_historical_weather(city, start_date,  end_date):
-    latitude, longitude = get_city_coordinates(city)
+def get_historical_weather(city, start_date,  end_date, latitude, longitude):
+    # latitude, longitude = get_city_coordinates(city)
 
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
@@ -64,9 +64,9 @@ def get_historical_weather(city, start_date,  end_date):
     daily_dataframe['city'] = city
     return daily_dataframe
 
-def get_hourly_weather_forecast(city):
+def get_hourly_weather_forecast(city, latitude, longitude):
 
-    latitude, longitude = get_city_coordinates(city)
+    # latitude, longitude = get_city_coordinates(city)
     
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
