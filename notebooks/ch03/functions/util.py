@@ -13,6 +13,7 @@ import requests_cache
 from retry_requests import retry
 import hopsworks
 import hsfs
+from pathlib import Path
 
 def get_historical_weather(city, start_date,  end_date, latitude, longitude):
     # latitude, longitude = get_city_coordinates(city)
@@ -275,3 +276,11 @@ def secrets_api(proj):
     api_key = os.environ.get('HOPSWORKS_API_KEY')
     conn = hopsworks.connection(host=host, project=proj, api_key_value=api_key)
     return conn.get_secrets_api()
+
+
+def check_file_path(file_path):
+    my_file = Path(file_path)
+    if my_file.is_file() == False:
+        print(f"Error. File not found at the path: {file_path} ")
+    else:
+        print(f"File successfully found at the path: {file_path}")
