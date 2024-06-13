@@ -254,6 +254,14 @@ def delete_models(mr, name):
         model.delete()
         print(f"Deleted model {model.name}/{model.version}")
 
+def delete_secrets(proj, name):
+    try:
+        secrets = secrets_api(proj.name)
+        secret = secrets.get_secret(name)
+        secret.delete()
+    except hsfs.client.exceptions.RestAPIError:
+        print(f"No {name} secret found")
+
 # WARNING - this will wipe out all your feature data and models
 def purge_project(proj):
     fs = proj.get_feature_store()
@@ -269,6 +277,7 @@ def purge_project(proj):
     
     # Delete all Models
     delete_models(mr, "air_quality_xgboost_model")
+    delete_secrets(proj, "SENSOR_LOCATION_JSON")
 
 
 def secrets_api(proj):
