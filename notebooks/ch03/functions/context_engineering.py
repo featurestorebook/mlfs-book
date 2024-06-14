@@ -230,13 +230,11 @@ def get_context_data(user_query: str, feature_view, weather_fg, model_air_qualit
     
     # Extract function calls from the completion
     functions = extract_function_calls(completion)
-    print(f"found functions:{functions}")
     
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
         data = invoke_function(functions[0], feature_view, weather_fg, model_air_quality)
-        print(f"data from invoke_func: {data}")
         
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):
