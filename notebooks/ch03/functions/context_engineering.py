@@ -151,7 +151,7 @@ def function_calling_with_openai(user_query: str, client) -> str:
     instructions = get_function_calling_prompt(user_query).split('<|im_start|>user')[0]
     
     completion = client.chat.completions.create(
-        model="gpt-4-0125-preview",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": instructions},
             {"role": "user", "content": user_query},
