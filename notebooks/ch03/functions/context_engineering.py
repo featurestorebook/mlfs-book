@@ -65,9 +65,12 @@ You are a helpful assistant with access to the following functions:
 
 ###INSTRUCTIONS:
 - You need to choose one function to use and retrieve paramenters for this function from the user input.
-- If the user query contains 'will', and specifies a single day or date, use get_future_data_for_date function
-- If the user query contains 'will', and specifies a range of days or dates, use or get_future_data_in_date_range function. 
-- If the user query is for future data, but only includes a single day or date, use the get_future_data_for_date function.
+- If the user query contains 'will', and specifies a single day or date, use get_future_data_in_date_range function
+- If the user query contains 'will', and specifies a range of days or dates, use get_future_data_in_date_range function. 
+- If the user query is for future data, but only includes a single day or date, use the get_future_data_in_date_range function,
+- If the user query contains 'today' or 'yesterday', use get_historical_data_for_date function.
+- If the user query contains 'tomorrow', use get_future_data_in_date_range function.
+- If the user query is for historical data, and specifies a range of days or dates, use use get_historical_data_for_date function.
 - If the user says a day of the week, assume the date of that day is when that day next arrives.
 - Do not include feature_view and model parameters.
 - Provide dates STRICTLY in the YYYY-MM-DD format.
@@ -148,7 +151,7 @@ def function_calling_with_openai(user_query: str, client) -> str:
     instructions = get_function_calling_prompt(user_query).split('<|im_start|>user')[0]
     
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0125-preview",
         messages=[
             {"role": "system", "content": instructions},
             {"role": "user", "content": user_query},
@@ -227,11 +230,13 @@ def get_context_data(user_query: str, feature_view, weather_fg, model_air_qualit
     
     # Extract function calls from the completion
     functions = extract_function_calls(completion)
+    print(f"found functions:{functions}")
     
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
         data = invoke_function(functions[0], feature_view, weather_fg, model_air_quality)
+        print(f"data from invoke_func: {data}")
         
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):

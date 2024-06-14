@@ -21,8 +21,8 @@ def get_historical_data_for_date(date: str, feature_view, weather_fg, model) -> 
     date_datetime = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     
     features_df, labels_df = feature_view.training_data(
-        start_time=date_datetime - datetime.timedelta(days=1),
-        end_time=date_datetime, 
+        start_time=date_datetime,
+        end_time=date_datetime + datetime.timedelta(days=1), 
         # event_time=True,
         statistics_config=False
     )
