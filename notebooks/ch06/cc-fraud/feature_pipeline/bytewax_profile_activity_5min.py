@@ -118,12 +118,7 @@ def format_event(event):
 
 
 def get_flow():
-    # connect to hopsworks
-    project = hopsworks.login(
-        host="",
-        project="",
-        api_key_value="",
-    )
+    project = hopsworks.login()
     fs = project.get_feature_store()
 
     # get feature group and its topic configuration
