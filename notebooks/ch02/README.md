@@ -7,7 +7,7 @@
 
 
 There are two ML Systems:
- 
+
  * a batch ML system that runs daily that updates a Dashboard showing whether that day's new Titanic Passenger survived or not;
  * an interactive ML system that requires you to enter details for a hypothetical passenger and it predicts whether that passenger would survive or not.
 

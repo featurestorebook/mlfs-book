@@ -27,33 +27,33 @@ jobs:
           cd notebooks/ch02
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: execute python workflows from bash script
-        env: 
+        env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           HOPSWORKS_HOST: ${{ secrets.HOPSWORKS_HOST }}
           HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
         run: |
           cd notebooks/ch02
           jupyter nbconvert --to notebook --execute titanic-feature-pipeline-daily.ipynb
-          jupyter nbconvert --to notebook --execute titanic-batch-inference-daily.ipynb 
+          jupyter nbconvert --to notebook --execute titanic-batch-inference-daily.ipynb
 
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Titanic Dashboard published"
           commit_options: '--no-verify --signoff'
-      
+
           file_pattern: 'docs/titanic/assets/img/* docs/_includes/*'
-          
+
           repository: .
-      
+
           status_options: '--untracked-files=no'
-      
-          skip_dirty_check: true    
-          
+
+          skip_dirty_check: true
+
           skip_fetch: true
-          
+
           skip_checkout: true
-     
+
           push_options: '--force'

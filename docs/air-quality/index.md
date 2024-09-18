@@ -15,5 +15,3 @@ powered by a [function-calling LLM](https://www.hopsworks.ai/dictionary/function
 1-Day Hindcast: Predictions vs Outcomes
 
 ![Hindcast](./assets/img/pm25_hindcast_1day.png)
-
-

@@ -17,4 +17,3 @@ scikit-learn==1.4.1.post1
 
 # Plot charts
 matplotlib==3.8.3
-

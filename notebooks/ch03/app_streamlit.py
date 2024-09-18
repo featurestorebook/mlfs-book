@@ -4,9 +4,9 @@ import joblib
 from xgboost import XGBRegressor
 from openai import OpenAI
 from functions.llm_chain import (
-    load_model, 
-    get_llm_chain, 
-    generate_response, 
+    load_model,
+    get_llm_chain,
+    generate_response,
     generate_response_openai,
 )
 import warnings
@@ -23,19 +23,19 @@ def connect_to_hopsworks():
         project="AirQuality_Book",
     )
     fs = project.get_feature_store()
-    
+
     # Retrieve the model registry
     mr = project.get_model_registry()
 
     # Retrieve the 'air_quality_fv' feature view
     feature_view = fs.get_feature_view(
-        name="air_quality_fv", 
+        name="air_quality_fv",
         version=2,
     )
 
     # Initialize batch scoring
     feature_view.init_batch_scoring(1)
-    
+
     # Retrieve the 'air_quality_xgboost_model' from the model registry
     retrieved_model = mr.get_model(
         name="air_quality_xgboost_model",
@@ -50,9 +50,9 @@ def connect_to_hopsworks():
     # Loading the XGBoost regressor model and label encoder from the saved model directory
     # retrieved_xgboost_model = joblib.load(saved_model_dir + "/xgboost_regressor.pkl")
     model_air_quality = XGBRegressor()
-    
+
     model_air_quality.load_model(saved_model_dir + "/model.json")
-    
+
     return feature_view, model_air_quality
 
 
@@ -61,13 +61,13 @@ def retrieve_llm_chain():
 
     # Load the LLM and its corresponding tokenizer.
     model_llm, tokenizer = load_model()
-    
+
     # Create and configure a language model chain.
     llm_chain = get_llm_chain(
-        model_llm, 
+        model_llm,
         tokenizer,
     )
-    
+
     return model_llm, tokenizer, llm_chain
 
 
@@ -93,8 +93,8 @@ if new_response_source != st.session_state.response_source:
 
     # Display a message indicating chat was cleared (optional)
     st.experimental_rerun()  # Rerun the app to reflect changes immediately
-    
-    
+
+
 if new_response_source == 'OpenAI API':
     openai_api_key = st.sidebar.text_input("Enter your OpenAI API key:", type="password")
     if openai_api_key:
@@ -102,7 +102,7 @@ if new_response_source == 'OpenAI API':
             api_key=openai_api_key
         )
         st.sidebar.success("API key saved successfully ✅")
-        
+
 elif new_response_source == 'Hermes LLM':
     # Conditionally load the LLM, tokenizer, and llm_chain if Local Model is selected
     model_llm, tokenizer, llm_chain = retrieve_llm_chain()
@@ -132,16 +132,16 @@ if user_query := st.chat_input("How can I help you?"):
             llm_chain,
             verbose=False,
         )
-        
+
     elif new_response_source == 'OpenAI API' and openai_api_key:
-        response = generate_response_openai(   
+        response = generate_response_openai(
             user_query,
             feature_view,
             model_air_quality,
             client,
             verbose=False,
         )
-        
+
     else:
         response = "Please select a response generation method and provide necessary details."
 

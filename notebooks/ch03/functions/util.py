@@ -68,7 +68,7 @@ def get_historical_weather(city, start_date,  end_date, latitude, longitude):
 def get_hourly_weather_forecast(city, latitude, longitude):
 
     # latitude, longitude = get_city_coordinates(city)
-    
+
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
@@ -114,19 +114,19 @@ def get_hourly_weather_forecast(city, latitude, longitude):
     hourly_dataframe = hourly_dataframe.dropna()
     return hourly_dataframe
 
-    
-    
+
+
 def get_city_coordinates(city_name: str):
     """
     Takes city name and returns its latitude and longitude (rounded to 2 digits after dot).
-    """ 
+    """
     # Initialize Nominatim API (for getting lat and long of the city)
     geolocator = Nominatim(user_agent="MyApp")
     city = geolocator.geocode(city_name)
 
     latitude = round(city.latitude, 2)
     longitude = round(city.longitude, 2)
-    
+
     return latitude, longitude
 
 def trigger_request(url:str):
@@ -134,10 +134,10 @@ def trigger_request(url:str):
     if response.status_code == 200:
         # Extract the JSON content from the response
         data = response.json()
-    else:        
+    else:
         print("Failed to retrieve data. Status Code:", response.status_code)
         raise requests.exceptions.RequestException(response.status_code)
-        
+
     return data
 
 
@@ -147,38 +147,38 @@ def get_pm25(aqicn_url: str, country: str, city: str, street: str, day: datetime
     """
     # The API endpoint URL
     url = f"{aqicn_url}/?token={AQI_API_KEY}"
-    
+
     # Make a GET request to fetch the data from the API
     data = trigger_request(url)
-    
+
     # if we get 'Unknown station' response then retry with city in url
-    if data['data'] == "Unknown station": 
+    if data['data'] == "Unknown station":
         url1 = f"https://api.waqi.info/feed/{country}/{street}/?token={AQI_API_KEY}"
         data = trigger_request(url1)
 
-    if data['data'] == "Unknown station": 
+    if data['data'] == "Unknown station":
         url2 = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
         data = trigger_request(url2)
 
-    
+
     # Check if the API response contains the data
     if data['status'] == 'ok':
         # Extract the air quality data
         aqi_data = data['data']
-        aq_today_df = pd.DataFrame()  
+        aq_today_df = pd.DataFrame()
         aq_today_df['pm25'] = [aqi_data['iaqi'].get('pm25', {}).get('v', None)]
         aq_today_df['pm25'] = aq_today_df['pm25'].astype('float32')
-        
+
         aq_today_df['country'] = country
         aq_today_df['city'] = city
         aq_today_df['street'] = street
         aq_today_df['date'] = day
-        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])       
+        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])
         aq_today_df['url'] = aqicn_url
-    else:        
+    else:
         print("Error: There may be an incorrect  URL for your Sensor or it is not contactable right now. The API response does not contain data.  Error message:", data['data'])
         raise requests.exceptions.RequestException(data['data'])
-    
+
     return aq_today_df
 
 
@@ -188,18 +188,18 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     day = pd.to_datetime(df['date']).dt.date
     # Plot each column separately in matplotlib
     ax.plot(day, df['predicted_pm25'], label='Predicted PM2.5', color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
- 
+
     # Set the y-axis to a logarithmic scale
     ax.set_yscale('log')
     ax.set_yticks([0, 10, 25, 50, 100, 250, 500])
     ax.get_yaxis().set_major_formatter(plt.ScalarFormatter())
     ax.set_ylim(bottom=1)
-    
+
     # Set the labels and title
     ax.set_xlabel('Date')
     ax.set_title(f"PM2.5 Predicted (Logarithmic Scale) for {city}, {street}")
     ax.set_ylabel('PM2.5')
-    
+
     colors = ['green', 'yellow', 'orange', 'red', 'purple', 'darkred']
     labels = ['Good', 'Moderate', 'Unhealthy for Some', 'Unhealthy', 'Very Unhealthy', 'Hazardous']
     ranges = [(0, 49), (50, 99), (100, 149), (150, 199), (200, 299), (300, 500)]
@@ -209,22 +209,22 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     # Add a legend for the different Air Quality Categories
     patches = [Patch(color=colors[i], label=f"{labels[i]}: {ranges[i][0]}-{ranges[i][1]}") for i in range(len(colors))]
     legend1 = ax.legend(handles=patches, loc='upper right', title="Air Quality Categories", fontsize='x-small')
-    
+
     # Aim for ~10 annotated values on x-axis, will work for both forecasts ans hindcasts
     if len(df.index) > 11:
         every_x_tick = len(df.index) / 10
         ax.xaxis.set_major_locator(MultipleLocator(every_x_tick))
-        
+
     plt.xticks(rotation=45)
-        
+
     if hindcast == True:
         ax.plot(day, df['pm25'], label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
         legend2 = ax.legend(loc='upper left', fontsize='x-small')
         ax.add_artist(legend1)
-        
+
     # Ensure everything is laid out neatly
     plt.tight_layout()
-    
+
     # # Save the figure, overwriting any existing file with the same name
     plt.savefig(file_path)
     return plt
@@ -245,7 +245,7 @@ def delete_feature_views(fs, name):
             print(f"Deleted {fv.name}/{fv.version}")
     except hsfs.client.exceptions.RestAPIError:
         print(f"No {name} feature view found")
-    
+
 def delete_models(mr, name):
     models = mr.get_models(name)
     if not models:
@@ -270,12 +270,12 @@ def purge_project(proj):
 
     # Delete Feature Views before deleting the feature groups
     delete_feature_views(fs, "air_quality_fv")
-    
+
     # Delete ALL Feature Groups
     delete_feature_groups(fs, "air_quality")
     delete_feature_groups(fs, "weather")
     delete_feature_groups(fs, "aq_predictions")
-    
+
     # Delete all Models
     delete_models(mr, "air_quality_xgboost_model")
     delete_secrets(proj, "SENSOR_LOCATION_JSON")
@@ -306,6 +306,3 @@ def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, 
     df = df.drop('pm25', axis=1)
     monitor_fg.insert(df, write_options={"wait_for_job": True})
     return hindcast_df
-    
-    
-    

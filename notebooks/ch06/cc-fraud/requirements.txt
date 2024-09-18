@@ -1,2 +1,3 @@
 hopsworks
 faker
+pre-commit

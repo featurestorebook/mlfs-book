@@ -9,9 +9,9 @@ import sys
 import pandas as pd
 from openai import OpenAI
 from functions.air_quality_data_retrieval import (
-    get_historical_data_for_date, 
-    get_historical_data_in_date_range, 
-    get_future_data_in_date_range, 
+    get_historical_data_for_date,
+    get_historical_data_in_date_range,
+    get_future_data_in_date_range,
     get_future_data_for_date,
 )
 from typing import Any, Dict, List
@@ -51,7 +51,7 @@ def serialize_function_to_json(func: Any) -> str:
 def get_function_calling_prompt(user_query):
     fn = """{"name": "function_name", "arguments": {"arg_1": "value_1", "arg_2": value_2, ...}}"""
     example = """{"name": "get_historical_data_in_date_range", "arguments": {"date_start": "2024-01-10", "date_end": "2024-01-14"}}"""
-    
+
     prompt = f"""<|im_start|>system
 You are a helpful assistant with access to the following functions:
 
@@ -66,7 +66,7 @@ You are a helpful assistant with access to the following functions:
 ###INSTRUCTIONS:
 - You need to choose one function to use and retrieve paramenters for this function from the user input.
 - If the user query contains 'will', and specifies a single day or date, use get_future_data_in_date_range function
-- If the user query contains 'will', and specifies a range of days or dates, use get_future_data_in_date_range function. 
+- If the user query contains 'will', and specifies a range of days or dates, use get_future_data_in_date_range function.
 - If the user query is for future data, but only includes a single day or date, use the get_future_data_in_date_range function,
 - If the user query contains 'today' or 'yesterday', use get_historical_data_for_date function.
 - If the user query contains 'tomorrow', use get_future_data_in_date_range function.
@@ -106,7 +106,7 @@ EXAMPLE 3:
 <|im_end|>
 
 <|im_start|>assistant"""
-    
+
     return prompt
 
 
@@ -114,24 +114,24 @@ def generate_hermes(user_query: str, model_llm, tokenizer) -> str:
     """Retrieves a function name and extracts function parameters based on the user query."""
 
     prompt = get_function_calling_prompt(user_query)
-    
+
     tokens = tokenizer(prompt, return_tensors="pt").to(model_llm.device)
     input_size = tokens.input_ids.numel()
     with torch.inference_mode():
         generated_tokens = model_llm.generate(
-            **tokens, 
-            use_cache=True, 
-            do_sample=True, 
-            temperature=0.2, 
-            top_p=1.0, 
-            top_k=0, 
-            max_new_tokens=512, 
-            eos_token_id=tokenizer.eos_token_id, 
+            **tokens,
+            use_cache=True,
+            do_sample=True,
+            temperature=0.2,
+            top_p=1.0,
+            top_k=0,
+            max_new_tokens=512,
+            eos_token_id=tokenizer.eos_token_id,
             pad_token_id=tokenizer.eos_token_id,
         )
 
     return tokenizer.decode(
-        generated_tokens.squeeze()[input_size:], 
+        generated_tokens.squeeze()[input_size:],
         skip_special_tokens=True,
     )
 
@@ -139,17 +139,17 @@ def generate_hermes(user_query: str, model_llm, tokenizer) -> str:
 def function_calling_with_openai(user_query: str, client) -> str:
     """
     Generates a response using OpenAI's chat API.
-    
+
     Args:
         user_query (str): The user's query or prompt.
         instructions (str): Instructions or context to provide to the GPT model.
-        
+
     Returns:
         str: The generated response from the assistant.
     """
-    
+
     instructions = get_function_calling_prompt(user_query).split('<|im_start|>user')[0]
-    
+
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -163,21 +163,21 @@ def function_calling_with_openai(user_query: str, client) -> str:
         last_choice = completion.choices[0]
         if last_choice.message:
             return last_choice.message.content.strip()
-    return ""    
+    return ""
 
 
 def extract_function_calls(completion: str) -> List[Dict[str, Any]]:
-    """Extract function calls from completion."""    
+    """Extract function calls from completion."""
     completion = completion.strip()
     pattern = r"(<onefunctioncall>(.*?)</onefunctioncall>)"
     match = re.search(pattern, completion, re.DOTALL)
     if not match:
         return None
-    
+
     multiplefn = match.group(1)
     root = ET.fromstring(multiplefn)
     functions = root.findall("functioncall")
-        
+
     return [json.loads(fn.text) for fn in functions]
 
 
@@ -189,21 +189,21 @@ def invoke_function(function, feature_view, weather_fg, model) -> pd.DataFrame:
 
     # Using Python's getattr function to dynamically call the function by its name and passing the arguments
     function_output = getattr(sys.modules[__name__], function_name)(
-        **arguments, 
-        feature_view=feature_view, 
+        **arguments,
+        feature_view=feature_view,
         weather_fg=weather_fg,
         model=model,
     )
-    
+
     if type(function_output) == str:
         return function_output
-    
+
     # Round the 'pm25' value to 2 decimal places
     function_output['pm25'] = function_output['pm25'].apply(round, ndigits=2)
     return function_output
 
 
-def get_context_data(user_query: str, feature_view, weather_fg, model_air_quality, model_llm=None, tokenizer=None, client=None) -> str: 
+def get_context_data(user_query: str, feature_view, weather_fg, model_air_quality, model_llm=None, tokenizer=None, client=None) -> str:
     """
     Retrieve context data based on user query.
 
@@ -218,24 +218,24 @@ def get_context_data(user_query: str, feature_view, weather_fg, model_air_qualit
     """
     if client:
         # Generate a response using LLM
-        completion = function_calling_with_openai(user_query, client) 
-     
+        completion = function_calling_with_openai(user_query, client)
+
     else:
         # Generate a response using LLM
         completion = generate_hermes(
-            user_query, 
-            model_llm, 
+            user_query,
+            model_llm,
             tokenizer,
         )
-    
+
     # Extract function calls from the completion
     functions = extract_function_calls(completion)
-    
+
     # If function calls were found
     if functions:
         # Invoke the function with provided arguments
         data = invoke_function(functions[0], feature_view, weather_fg, model_air_quality)
-        
+
         # Return formatted data as string
         if isinstance(data, pd.DataFrame):
             return f'Air Quality Measurements:\n' + '\n'.join(
@@ -243,6 +243,6 @@ def get_context_data(user_query: str, feature_view, weather_fg, model_air_qualit
             )
         # Return message if data is not updated
         return data
-    
+
     # If no function calls were found, return an empty string
     return ''

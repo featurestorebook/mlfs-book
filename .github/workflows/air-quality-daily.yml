@@ -27,13 +27,13 @@ jobs:
           cd notebooks/ch03
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: execute python workflows from bash script
-        env: 
+        env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           cd notebooks/ch03
-          jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb  
+          jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb
           jupyter nbconvert --to notebook --execute 4_air_quality_batch_inference.ipynb
 
       - name: github pages publish
@@ -41,17 +41,17 @@ jobs:
         with:
           commit_message: "Air Quality Dashboard published"
           commit_options: '--no-verify --signoff'
-      
+
           file_pattern: 'docs/air-quality/assets/img/* docs/_includes/*'
-          
+
           repository: .
-      
+
           status_options: '--untracked-files=no'
-      
-          skip_dirty_check: true    
-          
+
+          skip_dirty_check: true
+
           skip_fetch: true
-          
+
           skip_checkout: true
-     
+
           push_options: '--force'

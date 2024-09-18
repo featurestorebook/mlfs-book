@@ -25,7 +25,7 @@ def haversine(long: pd.Series, lat: pd.Series, shift: int) -> np.ndarray:
     c = 2*np.arcsin(np.sqrt(a + b))
 
     return c
-    
+
 def calculate_loc_delta_t_minus_1(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate loc_delta_t_minus_1 for each group.
@@ -39,11 +39,11 @@ def calculate_loc_delta_t_minus_1(df: pd.DataFrame) -> pd.DataFrame:
     # Sort values and convert latitude and longitude to radians
     df = df.sort_values("datetime")
     df[["longitude", "latitude"]] = df[["longitude", "latitude"]].applymap(radians)
-    
+
     df["loc_delta_t_minus_1"] = df.groupby("account_id").apply(
         lambda x: haversine(x["longitude"], x["latitude"], +1)
     ).reset_index(level=0, drop=True).fillna(0)
-    
+
     return df
 
 
@@ -76,7 +76,7 @@ def calculate_time_delta_t_minus_1(df: pd.DataFrame) -> pd.DataFrame:
     df["time_delta_t_minus_1"] = df.groupby("account_id") \
         .apply(lambda x: time_delta(x["datetime"], +1))\
         .reset_index(level=0, drop=True)
-        
+
     # Normalize time_delta_t_minus_1 to days and handle missing values
     df["time_delta_t_minus_1"] = (df["datetime"] - df["time_delta_t_minus_1"]) / np.timedelta64(1, 'D')
     df["time_delta_t_minus_1"] = df["time_delta_t_minus_1"].fillna(0)

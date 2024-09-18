@@ -1,0 +1,89 @@
+
+[project]
+name = "credit-card-fraud"
+version = "0.1.0"
+description = "Real-time credit card fraud prediction, powered by AI."
+authors = [
+    { name="Jim Dowling", email="jim@hopsworks.ai" },
+]
+license = {text = "MIT"}
+
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "-v --tb=short"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[tool.setuptools]
+packages = ["tests/feature-tests","tests/pipeline-tests"]
+
+
+# Following styling form https://madewithml.com/courses/mlops/styling/
+
+# Black formatting
+[tool.black]
+line-length = 150
+include = '\.pyi?$'
+exclude = '''
+/(
+      .eggs         # exclude a few common directories in the
+    | .git          # root of the project
+    | .hg
+    | .mypy_cache
+    | .tox
+    | venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+'''
+
+# iSort
+[tool.isort]
+profile = "black"
+line_length = 79
+multi_line_output = 3
+include_trailing_comma = true
+virtual_env = "conda"
+
+[tool.flake8]
+exclude = "venv"
+ignore = ["E501", "W503", "E226"]
+# E501: Line too long
+# W503: Line break occurred before binary operator
+# E226: Missing white space around arithmetic operator
+
+[tool.ruff]
+line-length = 120
+
+exclude = ["excluded_file.py"]
+lint.select = [
+    "E",  # pycodestyle errors (settings from FastAPI, thanks, @tiangolo!)
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+lint.ignore = [
+    "E501",  # line too long
+    "C901",  # too complex
+]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.ruff.lint.isort]
+order-by-type = true
+relative-imports-order = "closest-to-furthest"
+extra-standard-library = ["typing"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+known-first-party = []

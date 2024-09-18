@@ -21,7 +21,7 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
     Returns:
         tuple: A tuple containing the loaded model and tokenizer.
     """
-    
+
     # Load the tokenizer for Mistral-7B-Instruct model
     tokenizer_path = "./mistral/tokenizer"
     if os.path.isdir(tokenizer_path) == False:
@@ -29,7 +29,7 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
         tokenizer.save_pretrained(tokenizer_path)
     else:
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-        
+
     # Set the pad token to the unknown token to handle padding
     tokenizer.pad_token = tokenizer.unk_token
 
@@ -38,9 +38,9 @@ def load_model(model_id: str = "teknium/OpenHermes-2.5-Mistral-7B") -> tuple:
 
     # BitsAndBytesConfig int-4 config
     bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, 
-        bnb_4bit_use_double_quant=True, 
-        bnb_4bit_quant_type="nf4", 
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
@@ -69,12 +69,12 @@ def get_prompt_template():
     Retrieve a template for generating prompts in a conversational AI system.
 
     Returns:
-        str: A string representing the template for generating prompts. 
-            This template includes placeholders for system information, 
+        str: A string representing the template for generating prompts.
+            This template includes placeholders for system information,
             instructions, previous conversation, context, date and user query.
     """
     prompt_template = """<|im_start|>system
-You are one of the best air quality experts in the world. 
+You are one of the best air quality experts in the world.
 
 ###INSTRUCTIONS:
 - If you don't know the answer, you will respond politely that you cannot help.
@@ -113,14 +113,14 @@ def get_llm_chain(model_llm, tokenizer):
         model=model_llm,                      # The pre-trained language model for text generation
         tokenizer=tokenizer,                  # The tokenizer corresponding to the language model
         task="text-generation",               # Specify the task as text generation
-        use_cache=True, 
-        do_sample=True, 
-        temperature=0.4, 
+        use_cache=True,
+        do_sample=True,
+        temperature=0.4,
         top_p=1.0,
         top_k=0,
-        max_new_tokens=512, 
-        eos_token_id=tokenizer.eos_token_id, 
-        pad_token_id=tokenizer.eos_token_id,   
+        max_new_tokens=512,
+        eos_token_id=tokenizer.eos_token_id,
+        pad_token_id=tokenizer.eos_token_id,
     )
 
     # Create a Hugging Face pipeline for Mistral LLM using the text generation pipeline
@@ -128,15 +128,15 @@ def get_llm_chain(model_llm, tokenizer):
         pipeline=text_generation_pipeline,
     )
 
-    # Create prompt from prompt template 
+    # Create prompt from prompt template
     prompt = PromptTemplate(
         input_variables=["context", "question", "date_today"],
         template=get_prompt_template(),
     )
 
-    # Create LLM chain 
+    # Create LLM chain
     llm_chain = LLMChain(
-        llm=mistral_llm, 
+        llm=mistral_llm,
         prompt=prompt,
         verbose=False,
     )
@@ -145,18 +145,18 @@ def get_llm_chain(model_llm, tokenizer):
 
 
 def generate_response(
-    user_query: str, 
-    feature_view, 
+    user_query: str,
+    feature_view,
     weather_fg,
-    model_air_quality, 
-    model_llm, 
-    tokenizer, 
+    model_air_quality,
+    model_llm,
+    tokenizer,
     llm_chain=None,
     verbose: bool = False,
 ) -> str:
     """
     Generate response to user query using LLM chain and context data.
-    
+
     Args:
         user_query (str): The user's query.
         feature_view: Feature view for data retrieval.
@@ -165,7 +165,7 @@ def generate_response(
         model_air_quality: Model for predicting air quality.
         llm_chain: LLM Chain.
         verbose (bool): Whether to print verbose information. Defaults to False.
-        
+
     Returns:
         str: Generated response to the user query.
     """
@@ -174,22 +174,22 @@ def generate_response(
         user_query,
         feature_view,
         weather_fg,
-        model_air_quality, 
-        model_llm=model_llm, 
-        tokenizer=tokenizer, 
+        model_air_quality,
+        model_llm=model_llm,
+        tokenizer=tokenizer,
     )
-        
+
     # Get today's date in a readable format
     date_today = f'{datetime.date.today().strftime("%A")}, {datetime.date.today()}'
-    
+
     # Print today's date and context information if verbose mode is enabled
     if verbose:
         print(f"🗓️ Today's date: {date_today}")
         print(f'📖 {context}')
-        
+
     # Invoke the language model chain with relevant context
     model_output = llm_chain.invoke({
-        "context": context, 
+        "context": context,
         "date_today": date_today,
         "question": user_query,
     })
@@ -199,14 +199,14 @@ def generate_response(
 
 
 def generate_response_openai(
-    user_query: str, 
-    feature_view, 
+    user_query: str,
+    feature_view,
     weather_fg,
-    model_air_quality, 
+    model_air_quality,
     client,
     verbose=True,
 ):
-    
+
     context = get_context_data(
         user_query,
         feature_view,
@@ -214,17 +214,17 @@ def generate_response_openai(
         model_air_quality,
         client=client,
     )
-    
+
     # Get today's date in a readable format
     date_today = f'{datetime.date.today().strftime("%A")}, {datetime.date.today()}'
-    
+
     # Print today's date and context information if verbose mode is enabled
     if verbose:
         print(f"🗓️ Today's date: {date_today}")
         print(f'📖 {context}')
-    
+
     instructions = get_prompt_template().split('<|im_start|>user')[0]
-    
+
     instructions_filled = instructions.format(
         context=context,
         date_today=date_today
@@ -243,4 +243,4 @@ def generate_response_openai(
         last_choice = completion.choices[0]
         if last_choice.message:
             return last_choice.message.content.strip()
-    return "" 
+    return ""

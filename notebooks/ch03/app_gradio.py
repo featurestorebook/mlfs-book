@@ -6,9 +6,9 @@ from xgboost import XGBRegressor
 import joblib
 from openai import OpenAI
 from functions.llm_chain import (
-    load_model, 
-    get_llm_chain, 
-    generate_response, 
+    load_model,
+    get_llm_chain,
+    generate_response,
     generate_response_openai,
 )
 # Initialize the ASR pipeline
@@ -18,19 +18,19 @@ def connect_to_hopsworks():
     # Initialize Hopsworks feature store connection
     project = hopsworks.login()
     fs = project.get_feature_store()
-    
+
     # Retrieve the model registry
     mr = project.get_model_registry()
 
     # Retrieve the 'air_quality_fv' feature view
     feature_view = fs.get_feature_view(
-        name="air_quality_fv", 
+        name="air_quality_fv",
         version=1,
         )
 
     # Initialize batch scoring
     feature_view.init_batch_scoring(1)
-    
+
     # Retrieve the 'air_quality_xgboost_model' from the model registry
     retrieved_model = mr.get_model(name="air_quality_xgboost_model", version=1)
 
@@ -42,16 +42,16 @@ def connect_to_hopsworks():
     # Loading the XGBoost regressor model and label encoder from the saved model directory
     # retrieved_xgboost_model = joblib.load(saved_model_dir + "/xgboost_regressor.pkl")
     model_air_quality = XGBRegressor()
-    
+
     model_air_quality.load_model(saved_model_dir + "/model.json")
-    
+
     return feature_view, model_air_quality
 
 
 def retrieve_llm_chain():
     model_llm, tokenizer = load_model()
     llm_chain = get_llm_chain(
-        model_llm, 
+        model_llm,
         tokenizer,
     )
     return model_llm, tokenizer, llm_chain
@@ -72,7 +72,7 @@ def generate_query_response(user_query, method, openai_api_key=None):
     if method == 'Hermes LLM':
         # Load the LLM and its corresponding tokenizer and configure a language model chain
         model_llm, tokenizer, llm_chain = retrieve_llm_chain()
-        
+
         response = generate_response(
             user_query,
             feature_view,
@@ -83,13 +83,13 @@ def generate_query_response(user_query, method, openai_api_key=None):
             verbose=False,
         )
         return response
-    
+
     elif method == 'OpenAI API' and openai_api_key:
         client = OpenAI(
             api_key=openai_api_key
         )
-        
-        response = generate_response_openai(   
+
+        response = generate_response_openai(
             user_query,
             feature_view,
             model_air_quality,
@@ -97,17 +97,17 @@ def generate_query_response(user_query, method, openai_api_key=None):
             verbose=False,
         )
         return response
-        
+
     else:
         return "Invalid method or missing API key."
-    
+
 
 def handle_input(text_input=None, audio_input=None, method='Hermes LLM', openai_api_key=""):
     if audio_input is not None:
         user_query = transcribe(audio_input)
     else:
         user_query = text_input
-    
+
     # Check if OpenAI API key is required but not provided
     if method == 'OpenAI API' and not openai_api_key.strip():
         return "OpenAI API key is required for this method."
@@ -121,8 +121,8 @@ def handle_input(text_input=None, audio_input=None, method='Hermes LLM', openai_
 iface = gr.Interface(
     fn=handle_input,
     inputs=[
-        gr.Textbox(placeholder="Type here or use voice input..."), 
-        gr.Audio(), 
+        gr.Textbox(placeholder="Type here or use voice input..."),
+        gr.Audio(),
         gr.Radio(["Hermes LLM", "OpenAI API"], label="Choose the response generation method"),
         gr.Textbox(label="Enter your OpenAI API key (only if you selected OpenAI API):", type="password")  # Removed `optional=True`
     ],
