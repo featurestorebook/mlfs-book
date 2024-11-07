@@ -1,3 +1,7 @@
+# api keys
+data/hopsworks-api-key.txt
+data/aqi-api-key.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

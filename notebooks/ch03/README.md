@@ -31,3 +31,8 @@ The RAG in this application augments the prompt with:
 ## Tutorial Instructions
 
 You can find [instructions for running this tutorial in this Google Doc](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing).
+
+
+### Windows User
+First, run:
+conda install twofish
