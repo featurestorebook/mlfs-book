@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime, timedelta
 import time
 import requests
 import pandas as pd
@@ -218,6 +218,7 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     plt.xticks(rotation=45)
 
     if hindcast == True:
+        ax.set_xlim([datetime.today() - timedelta(weeks=1), datetime.today() + timedelta(weeks=1)])
         ax.plot(day, df['pm25'], label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
         legend2 = ax.legend(loc='upper left', fontsize='x-small')
         ax.add_artist(legend1)
