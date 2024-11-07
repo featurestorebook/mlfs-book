@@ -1,3 +1,0 @@
-hopsworks
-faker
-pre-commit
