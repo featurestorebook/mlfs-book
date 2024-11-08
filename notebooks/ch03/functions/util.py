@@ -14,6 +14,11 @@ from retry_requests import retry
 import hopsworks
 import hsfs
 from pathlib import Path
+import os
+
+def load_hopskey():
+    with open('../../data/hopsworks-api-key.txt', 'r') as file:
+        os.environ["HOPSWORKS_API_KEY"] = file.read().rstrip()
 
 def get_historical_weather(city, start_date,  end_date, latitude, longitude):
     # latitude, longitude = get_city_coordinates(city)
@@ -296,14 +301,34 @@ def check_file_path(file_path):
     else:
         print(f"File successfully found at the path: {file_path}")
 
-def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, model):
+def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, model, fs):
     features_df = weather_fg.read()
     features_df = features_df.sort_values(by=['date'], ascending=True)
     features_df = features_df.tail(10)
-    features_df['predicted_pm25'] = model.predict(features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']])
+
+    # get the training feature group, becasee we need the last rolling mean
+    air_quality_fg = fs.get_feature_group(
+        name='air_quality',
+        version=3,
+    )
+    train_df = air_quality_fg.read().sort_values("date")
+    popped_value = train_df.iloc[-3]["pm25"]     # get the first value that contributest to the last rolling mean (-3 postition)
+    rolling_mean = train_df.iloc[-1]["pm25_lagging"]
+
+    data = features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']]
+
+    for i, row in data.iterrows():
+        row = pd.DataFrame([row])
+        row.insert(0,"pm25_lagging",rolling_mean)   # add the lagging pm25 value to the row
+        prediction = model.predict(row)  
+        features_df.loc[i,'predicted_pm25'] = prediction
+        rolling_mean = rolling_mean + (prediction - popped_value) / 3 
+
+    # features_df['predicted_pm25'] = model.predict(features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']])
     df = pd.merge(features_df, air_quality_df[['date','pm25','street','country']], on="date")
     df['days_before_forecast_day'] = 1
     hindcast_df = df
     df = df.drop('pm25', axis=1)
+    print(df.head(10))
     monitor_fg.insert(df, write_options={"wait_for_job": True})
     return hindcast_df
