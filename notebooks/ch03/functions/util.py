@@ -16,9 +16,6 @@ import hsfs
 from pathlib import Path
 import os
 
-def load_hopskey():
-    with open('../../data/hopsworks-api-key.txt', 'r') as file:
-        os.environ["HOPSWORKS_API_KEY"] = file.read().rstrip()
 
 def get_historical_weather(city, start_date,  end_date, latitude, longitude):
     # latitude, longitude = get_city_coordinates(city)
