@@ -7,7 +7,7 @@ This project, Lab 1 from KTH's ID2223 course in Scalable Machine Learning and De
 1. Clone the repository:
     ```sh
     git clone https://github.com/yourusername/air-quality-analysis.git
-    cd air-quality-analysis/notebooks/ch03/
+    cd air-quality-analysis/notebooks/
     ```
 
 2. Install the required dependencies:
@@ -27,7 +27,7 @@ This project, Lab 1 from KTH's ID2223 course in Scalable Machine Learning and De
 
 ### Quality Feature Backfill
 
-Create feature groups and backfill them with historical air quality data running the notebook `1_air_quality_feature_backfill.ipynb` in `notebooks/ch03/functions/1_air_quality_feature_backfill.ipynb`.
+Create feature groups and backfill them with historical air quality data running the notebook `1_air_quality_feature_backfill.ipynb` in `notebooks/functions/1_air_quality_feature_backfill.ipynb`.
 
 ### Quality Feature Pipeline
 

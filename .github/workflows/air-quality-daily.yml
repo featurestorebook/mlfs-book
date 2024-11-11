@@ -24,7 +24,7 @@ jobs:
           cache: 'pip'
       - name: install python packages
         run: |
-          cd notebooks/ch03
+          cd notebooks/
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
@@ -32,7 +32,7 @@ jobs:
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          cd notebooks/ch03
+          cd notebooks/
           jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb
           jupyter nbconvert --to notebook --execute 4_air_quality_batch_inference.ipynb
 

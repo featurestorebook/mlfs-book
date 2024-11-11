@@ -168,4 +168,4 @@ data/hopsworks-api-key.txt
 data/aqi-api-key.txt
 
 # .cache.sqlite
-notebooks/ch03/.cache.sqlite
+notebooks/.cache.sqlite
