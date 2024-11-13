@@ -2,8 +2,8 @@ name: air-quality-daily
 
 on:
   workflow_dispatch:
-    #schedule:
-    #- cron: '11 6 * * *'
+  schedule:
+    - cron: "11 6 * * *" # run daily at 6:11 AM UTC
 
 jobs:
   schedule_pipelines:
@@ -20,8 +20,8 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
       - name: install python packages
         run: |
           cd notebooks/ch03
@@ -40,13 +40,13 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Air Quality Dashboard published"
-          commit_options: '--no-verify --signoff'
+          commit_options: "--no-verify --signoff"
 
-          file_pattern: 'docs/air-quality/assets/img/* docs/_includes/*'
+          file_pattern: "docs/air-quality/assets/img/* docs/_includes/*"
 
           repository: .
 
-          status_options: '--untracked-files=no'
+          status_options: "--untracked-files=no"
 
           skip_dirty_check: true
 
@@ -54,4 +54,4 @@ jobs:
 
           skip_checkout: true
 
-          push_options: '--force'
+          push_options: "--force"
