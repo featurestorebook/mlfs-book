@@ -1,8 +1,8 @@
 import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, AutoConfig, AutoModel
-from langchain.llms import HuggingFacePipeline
+from langchain_community.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferWindowMemory
 import torch
 import datetime

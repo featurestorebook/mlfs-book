@@ -3,6 +3,8 @@ import hopsworks
 import joblib
 from xgboost import XGBRegressor
 from openai import OpenAI
+from pathlib import Path
+import os
 from functions.llm_chain import (
     load_model,
     get_llm_chain,
@@ -18,9 +20,10 @@ st.title("🌤️ AirQuality AI assistant 💬")
 @st.cache_resource()
 def connect_to_hopsworks():
     # Initialize Hopsworks feature store connection
+    os.environ["HOPSWORKS_API_KEY"] = "2ZoLYydQfIz5VW5b.D5B2X2LLCmJsysb4n78mTmGgEAWzlLfrgRKcCLJXlE4iJZ9Mqhm1GhsG60PJQxls"
     project = hopsworks.login(
-        host="snurran.hops.works",
-        project="AirQuality_Book",
+        #host="snurran.hops.works",
+        #project="AirQuality_Book",
     )
     fs = project.get_feature_store()
 
