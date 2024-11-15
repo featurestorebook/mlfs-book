@@ -17,3 +17,4 @@ O'Reilly book - Building Machine Learning Systems with a feature store: batch, r
 
 
 [Click here to view the prediction](https://jacopodallafior.github.io/Air_quality/air-quality/)
+[Click here to ask for prediction](https://000a058521c4f78ed1.gradio.live)
