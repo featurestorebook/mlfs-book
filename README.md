@@ -10,7 +10,7 @@ This project is inspired by the book *Building Machine Learning Systems with a F
 The system is structured following the pipeline shown below.  
 It integrates data collection, processing, management via a feature store, and prediction based on ML models.  
 
-![Pipeline Diagram](path-to-pipeline-image)  
+![Pipeline Diagram](images/pipeline.png)  
 *Figure: Data flow and system architecture.*
 
 ---
