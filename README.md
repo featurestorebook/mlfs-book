@@ -28,17 +28,6 @@ It integrates data collection, processing, management via a feature store, and p
    
 4. **Interactive Predictions:**  
    Live dashboard for viewing or requesting real-time predictions.  
-
----
-
-## 📊 Course Comparison  
-
-| Course                                       | MLOps | LLMs                | Feature Store/Training/Inference | Functional AI Systems | Focus                                    |
-|---------------------------------------------|-------|---------------------|----------------------------------|-----------------------|------------------------------------------|
-| *Building AI Systems (O'Reilly)*           | ✅    | Fine-Tuning & RAG   | ✅                                | 🔥                    | Software Engineering, Fundamentals, Projects |
-| [Made With ML](https://madewithml.com/)     | ❌    | ✅                   | ❌                                | ❌                    | Model Training, Software Engineering      |
-| [7 Steps MLOps](https://www.pauliusztin.me/courses/the-full-stack-7-steps-mlops-framework) | ✅    | Separate Course      | ✅                                | ❌                    | Tools and Projects                        |
-
 ---
 
 ## 🚀 Getting Started  
