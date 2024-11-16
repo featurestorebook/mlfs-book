@@ -1,0 +1,3 @@
+#!/bin/bash
+
+export HOPSWORKS_API_KEY="K86PR55oWoqOXhUX.VUJFWq1zEqfhZntoebWp1RLsH90VVbAYuqukvh5AcM8xHOYk7c4vg4VvD6iZEG37"
