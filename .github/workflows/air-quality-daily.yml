@@ -33,7 +33,9 @@ jobs:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           cd notebooks/ch03
+          jupyter nbconvert --to notebook --execute 1_air_quality_feature_backfill.ipynb
           jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb
+          jupyter nbconvert --to notebook --execute 3_air_quality_training_pipeline.ipynb
           jupyter nbconvert --to notebook --execute 4_air_quality_batch_inference.ipynb
 
       - name: github pages publish
