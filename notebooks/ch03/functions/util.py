@@ -187,8 +187,8 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
 
     day = pd.to_datetime(df['date']).dt.date
     # Plot each column separately in matplotlib
-    ax.plot(day, df['predicted_pm25'], label='Predicted PM2.5', color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
-
+    #ax.plot(day, df['predicted_pm25'], label='Predicted PM2.5', color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
+    ax.plot(day.values, df['predicted_pm25'].values, label='Predicted PM2.5', color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
     # Set the y-axis to a logarithmic scale
     ax.set_yscale('log')
     ax.set_yticks([0, 10, 25, 50, 100, 250, 500])
@@ -218,7 +218,7 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     plt.xticks(rotation=45)
 
     if hindcast == True:
-        ax.plot(day, df['pm25'], label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
+        ax.plot(day.values, df['pm25'].values, label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
         legend2 = ax.legend(loc='upper left', fontsize='x-small')
         ax.add_artist(legend1)
 
