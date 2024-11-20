@@ -10,15 +10,12 @@
    - Supports both **real-time** and **batch** predictions for flexible operations.  
 
 2. **Advanced Feature Store:**  
-   - Efficiently manages features for training and predictions.  
-
-3. **Support for LLMs:**  
-   - Implements advanced techniques like **Fine-Tuning** and **Retrieval-Augmented Generation (RAG)**.  
-
-4. **Rolling Window Features:**  
+   - Efficiently manages features for training and predictions.
+     
+3. **Rolling Window Features:**  
    - Enhances predictive accuracy with a 3-day rolling mean of PM2.5 as an additional feature.  
 
-5. **Interactive Predictions:**  
+4. **Interactive Predictions:**  
    - Live dashboard and tools for real-time data monitoring and prediction requests.  
 
 ---
