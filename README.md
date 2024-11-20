@@ -14,6 +14,9 @@ Here is the [dashboard](https://lemongooo.github.io/mlfs-book/air-quality/) show
    - Update new data in the Hopsworks Feature Groups to keep the model input current.
 
 ## Training Pipeline
+   - Utilize the 3_air_quality_training_pipeline.ipynb to merge selected features (PM2.5 with its lagged features and all weather data) and create a Feature View in Hopsworks.
+   - Split the data into training and testing sets, train an XGBoost regressor, and evaluate the model's performance using MSE and R² metrics.
+   - Register the model along with its schema and metrics in the Hopsworks Model Registry for centralized management and deployment.
 
 
 ## Batch Inference Pipeline
@@ -27,12 +30,16 @@ Here is the [dashboard](https://lemongooo.github.io/mlfs-book/air-quality/) show
 To enhance the model for predicting air quality, lagged features of PM2.5 are used:
 ```python
 df_aq['pm25'] = df_aq['pm25'].astype('float32')
-df_aq['pm25_lag_1'] = df['pm25'].shift(1).astype('float32')
-df_aq['pm25_lag_2'] = df['pm25'].shift(2).astype('float32')
-df_aq['pm25_lag_3'] = df['pm25'].shift(3).astype('float32')
+df_aq['pm25_lag_1'] = df['pm25'].shift(1).astype('float32') # previous day
+df_aq['pm25_lag_2'] = df['pm25'].shift(2).astype('float32') # two days ago
+df_aq['pm25_lag_3'] = df['pm25'].shift(3).astype('float32') # three days ago
 ```
+
 Air quality data typically shows time series correlations, meaning that today's air quality can influence the air quality in the following days. By including these lagged features, the model can capture such time dependencies and improve prediction accuracy.
 
 | | Without Lagged Features | With Lagged Features |
 |---|---|---|
 | **Model Performance** | ![image](without_lagged.png)| ![image](with_lagged.png) |
+
+R-squared shifted from negative to positive values, demonstrating a significant improvement in model performance.
+MSE values decreased substantially, indicating higher prediction accuracy
