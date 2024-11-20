@@ -26,6 +26,9 @@ Here is the **[dashboard](https://lemongooo.github.io/mlfs-book/air-quality/)** 
 
 
 ## Batch Inference Pipeline
+   - Use the `4_air_quality_batch_inference.ipynb notebook` to load the trained XGBoost model from the Hopsworks Model Registry.
+   - Predict PM2.5 levels for the next 7-10 days by using the latest weather data and create a feature group to store predictions in Hopsworks.
+   - Implement a dashboard with charts that show the predicted PM2.5 levels compared to the actual measurements.
 
 
 
@@ -33,7 +36,7 @@ Here is the **[dashboard](https://lemongooo.github.io/mlfs-book/air-quality/)** 
 
 
 ## Lagged Feature
-To enhance the model for predicting air quality, lagged features of PM2.5 are used.
+Air quality data typically shows time series correlations, meaning that today's air quality can influence the air quality in the following days. To enhance the model for predicting air quality, lagged features of PM2.5 are used. 
 ### Backfill
 In the backfill phase, historical PM2.5 data is processed to create three lagged features, each representing air quality readings from one, two, and three days prior.
 ```python
@@ -46,7 +49,7 @@ df_aq['pm25_lag_3'] = df['pm25'].shift(3).astype('float32') # three days ago
 The system retrieves today's PM2.5 from the AQI API and fills them with lagged features (previous 1-3 days of PM2.5 values) from historical data. These combined features are then stored together in the air quality feature group for model usage.
 
 ### Training
-The training set incorporates both temporal patterns (through PM2.5 lagged values) and environmental factors (through weather data).
+The training set incorporates both PM2.5 lagged values and weather data.
 ```python
 selected_features = air_quality_fg.select(['pm25','pm25_lag_1','pm25_lag_2','pm25_lag_3']).join(weather_fg.select_all())
 ```
@@ -56,7 +59,8 @@ This feature combination allows the model to capture both temporal and meteorolo
 The batch inference process generates predictions step by step using weather data and historical values. For each new prediction, the model uses it as lagged input to forecast the next timestamp.
 
 
-Air quality data typically shows time series correlations, meaning that today's air quality can influence the air quality in the following days. By including these lagged features, the model can capture such time dependencies and improve prediction accuracy.
+### Result
+By including these lagged features, the model can capture such time dependencies and improve prediction accuracy.
 
 | | Without Lagged Features | With Lagged Features |
 |---|---|---|
