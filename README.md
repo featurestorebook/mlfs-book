@@ -56,7 +56,7 @@ selected_features = air_quality_fg.select(['pm25','pm25_lag_1','pm25_lag_2','pm2
 This feature combination allows the model to capture both temporal and meteorological influences on air quality.
 
 ### Batch Inference
-The batch inference process generates predictions step by step using weather data and historical values. For each new prediction, the model uses it as lagged input to forecast the next timestamp.
+The batch inference process generates predictions step by step using weather data and historical values. For each new prediction, the model uses it as lagged input to forecast the next timestamp. However, error propagation is a drawback for this approach. Each prediction becomes a lagged feature for the next prediction, so any prediction errors will cascade and amplify through the sequence, potentially leading to decreased accuracy in longer-term forecasts.
 
 
 ### Result
