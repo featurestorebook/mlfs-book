@@ -1,5 +1,3 @@
-Here’s the updated **README.md** that includes the performance and plots for both versions of the model:
-
 ---
 
 # AIR QUALITY PREDICTOR 🌍💨  
