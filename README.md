@@ -1,5 +1,5 @@
 # ID2223 Lab1 - Air Quality Prediction Service for Helsinki, Kallio 2, Finland 
-Group 25 - Mengmeng Yang， Zongrong Yang
+Group 25 - Mengmeng Yang， Zong-rong Yang
 
 ## Lab Introduction
 This is the project of Lab1 for the course **ID2223 Scalable Machine Learning and Deep Learning**. This project implements a complete machine learning pipeline for predicting air quality (PM2.5 levels) in Helsinki, Finland using weather data and **lagged air quality for the previous 1-3 days**.
