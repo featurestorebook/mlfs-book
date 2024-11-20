@@ -1,4 +1,5 @@
 # ID2223 Lab1 - Air Quality Prediction Service for Helsinki, Kallio 2, Finland 
+Group 25 - Mengmeng Yang， Zongrong Yang
 
 ## Lab Description
 This project implements a complete machine learning pipeline for predicting air quality (PM2.5 levels) using weather data.
@@ -32,8 +33,6 @@ df_aq['pm25_lag_3'] = df['pm25'].shift(3).astype('float32')
 ```
 Air quality data typically shows time series correlations, meaning that today's air quality can influence the air quality in the following days. By including these lagged features, the model can capture such time dependencies and improve prediction accuracy.
 
-### Without using lagged feature
-![image](without_lagged.png)
-
-### With using lagged feature
-![image](with_lagged.png)
+| | Without Lagged Features | With Lagged Features |
+|---|---|---|
+| **Model Performance** | <img src="/api/placeholder/450/300" alt="Model without lagged features"> | <img src="/api/placeholder/450/300" alt="Model with lagged features"> |
