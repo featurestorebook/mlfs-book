@@ -2,26 +2,38 @@
 
 ## Lab Description
 This project implements a complete machine learning pipeline for predicting air quality (PM2.5 levels) using weather data.
+
+Here is the [dashboard](https://lemongooo.github.io/mlfs-book/air-quality/) shows 9-day predictions and model performance metrics
 ## Backfill Feature Pipeline
-   - Use the  1_air_quality_feature_backfill.ipynb to develop a pipeline that downloads historical air quality data of Helsinki, Kallio 2, Finland from [AQICN](https://aqicn.org) and weather data from [Open-Meteo](https://open-meteo.com).
+   - Use the  `1_air_quality_feature_backfill.ipynb` to develop a pipeline that downloads historical air quality data of Helsinki, Kallio 2, Finland from [AQICN](https://aqicn.org) and weather data from [Open-Meteo](https://open-meteo.com).
    - Register those data as two Feature Groups in Hopsworks to ensure data consistency and completeness for model training.
 
 ## Feature Pipeline
-   - Daily feature updates using GitHub Actions
-   - Feature storage and management using Hopsworks Feature Store
+   - Employ `2_air_quality_feature_pipeline.ipynb` to set up a daily pipeline with GitHub Actions that fetches daily weather and air quality data and the upcoming 7-10 day weather forecast. 
+   - Update new data in the Hopsworks Feature Groups to keep the model input current.
 
 ## Training Pipeline
-   - Model training on historical weather and air quality data
-   - Model registry and versioning with Hopsworks
+
 
 ## Batch Inference Pipeline
-   - Daily predictions for the next 7 days
-   - Automated updates via GitHub Actions/Modal
 
-## Dashboard
-Shows 7-day predictions and model performance metrics
 
-[Dashboards for Example ML Systems](https://lemongooo.github.io/mlfs-book/air-quality/)
+
+
+
 
 ## Lagged Feature
+To enhance the model for predicting air quality, lagged features of PM2.5 are used:
+```python
+df_aq['pm25'] = df_aq['pm25'].astype('float32')
+df_aq['pm25_lag_1'] = df['pm25'].shift(1).astype('float32')
+df_aq['pm25_lag_2'] = df['pm25'].shift(2).astype('float32')
+df_aq['pm25_lag_3'] = df['pm25'].shift(3).astype('float32')
+```
+Air quality data typically shows time series correlations, meaning that today's air quality can influence the air quality in the following days. By including these lagged features, the model can capture such time dependencies and improve prediction accuracy.
 
+### Without using lagged feature
+![image](without_lagged.png)
+
+### With using lagged feature
+![image](with_lagged.png)
