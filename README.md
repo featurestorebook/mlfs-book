@@ -35,4 +35,4 @@ Air quality data typically shows time series correlations, meaning that today's 
 
 | | Without Lagged Features | With Lagged Features |
 |---|---|---|
-| **Model Performance** | <img src="/api/placeholder/450/300" alt="Model without lagged features"> | <img src="/api/placeholder/450/300" alt="Model with lagged features"> |
+| **Model Performance** | ![image](without_lagged.png)| ![image](with_lagged.png) |
