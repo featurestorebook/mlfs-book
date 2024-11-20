@@ -48,7 +48,7 @@ The training pipeline automates the creation and evaluation of the predictive mo
   1. Create a feature view by joining the `air_quality` and `weather` feature groups.
   2. Split the feature view data into training and testing datasets.
   3. Train an XGBoost regression model on the training data.
-  4. Evaluate the model using metrics (MSE and R-Squared)
+  4. Evaluate the model using metrics (MSE)
   5. Save the trained model and upload it to Hopsworks for inference.
 
 
@@ -130,15 +130,13 @@ This version implements air quality prediction using rolling window features to 
 
 ### Without Rolling Window Features  
 
-- **MSE**: 34.85334  
-- **R-Squared**: 0.01622  
+- **MSE**: 34.85334    
 
 ![Prediction Results](Standard_Results.jpg)  
 
 ### With Rolling Window Features  
 
 - **MSE**: 6.9079943  
-- **R-Squared**: 0.61780  
 
 ![Prediction Results](RollingWindow_Results.jpg)  
 
