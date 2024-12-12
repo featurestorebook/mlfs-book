@@ -280,14 +280,6 @@ def purge_project(proj):
     delete_models(mr, "air_quality_xgboost_model")
     delete_secrets(proj, "SENSOR_LOCATION_JSON")
 
-
-def secrets_api(proj):
-    host = "c.app.hopsworks.ai"
-    api_key = os.environ.get('HOPSWORKS_API_KEY')
-    conn = hopsworks.connection(host=host, project=proj, api_key_value=api_key)
-    return conn.get_secrets_api()
-
-
 def check_file_path(file_path):
     my_file = Path(file_path)
     if my_file.is_file() == False:
