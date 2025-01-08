@@ -21,7 +21,7 @@ start-ui:
 	uv run python -m streamlit run streamlit_app.py
  
 cc-purge:
-	uv run python mlfs/clean_hopsworks_resources.py
+	uv run python mlfs/clean_hopsworks_resources.py cc
 
 all: feature-engineering train-retrieval train-ranking create-embeddings create-deployments schedule-materialization-jobs
 
@@ -38,4 +38,10 @@ cc-training:
 
 cc-deploy:
 	uv run ipython notebooks/ccfraud/
+
+aq-purge:
+	uv run python mlfs/clean_hopsworks_resources.py aq
+
+titanic-purge:
+	uv run python mlfs/clean_hopsworks_resources.py titanic
 
