@@ -13,26 +13,36 @@ class FraudDatasetSize(Enum):
 
 
 class HopsworksSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        env_file_encoding='utf-8',
+        extra='ignore'
+    )
+    
     MLFS_DIR: Path = Path(__file__).parent
 
     HOPSWORKS_API_KEY: SecretStr | None = None
+    
+    AQI_API_KEY: SecretStr | None = None
+    
+    FELDERA_API_KEY: SecretStr | None = None    
+    
+    OPENAI_API_KEY: SecretStr | None = None
+    OPENAI_MODEL_ID: str = "gpt-4o-mini"
+
     HOPSWORKS_PROJECT: str | None = None
 
-class FraudSettings(HopsworksSettings):
-
-    # Feldera
-    FELDERA_API_KEY: SecretStr | None = None
-
-    # OpenAI
-    OPENAI_MODEL_ID: str = "gpt-4o-mini"
-    OPENAI_API_KEY: SecretStr | None = None
+    # Air Quality
+    COUNTRY: str = "sweden"
+    CITY: str = "stockholm"
+    STREET: str = "hornsgatan-108"
+    AQCN_URL: str = "https://api.waqi.info/feed/@10009"
 
     # Feature engineering
     FRAUD_DATA_SIZE: FraudDatasetSize = FraudDatasetSize.SMALL
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
 
-    # Training
+    # Personalized Recommendations
     TWO_TOWER_MODEL_EMBEDDING_SIZE: int = 16
     TWO_TOWER_MODEL_BATCH_SIZE: int = 2048
     TWO_TOWER_NUM_EPOCHS: int = 10
@@ -50,18 +60,4 @@ class FraudSettings(HopsworksSettings):
     # Inference
     RANKING_MODEL_TYPE: Literal["ranking", "llmranking"] = "ranking"
     CUSTOM_HOPSWORKS_INFERENCE_ENV: str = "custom_env_name"
-
-
-class AirQualitySettings(HopsworksSettings):
     
-    AQI_API_KEY: SecretStr | None = None
-
-    country: str = "sweden"
-    city: str = "stockholm"
-    street: str = "hornsgatan-108"
-    aqcn_url: str = "https://api.waqi.info/feed/@10009"
-
-settings = FraudSettings()
-airquality_settings = AirQualitySettings()
-titanic_settings = HopsworksSettings()
-

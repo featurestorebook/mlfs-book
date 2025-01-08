@@ -42,6 +42,19 @@ cc-deploy:
 aq-purge:
 	uv run python mlfs/clean_hopsworks_resources.py aq
 
+aq-feature-backfill:
+	uv run ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
+
+aq-train:
+	uv run ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb
+
+aq-inference:
+	uv run ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+	uv run ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
+
+aq-llm:
+	uv run ipython notebooks/airquality/5_function_calling.ipynb
+
 titanic-feature-backfill:
 	uv run ipython notebooks/titanic/1-titanic-feature-group-backfill.ipynb
 

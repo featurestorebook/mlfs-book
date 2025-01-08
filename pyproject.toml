@@ -9,7 +9,7 @@ authors = [
     { name="Jim Dowling", email="jim@hopsworks.ai" },
 ]
 dependencies = [
-    "hopsworks[python,polars]>=4.1.2",
+    "hopsworks[python,polars,great-expectations]>=4.1.2",
     "feldera>=0.33.0",
     "huggingface-hub==0.24.7",
     "ipykernel>=6.29.5",
