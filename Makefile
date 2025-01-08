@@ -17,13 +17,13 @@ install:
 	pip install uv
 	uv pip install --all-extras --system --requirement pyproject.toml
 
-start-ui:
+cc-start-ui:
 	uv run python -m streamlit run streamlit_app.py
  
 cc-purge:
 	uv run python mlfs/clean_hopsworks_resources.py cc
 
-all: feature-engineering train-retrieval train-ranking create-embeddings create-deployments schedule-materialization-jobs
+cc-all: feature-engineering train-retrieval train-ranking create-embeddings create-deployments schedule-materialization-jobs
 
 cc-data-generation:
 	uv run ipython notebooks/ccfraud/0-data-generation-with-polars.ipynb
@@ -33,7 +33,7 @@ cc-feature-backfill:
 
 cc-streaming-features:
 	uv run ipython notebooks/ccfraud/1-streaming-feature-pipeline-feldera.ipynb
-cc-training:
+cc-train:
 	uv run ipython notebooks/ccfraud/
 
 cc-deploy:
@@ -41,6 +41,16 @@ cc-deploy:
 
 aq-purge:
 	uv run python mlfs/clean_hopsworks_resources.py aq
+
+titanic-feature-backfill:
+	uv run ipython notebooks/titanic/1-titanic-feature-group-backfill.ipynb
+
+titanic-train:
+	uv run ipython notebooks/titanic/2-titanic-training-pipeline.ipynb
+
+titanic-inference:
+	uv run ipython notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
+	uv run ipython notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
 
 titanic-purge:
 	uv run python mlfs/clean_hopsworks_resources.py titanic

@@ -15,9 +15,9 @@ class FraudDatasetSize(Enum):
 class HopsworksSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
     MLFS_DIR: Path = Path(__file__).parent
-    # Hopsworks
+
     HOPSWORKS_API_KEY: SecretStr | None = None
-    HOPSWORKS_PROJECT: str = "jim"
+    HOPSWORKS_PROJECT: str | None = None
 
 class FraudSettings(HopsworksSettings):
 
@@ -54,7 +54,7 @@ class FraudSettings(HopsworksSettings):
 
 class AirQualitySettings(HopsworksSettings):
     
-    AQICN_API_KEY: SecretStr | None = None
+    AQI_API_KEY: SecretStr | None = None
 
     country: str = "sweden"
     city: str = "stockholm"
@@ -62,4 +62,6 @@ class AirQualitySettings(HopsworksSettings):
     aqcn_url: str = "https://api.waqi.info/feed/@10009"
 
 settings = FraudSettings()
-aq_settings = AirQualitySettings()
+airquality_settings = AirQualitySettings()
+titanic_settings = HopsworksSettings()
+
