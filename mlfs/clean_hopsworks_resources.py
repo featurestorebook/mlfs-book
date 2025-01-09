@@ -1,5 +1,4 @@
 import hopsworks
-from config import settings
 import sys
 
 files_to_clean=""

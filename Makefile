@@ -20,15 +20,15 @@ install:
 cc-start-ui:
 	uv run python -m streamlit run streamlit_app.py
  
+
+
 cc-purge:
 	uv run python mlfs/clean_hopsworks_resources.py cc
-
-cc-all: feature-engineering train-retrieval train-ranking create-embeddings create-deployments schedule-materialization-jobs
 
 cc-data-generation:
 	uv run ipython notebooks/ccfraud/0-data-generation-with-polars.ipynb
 
-cc-feature-backfill:
+cc-features:
 	uv run ipython notebooks/ccfraud/1-batch-polars-feature-pipeline.ipynb
 
 cc-streaming-features:
@@ -39,10 +39,12 @@ cc-train:
 cc-deploy:
 	uv run ipython notebooks/ccfraud/
 
+cc-all: cc-features cc-streaming-features cc-train cc-deploy
+
 aq-purge:
 	uv run python mlfs/clean_hopsworks_resources.py aq
 
-aq-feature-backfill:
+aq-features:
 	uv run ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
 
 aq-train:
@@ -55,7 +57,12 @@ aq-inference:
 aq-llm:
 	uv run ipython notebooks/airquality/5_function_calling.ipynb
 
-titanic-feature-backfill:
+aq-all: aq-features aq-train aq-inference
+
+titanic-purge:
+	uv run python mlfs/clean_hopsworks_resources.py titanic
+
+titanic-features:
 	uv run ipython notebooks/titanic/1-titanic-feature-group-backfill.ipynb
 
 titanic-train:
@@ -65,6 +72,5 @@ titanic-inference:
 	uv run ipython notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
 	uv run ipython notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
 
-titanic-purge:
-	uv run python mlfs/clean_hopsworks_resources.py titanic
+titanic-all: titanic-features titanic-train titanic-inference
 
