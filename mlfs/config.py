@@ -21,22 +21,23 @@ class HopsworksSettings(BaseSettings):
     
     MLFS_DIR: Path = Path(__file__).parent
 
+    # Hopsworks
     HOPSWORKS_API_KEY: SecretStr | None = None
+    HOPSWORKS_PROJECT: str | None = None
     
-    AQI_API_KEY: SecretStr | None = None
+    # Air Quality
+    AQICN_API_KEY: SecretStr | None = None
+    AQICN_COUNTRY: str = "sweden"
+    AQICN_CITY: str = "stockholm"
+    AQICN_STREET: str = "hornsgatan-108"
+    AQICN_URL: str = "https://api.waqi.info/feed/@10009"
     
+    # Other API Keys
     FELDERA_API_KEY: SecretStr | None = None    
-    
     OPENAI_API_KEY: SecretStr | None = None
     OPENAI_MODEL_ID: str = "gpt-4o-mini"
 
-    HOPSWORKS_PROJECT: str | None = None
 
-    # Air Quality
-    COUNTRY: str = "sweden"
-    CITY: str = "stockholm"
-    STREET: str = "hornsgatan-108"
-    AQCN_URL: str = "https://api.waqi.info/feed/@10009"
 
     # Feature engineering
     FRAUD_DATA_SIZE: FraudDatasetSize = FraudDatasetSize.SMALL
