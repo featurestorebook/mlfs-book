@@ -124,6 +124,9 @@ elif files_to_clean == "aq":
     for feature_group in [
         "air_quality",
         "weather",
+        "air_quality_fv_1_logging_transformed",
+        "air_quality_fv_1_logging_untransformed",
+        "aq_predictions"
     ]:
         delete_feature_group(feature_group)
 
