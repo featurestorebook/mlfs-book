@@ -1,0 +1,6 @@
+getpass4==0.0.14.1
+transformers==4.38.2
+langchain==0.1.10
+bitsandbytes==0.42.0
+accelerate==0.27.2
+openai==1.14.3

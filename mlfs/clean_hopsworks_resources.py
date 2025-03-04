@@ -16,6 +16,7 @@ project = hopsworks.login()
 fs = project.get_feature_store()
 ms = project.get_model_serving()
 mr = project.get_model_registry()
+kafka_api = project.get_kafka_api()
 
 def delete_deployment(deployment_name):
     try:
@@ -73,6 +74,22 @@ def delete_feature_group(feature_group):
         except:
             print(f"Failed to delete feature group {fv.name}.")
 
+    try:
+        kafka_topics = kafka_api.get_topics()
+        for topic in kafka_topics:
+            if topic.name == feature_group:
+                topic.delete()
+                print(f"Deleting kafka topic {feature_group}")
+    except:
+        print(f"Couldn't find any kafka topics. Skipping...")
+
+    try:
+        schema = kafka_api.get_schema(feature_group, 1)
+        if schema is not None:
+            schema.delete()
+    except:
+        print(f"Couldn't find kafka schema: {feature_group}. Skipping...")
+
 
 if files_to_clean == "cc":
 
@@ -117,6 +134,25 @@ if files_to_clean == "cc":
         "bank_fg",
     ]:
         delete_feature_group(feature_group)
+
+    KAFKA_TOPIC_NAME = f"{project.name}_real_time_live_transactions"
+    SCHEMA_NAME = "live_transactions_schema"
+    try:
+        kafka_topics = kafka_api.get_topics()
+        for topic in kafka_topics:
+            if topic.name == KAFKA_TOPIC_NAME:
+                topic.delete()
+    except:
+        print(f"Couldn't find kafka topic: {KAFKA_TOPIC_NAME}. Skipping...")
+
+    try:
+        schema = kafka_api.get_schema(SCHEMA_NAME, 1)
+        if schema is not None:
+            schema.delete()
+            print(f"Deleted kafka schema {SCHEMA_NAME}")
+    except:
+        print(f"Couldn't find kafka schema: {SCHEMA_NAME}. Skipping...")
+
 
 elif files_to_clean == "aq":
     delete_model("air_quality_xgboost_model")    
