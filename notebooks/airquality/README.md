@@ -12,7 +12,7 @@ The output is a forecast for air quality, like this one:
 
 This air quality forecasting service has been augmented with LLM capabilities. You can ask it both future (forecasting) and historical questions about air quality at your location via a microphone or text input dialog.
 
-The RAG in this application augments the prompt with:
+We augment the prompt with:
  * your location,
  * today’s date,
  * predicted air quality (from a ML model),
@@ -32,7 +32,3 @@ The RAG in this application augments the prompt with:
 
 You can find [instructions for running this tutorial in this Google Doc](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing).
 
-
-### Windows User
-First, run:
-conda install twofish

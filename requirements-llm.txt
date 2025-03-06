@@ -4,3 +4,11 @@ langchain==0.1.10
 bitsandbytes==0.42.0
 accelerate==0.27.2
 openai==1.14.3
+huggingface-hub==0.24.7
+ipykernel>=6.29.5
+sentence-transformers==2.2.2
+streamlit==1.28.2
+email-validator==2.2.0
+nbformat
+Faker
+ray[tune]

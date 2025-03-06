@@ -9,21 +9,25 @@ O'Reilly book - Building Machine Learning Systems with a feature store: batch, r
 
 
 
-## Makefile
 
-make install
-make cc-all
+# Run Air Quality Tutorial
+
+See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing)
+    # Create a conda or virtual environment for your project
+    conda create -n book 
+    conda activate book
+
+    # Install 'uv' and 'invoke'
+    pip install uv invoke python-dotenv
+
+    # 'invoke install' installs python dependencies using uv and requirements.txt
+    invoke install
 
 
 ## PyInvoke
-pip install uv invoke python-dotenv
-invoke install
-invoke cc-start-ui
-invoke cc-datagen
+
+    invoke aq-features
+    invoke aq-train
+    invoke aq-inference
 
 
-## Course Comparison
-
-| Course                         | MLOps | LLLMs             | Feature/Training/Inference | Working AI Systems | Focus |
-|--------------------------------|-------|----------------------------|--------------------|------------------|
-| Building AI Systems (O'Reilly) | Yes   | Fine-Tuning & RAG | Yes                        | High               | Project-based, Software Engineering, Fundamentals    |
