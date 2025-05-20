@@ -18,7 +18,7 @@ See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-
     conda activate book
 
     # Install 'uv' and 'invoke'
-    pip install uv invoke python-dotenv
+    pip install invoke dotenv
 
     # 'invoke install' installs python dependencies using uv and requirements.txt
     invoke install

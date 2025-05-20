@@ -37,6 +37,13 @@ dependencies = [
 #accelerate==0.27.2
 #openai==1.14.3
 
+[tool.poe]
+executor.type = "uv"
+
+[tool.poe.tasks]
+test         = "pytest --cov=my_app"                         # a simple command task
+serve.script = "my_app.service:run(debug=True)"              # python script based task
+
 
 [tool.pytest.ini_options]
 addopts = "-v --tb=short"
