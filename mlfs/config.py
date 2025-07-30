@@ -28,10 +28,10 @@ class HopsworksSettings(BaseSettings):
 
     # Air Quality
     AQICN_API_KEY: SecretStr | None = None
-    AQICN_COUNTRY: str = "sweden"
-    AQICN_CITY: str = "stockholm"
-    AQICN_STREET: str = "hornsgatan-108"
-    AQICN_URL: str = "https://api.waqi.info/feed/@10009"
+    AQICN_COUNTRY: str | None = None
+    AQICN_CITY: str | None = None
+    AQICN_STREET: str | None = None
+    AQICN_URL: str | None = None
     
     # Other API Keys
     FELDERA_API_KEY: SecretStr | None = None    
@@ -61,16 +61,51 @@ class HopsworksSettings(BaseSettings):
     # Inference
     RANKING_MODEL_TYPE: Literal["ranking", "llmranking"] = "ranking"
     CUSTOM_HOPSWORKS_INFERENCE_ENV: str = "custom_env_name"
-    
+
     def model_post_init(self, __context):
         """Runs after the model is initialized."""
         print("HopsworksSettings initialized!")
-        if os.getenv("HOPSWORKS_API_KEY") == None:
-            if self.HOPSWORKS_API_KEY is not None: 
-                os.environ['HOPSWORKS_API_KEY']=self.HOPSWORKS_API_KEY.get_secret_value()
-        if os.getenv("HOPSWORKS_PROJECT") == None:
-            if self.HOPSWORKS_PROJECT is not None: 
-                os.environ['HOPSWORKS_PROJECT']=self.HOPSWORKS_PROJECT
-        if os.getenv("HOPSWORKS_HOST") == None:
-            if self.HOPSWORKS_HOST is not None: 
-                os.environ['HOPSWORKS_HOST']=self.HOPSWORKS_HOST
+
+        # Set environment variables if not already set
+        if os.getenv("HOPSWORKS_API_KEY") is None:
+            if self.HOPSWORKS_API_KEY is not None:
+                os.environ['HOPSWORKS_API_KEY'] = self.HOPSWORKS_API_KEY.get_secret_value()
+        if os.getenv("HOPSWORKS_PROJECT") is None:
+            if self.HOPSWORKS_PROJECT is not None:
+                os.environ['HOPSWORKS_PROJECT'] = self.HOPSWORKS_PROJECT
+        if os.getenv("HOPSWORKS_HOST") is None:
+            if self.HOPSWORKS_HOST is not None:
+                os.environ['HOPSWORKS_HOST'] = self.HOPSWORKS_HOST
+
+        # --- Check required .env values ---
+        missing = []
+        # 1. HOPSWORKS_API_KEY
+        api_key = self.HOPSWORKS_API_KEY or os.getenv("HOPSWORKS_API_KEY")
+        if not api_key:
+            missing.append("HOPSWORKS_API_KEY")
+        # 2. AQICN_API_KEY
+        aqicn_api_key = self.AQICN_API_KEY or os.getenv("AQICN_API_KEY")
+        if not aqicn_api_key:
+            missing.append("AQICN_API_KEY")
+        # 3. AQICN_COUNTRY
+        aqicn_country = self.AQICN_COUNTRY or os.getenv("AQICN_COUNTRY")
+        if not aqicn_country:
+            missing.append("AQICN_COUNTRY")
+        # 4. AQICN_CITY
+        aqicn_city = self.AQICN_CITY or os.getenv("AQICN_CITY")
+        if not aqicn_city:
+            missing.append("AQICN_CITY")
+        # 5. AQICN_STREET
+        aqicn_street = self.AQICN_STREET or os.getenv("AQICN_STREET")
+        if not aqicn_street:
+            missing.append("AQICN_STREET")
+        # 6. AQICN_URL
+        aqicn_url = self.AQICN_URL or os.getenv("AQICN_URL")
+        if not aqicn_url:
+            missing.append("AQICN_URL")
+
+        if missing:
+            raise ValueError(
+                "The following required settings are missing from your environment (.env or system):\n  " +
+                "\n  ".join(missing)
+            )    
