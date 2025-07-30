@@ -26,8 +26,10 @@ See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-
 
 ## PyInvoke
 
+    invoke aq-backfill
     invoke aq-features
     invoke aq-train
     invoke aq-inference
+    invoke aq-clean
 
 

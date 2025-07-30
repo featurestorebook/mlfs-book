@@ -26,7 +26,7 @@ cc-start-ui:
 	uv run python -m streamlit run streamlit_app.py
  
 
-cc-purge:
+cc-clean:
 	uv run python mlfs/clean_hopsworks_resources.py cc
 
 cc-datagen:
@@ -49,7 +49,7 @@ cc-deploy:
 
 cc-all: cc-datagen cc-features cc-streaming-features cc-train cc-deploy
 
-aq-purge:
+aq-clean:
 	uv run python mlfs/clean_hopsworks_resources.py aq
 
 aq-features:
@@ -67,7 +67,7 @@ aq-llm:
 
 aq-all: aq-features aq-train aq-inference
 
-titanic-purge:
+titanic-clean:
 	uv run python mlfs/clean_hopsworks_resources.py titanic
 
 titanic-features:
