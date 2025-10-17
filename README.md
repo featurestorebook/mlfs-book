@@ -33,3 +33,17 @@ See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-
     invoke aq-clean
 
 
+
+## Feldera
+
+
+pip install feldera ipython-secrets
+sudo apt-get install python3-secretstorage
+sudo apt-get install gnome-keyring 
+
+mkdir -p /tmp/c.app.hopsworks.ai
+ln -s  /tmp/c.app.hopsworks.ai ~/hopsworks
+docker run -p 8080:8080 \
+  -v ~/hopsworks:/tmp/c.app.hopsworks.ai \
+  --tty --rm -it ghcr.io/feldera/pipeline-manager:latest
+

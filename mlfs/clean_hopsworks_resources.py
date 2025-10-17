@@ -132,6 +132,7 @@ if files_to_clean == "cc":
         "merchant_fg",
         "account_fg",
         "bank_fg",
+        "cc_trans_aggs_fg"
     ]:
         delete_feature_group(feature_group)
 

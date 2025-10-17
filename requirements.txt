@@ -16,3 +16,6 @@ Faker
 invoke
 python-dotenv
 #poethepoet
+felera
+ipython-secrets
+keyrings.alt
