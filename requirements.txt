@@ -1,4 +1,4 @@
-hopsworks[great-expectations]>=4.3.1
+hopsworks[python,great-expectations]>=4.3.1
 streamlit==1.28.2
 email-validator==2.2.0
 pydantic-settings>=2.6.1
@@ -16,6 +16,6 @@ Faker
 invoke
 python-dotenv
 #poethepoet
-feldera
+#feldera
 #ipython-secrets
 #keyrings.alt
