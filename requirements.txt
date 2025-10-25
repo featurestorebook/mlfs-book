@@ -16,6 +16,6 @@ Faker
 invoke
 python-dotenv
 #poethepoet
-#feldera
+feldera==0.41
 #ipython-secrets
 #keyrings.alt
