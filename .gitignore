@@ -171,3 +171,4 @@ snurran.sh
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+/.idea/inspectionProfiles/profiles_settings.xml
