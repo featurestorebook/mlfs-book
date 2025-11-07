@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Build AI Systems with a Feature Store"
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = "~=3.11"
+requires-python = "~=3.11.0"
 authors = [
     { name="Jim Dowling", email="jim@hopsworks.ai" },
 ]
