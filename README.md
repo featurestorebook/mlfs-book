@@ -2,6 +2,16 @@
 O'Reilly book - Building Machine Learning Systems with a feature store: batch, real-time, and LLMs
 
 
+## Setup
+```
+conda create -n mlfs python=3.11 -y
+conda activate mlfs
+python -m pip install --upgrade pip setuptools wheel
+pip install -r ./requirements.txt
+python -m ipykernel install --user --name mlfs --display-name "Python (mlfs)"
+```
+
+
 ## ML System Examples
 
 
