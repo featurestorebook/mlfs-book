@@ -5,8 +5,8 @@ import numpy as np
 from datetime import datetime
 import requests
 import os
-
-
+import hopsworks
+from hsfs.transformation_statistics import TransformationStatistics
 
 # @hopsworks.udf(int, drop=['prev_transaction_time'])
 # def days_to_card_expiry(expiry_date: pd.Series) -> pd.Series:
@@ -18,11 +18,11 @@ import os
 #     return binned_days_to_expiry
     # return expiry_date.dt.date() - datetime.now.date()
 
-@hopsworks.udf(int, hopsworks.training.Statistics)
-def amount_deviation_from_avg(amount, statistics=statistics):
-    """
-    """
-    return np.abs(amount - statistics.amount.mean)
+# @hopsworks.udf(int, TransformationStatistics)
+# def amount_deviation_from_avg(amount, statistics=statistics):
+#     """
+#     """
+#     return np.abs(amount - statistics.amount.mean)
 
 
 @hopsworks.udf(int, drop=['prev_transaction_time'])

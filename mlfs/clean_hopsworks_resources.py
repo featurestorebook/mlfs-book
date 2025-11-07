@@ -96,26 +96,16 @@ if files_to_clean == "cc":
     # Delete all deployments
     for deployment_name in [
         "",
-        "",
-        "",
-        "",
     ]:
         delete_deployment(deployment_name)
     # List all models
     for model_name in [
-        "",
-        "",
-        "",
         "",
     ]:
         delete_model(model_name)
     
     
     for feature_view in [
-        "",
-        "",
-        "",
-        "",
         "",
     ]:
         delete_feature_view(feature_view)
