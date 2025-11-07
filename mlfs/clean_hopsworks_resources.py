@@ -10,7 +10,7 @@ files_to_clean = sys.argv[1]
 
 print(f"Cleaning project: {files_to_clean}")
 
-project = hopsworks.login() 
+project = hopsworks.login(engine="python") 
 
 # Get feature store, deployment registry, model registry
 fs = project.get_feature_store()

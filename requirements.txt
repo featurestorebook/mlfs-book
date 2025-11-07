@@ -1,4 +1,4 @@
-hopsworks[python,great-expectations]>=4.3.1
+hopsworks[python,great-expectations]
 streamlit==1.28.2
 email-validator==2.2.0
 pydantic-settings>=2.6.1
@@ -15,7 +15,4 @@ nbformat
 Faker
 invoke
 python-dotenv
-#poethepoet
-feldera==0.41
-#ipython-secrets
-#keyrings.alt
+#feldera==0.41
