@@ -34,6 +34,7 @@ jobs:
           make aq-inference
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
+        continue-on-error: true
         with:
           commit_message: "Air Quality Dashboard published"
           commit_options: '--no-verify --signoff'
