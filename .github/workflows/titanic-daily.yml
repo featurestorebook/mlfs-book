@@ -50,7 +50,7 @@ jobs:
 
           status_options: '--untracked-files=no'
 
-          skip_dirty_check: true
+          skip_dirty_check: false
 
           skip_fetch: true
 
