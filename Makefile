@@ -1,8 +1,8 @@
 #        conda create -n mlfs python==3.11	
 #        conda activate mlsfs
 #	conda install twofish clang -y
-
-include .env
+ # made optional
+-include .env
 export $(shell sed 's/=.*//' .env)
 	
 check-venv:
