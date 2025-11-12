@@ -8,8 +8,6 @@ O'Reilly book - Building Machine Learning Systems with a feature store: batch, r
 [Dashboards for Example ML Systems](https://featurestorebook.github.io/mlfs-book/)
 
 
-
-
 # Run Air Quality Tutorial
 
 See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing)
@@ -40,3 +38,6 @@ docker run -p 8080:8080 \
   -v ~/hopsworks:/tmp/c.app.hopsworks.ai \
   --tty --rm -it ghcr.io/feldera/pipeline-manager:latest
 
+
+## Introduction to ML
+I wrote a brief introduction to machine learning [here](./introduction_to_supervised_ml.pdf)
