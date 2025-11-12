@@ -1,0 +1,7 @@
+hopsworks[python,great-expectations]
+feldera==0.41
+Faker
+streamlit==1.28.2
+email-validator==2.2.0
+nbformat
+geoip2

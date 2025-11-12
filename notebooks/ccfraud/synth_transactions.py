@@ -7,6 +7,8 @@ import random
 import uuid
 import hsfs
 import hopsworks
+import geoip2.database
+import os
 
 # seeds
 fake = Faker()
@@ -16,8 +18,392 @@ random.seed(42)
 
 
 # ---------------------------
+# IP Address Generation with GeoIP Support
+# ---------------------------
+
+# Known IP ranges for different countries (these are real public IP ranges)
+# Known IP ranges for different countries (these are real public IP ranges that resolve in GeoIP)
+COUNTRY_IP_RANGES = {
+    "United States": [
+        ("8.0.0.0", "8.255.255.255"),       # Level3
+        ("12.0.0.0", "12.255.255.255"),     # AT&T
+        ("24.0.0.0", "24.255.255.255"),     # Cable/DSL
+        ("50.0.0.0", "50.127.255.255"),     # Various ISPs
+        ("66.0.0.0", "66.255.255.255"),     # Various ISPs
+        ("67.0.0.0", "67.255.255.255"),     # Various ISPs
+        ("68.0.0.0", "68.255.255.255"),     # Cable/DSL
+        ("69.0.0.0", "69.255.255.255"),     # Various ISPs
+        ("71.0.0.0", "71.255.255.255"),     # Cable/DSL
+        ("74.0.0.0", "74.255.255.255"),     # Various ISPs
+        ("75.0.0.0", "75.255.255.255"),     # Various ISPs
+        ("76.0.0.0", "76.255.255.255"),     # Various ISPs
+        ("96.0.0.0", "96.255.255.255"),     # Various ISPs
+        ("98.0.0.0", "98.255.255.255"),     # Various ISPs
+        ("99.0.0.0", "99.255.255.255"),     # Various ISPs
+        ("104.0.0.0", "104.255.255.255"),   # Various
+        ("107.0.0.0", "107.255.255.255"),   # Various ISPs
+        ("108.0.0.0", "108.255.255.255"),   # Various ISPs
+    ],
+    "United Kingdom": [
+        ("81.0.0.0", "81.255.255.255"),     # British Telecom
+        ("86.0.0.0", "86.255.255.255"),     # Various UK ISPs
+        ("90.0.0.0", "90.255.255.255"),     # Virgin Media
+        ("92.0.0.0", "92.255.255.255"),     # Various UK ISPs
+        ("94.0.0.0", "94.255.255.255"),     # Various UK ISPs
+    ],
+    "Germany": [
+        ("46.0.0.0", "46.255.255.255"),     # Various EU
+        ("78.0.0.0", "78.255.255.255"),     # Deutsche Telekom
+        ("91.0.0.0", "91.255.255.255"),     # Various EU
+    ],
+    "France": [
+        ("80.0.0.0", "80.255.255.255"),     # Orange
+        ("82.0.0.0", "82.255.255.255"),     # Various FR ISPs
+        ("88.0.0.0", "88.255.255.255"),     # Free/SFR
+        ("90.0.0.0", "90.127.255.255"),     # Various FR ISPs
+    ],
+    "China": [
+        ("1.0.0.0", "1.63.255.255"),        # China Telecom
+        ("27.0.0.0", "27.255.255.255"),     # China networks
+        ("36.0.0.0", "36.127.255.255"),     # China networks
+        ("58.0.0.0", "58.255.255.255"),     # China networks
+        ("106.0.0.0", "106.255.255.255"),   # China networks
+        ("110.0.0.0", "110.255.255.255"),   # China networks
+        ("111.0.0.0", "111.255.255.255"),   # China networks
+        ("112.0.0.0", "112.255.255.255"),   # China networks
+        ("113.0.0.0", "113.255.255.255"),   # China networks
+        ("114.0.0.0", "114.255.255.255"),   # China networks
+        ("115.0.0.0", "115.255.255.255"),   # China networks
+        ("116.0.0.0", "116.255.255.255"),   # China networks
+        ("117.0.0.0", "117.127.255.255"),   # China networks
+        ("118.0.0.0", "118.255.255.255"),   # China networks
+        ("119.0.0.0", "119.255.255.255"),   # China networks
+        ("120.0.0.0", "120.255.255.255"),   # China networks
+        ("121.0.0.0", "121.255.255.255"),   # China networks
+        ("122.0.0.0", "122.255.255.255"),   # China networks
+        ("123.0.0.0", "123.255.255.255"),   # China networks
+    ],
+    "Japan": [
+        ("60.0.0.0", "60.255.255.255"),     # Japan networks
+        ("61.0.0.0", "61.255.255.255"),     # Japan/Korea/Taiwan
+        ("126.0.0.0", "126.255.255.255"),   # Japan networks
+        ("133.0.0.0", "133.255.255.255"),   # Japan networks
+        ("210.0.0.0", "210.255.255.255"),   # Japan/APNIC
+        ("211.0.0.0", "211.255.255.255"),   # Japan/APNIC
+    ],
+    "India": [
+        ("14.0.0.0", "14.255.255.255"),     # BSNL
+        ("49.0.0.0", "49.255.255.255"),     # Various Indian ISPs
+        ("117.128.0.0", "117.255.255.255"), # Indian ISPs
+    ],
+    "Canada": [
+        ("70.0.0.0", "70.255.255.255"),     # Rogers
+        ("72.0.0.0", "72.255.255.255"),     # Various Canadian ISPs
+        ("142.0.0.0", "142.255.255.255"),   # Various Canadian ISPs
+        ("184.0.0.0", "184.127.255.255"),   # Various Canadian ISPs
+    ],
+    "Australia": [
+        ("1.128.0.0", "1.159.255.255"),     # Telstra
+        ("27.32.0.0", "27.47.255.255"),     # Various AU ISPs
+        ("101.0.0.0", "101.255.255.255"),   # Various AU ISPs
+        ("103.0.0.0", "103.127.255.255"),   # APNIC region including AU
+    ],
+    "Brazil": [
+        ("177.0.0.0", "177.255.255.255"),   # Various BR ISPs
+        ("179.0.0.0", "179.255.255.255"),   # Various BR ISPs
+        ("186.0.0.0", "186.255.255.255"),   # LACNIC - BR ISPs
+        ("189.0.0.0", "189.255.255.255"),   # Various BR ISPs
+        ("191.0.0.0", "191.255.255.255"),   # Various BR ISPs
+    ],
+    "Russia": [
+        ("5.0.0.0", "5.255.255.255"),       # Various RU networks
+        ("31.0.0.0", "31.255.255.255"),     # Various RU networks
+        ("37.0.0.0", "37.127.255.255"),     # Various RU networks
+        ("46.0.0.0", "46.255.255.255"),     # RIPE region including RU
+        ("77.0.0.0", "77.127.255.255"),     # Various RU networks
+        ("78.0.0.0", "78.127.255.255"),     # Various RU networks
+        ("79.0.0.0", "79.127.255.255"),     # Various RU networks
+        ("80.0.0.0", "80.127.255.255"),     # Various RU networks
+        ("81.0.0.0", "81.127.255.255"),     # Various RU networks
+        ("82.0.0.0", "82.127.255.255"),     # Various RU networks
+        ("83.0.0.0", "83.127.255.255"),     # Various RU networks
+        ("84.0.0.0", "84.127.255.255"),     # Various RU networks
+        ("85.0.0.0", "85.127.255.255"),     # Various RU networks
+        ("86.0.0.0", "86.127.255.255"),     # Various RU networks
+        ("87.0.0.0", "87.127.255.255"),     # Various RU networks
+        ("88.0.0.0", "88.127.255.255"),     # Various RU networks
+        ("89.0.0.0", "89.127.255.255"),     # Various RU networks
+        ("90.0.0.0", "90.127.255.255"),     # Various RU networks
+        ("91.0.0.0", "91.127.255.255"),     # Various RU networks
+        ("92.0.0.0", "92.127.255.255"),     # Various RU networks
+        ("93.0.0.0", "93.127.255.255"),     # Various RU networks
+        ("94.0.0.0", "94.127.255.255"),     # Various RU networks
+        ("95.0.0.0", "95.127.255.255"),     # Various RU networks
+    ],
+    "South Korea": [
+        ("1.224.0.0", "1.255.255.255"),     # KT Corp
+        ("14.0.0.0", "14.127.255.255"),     # Various KR ISPs
+        ("27.0.0.0", "27.127.255.255"),     # Various KR ISPs
+        ("58.0.0.0", "58.127.255.255"),     # Various KR ISPs
+        ("59.0.0.0", "59.127.255.255"),     # Various KR ISPs
+        ("60.0.0.0", "60.127.255.255"),     # Various KR ISPs
+        ("61.0.0.0", "61.127.255.255"),     # KT Corp
+        ("106.0.0.0", "106.127.255.255"),   # Various KR ISPs
+        ("110.0.0.0", "110.127.255.255"),   # Various KR ISPs
+        ("112.0.0.0", "112.127.255.255"),   # Various KR ISPs
+        ("114.0.0.0", "114.127.255.255"),   # Various KR ISPs
+        ("115.0.0.0", "115.127.255.255"),   # Various KR ISPs
+        ("116.0.0.0", "116.127.255.255"),   # Various KR ISPs
+        ("117.0.0.0", "117.127.255.255"),   # Various KR ISPs
+        ("118.0.0.0", "118.127.255.255"),   # Various KR ISPs
+        ("119.0.0.0", "119.127.255.255"),   # Various KR ISPs
+        ("121.0.0.0", "121.255.255.255"),   # Various KR ISPs
+        ("175.0.0.0", "175.255.255.255"),   # Various KR ISPs
+    ],
+    "Mexico": [
+        ("187.0.0.0", "187.255.255.255"),   # Telmex
+        ("189.0.0.0", "189.255.255.255"),   # Various MX ISPs
+        ("201.0.0.0", "201.255.255.255"),   # LACNIC - MX ISPs
+    ],
+    "Spain": [
+        ("80.0.0.0", "80.127.255.255"),     # Various ES ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various ES ISPs
+        ("83.0.0.0", "83.255.255.255"),     # Various ES ISPs
+        ("84.0.0.0", "84.255.255.255"),     # Telefonica
+        ("85.0.0.0", "85.127.255.255"),     # Various ES ISPs
+        ("88.0.0.0", "88.127.255.255"),     # Various ES ISPs
+    ],
+    "Italy": [
+        ("79.0.0.0", "79.255.255.255"),     # Telecom Italia
+        ("80.0.0.0", "80.127.255.255"),     # Various IT ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various IT ISPs
+        ("82.0.0.0", "82.127.255.255"),     # Various IT ISPs
+        ("87.0.0.0", "87.255.255.255"),     # Various IT ISPs
+        ("93.0.0.0", "93.255.255.255"),     # Various IT ISPs
+        ("151.0.0.0", "151.255.255.255"),   # Various IT ISPs
+    ],
+    "Netherlands": [
+        ("77.0.0.0", "77.255.255.255"),     # KPN
+        ("80.0.0.0", "80.127.255.255"),     # Various NL ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various NL ISPs
+        ("82.0.0.0", "82.127.255.255"),     # Various NL ISPs
+        ("83.0.0.0", "83.127.255.255"),     # Various NL ISPs
+        ("84.0.0.0", "84.127.255.255"),     # Various NL ISPs
+        ("85.0.0.0", "85.127.255.255"),     # Various NL ISPs
+        ("86.0.0.0", "86.127.255.255"),     # Various NL ISPs
+        ("145.0.0.0", "145.255.255.255"),   # Various NL ISPs
+        ("213.0.0.0", "213.255.255.255"),   # Various NL ISPs
+    ],
+    "Indonesia": [
+        ("36.64.0.0", "36.127.255.255"),    # Telkom Indonesia
+        ("103.0.0.0", "103.255.255.255"),   # Various ID ISPs
+        ("110.0.0.0", "110.127.255.255"),   # Various ID ISPs
+        ("112.0.0.0", "112.127.255.255"),   # Various ID ISPs
+        ("114.0.0.0", "114.127.255.255"),   # Various ID ISPs
+        ("118.0.0.0", "118.127.255.255"),   # Various ID ISPs
+        ("125.0.0.0", "125.127.255.255"),   # Various ID ISPs
+    ],
+    "Saudi Arabia": [
+        ("37.128.0.0", "37.255.255.255"),   # STC
+        ("46.0.0.0", "46.127.255.255"),     # Various SA ISPs
+        ("80.0.0.0", "80.127.255.255"),     # Various SA ISPs
+        ("109.0.0.0", "109.255.255.255"),   # Various SA ISPs
+        ("188.0.0.0", "188.255.255.255"),   # Various SA ISPs
+    ],
+    "Turkey": [
+        ("78.160.0.0", "78.191.255.255"),   # Turk Telekom
+        ("79.0.0.0", "79.127.255.255"),     # Various TR ISPs
+        ("80.0.0.0", "80.127.255.255"),     # Various TR ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various TR ISPs
+        ("82.0.0.0", "82.127.255.255"),     # Various TR ISPs
+        ("85.0.0.0", "85.127.255.255"),     # Various TR ISPs
+        ("88.0.0.0", "88.127.255.255"),     # Various TR ISPs
+        ("176.0.0.0", "176.255.255.255"),   # Various TR ISPs
+        ("185.0.0.0", "185.255.255.255"),   # Various TR ISPs
+    ],
+    "Taiwan": [
+        ("1.160.0.0", "1.175.255.255"),     # Taiwan networks
+        ("27.0.0.0", "27.127.255.255"),     # Taiwan networks
+        ("36.224.0.0", "36.239.255.255"),   # Taiwan networks
+        ("60.0.0.0", "60.127.255.255"),     # Taiwan networks
+        ("61.0.0.0", "61.127.255.255"),     # Taiwan networks
+        ("111.0.0.0", "111.127.255.255"),   # Taiwan networks
+        ("114.0.0.0", "114.127.255.255"),   # Taiwan networks
+        ("118.0.0.0", "118.127.255.255"),   # Taiwan networks
+        ("125.0.0.0", "125.127.255.255"),   # Taiwan networks
+    ],
+    "Belgium": [
+        ("77.0.0.0", "77.127.255.255"),     # Belgacom
+        ("78.0.0.0", "78.127.255.255"),     # Various BE ISPs
+        ("79.0.0.0", "79.127.255.255"),     # Various BE ISPs
+        ("80.0.0.0", "80.127.255.255"),     # Various BE ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various BE ISPs
+        ("82.0.0.0", "82.127.255.255"),     # Various BE ISPs
+        ("83.0.0.0", "83.127.255.255"),     # Various BE ISPs
+        ("84.0.0.0", "84.127.255.255"),     # Various BE ISPs
+        ("85.0.0.0", "85.127.255.255"),     # Various BE ISPs
+    ],
+    "Argentina": [
+        ("181.0.0.0", "181.255.255.255"),   # Various AR ISPs
+        ("186.0.0.0", "186.127.255.255"),   # Various AR ISPs
+        ("190.0.0.0", "190.255.255.255"),   # LACNIC - AR ISPs
+        ("200.0.0.0", "200.127.255.255"),   # LACNIC - AR ISPs
+    ],
+    "Thailand": [
+        ("1.0.128.0", "1.0.255.255"),       # Thailand networks
+        ("27.0.0.0", "27.127.255.255"),     # Thailand networks
+        ("58.0.0.0", "58.127.255.255"),     # Thailand networks
+        ("101.0.0.0", "101.127.255.255"),   # Thailand networks
+        ("103.0.0.0", "103.127.255.255"),   # Thailand networks
+        ("110.0.0.0", "110.127.255.255"),   # Thailand networks
+        ("111.0.0.0", "111.127.255.255"),   # Thailand networks
+        ("112.0.0.0", "112.127.255.255"),   # Thailand networks
+        ("113.0.0.0", "113.127.255.255"),   # Thailand networks
+        ("114.0.0.0", "114.127.255.255"),   # Thailand networks
+        ("115.0.0.0", "115.127.255.255"),   # Thailand networks
+        ("116.0.0.0", "116.127.255.255"),   # Thailand networks
+        ("117.0.0.0", "117.127.255.255"),   # Thailand networks
+        ("118.0.0.0", "118.127.255.255"),   # Thailand networks
+        ("119.0.0.0", "119.127.255.255"),   # Thailand networks
+        ("125.0.0.0", "125.127.255.255"),   # Thailand networks
+    ],
+    "Israel": [
+        ("2.0.0.0", "2.127.255.255"),       # Various IL ISPs
+        ("5.0.0.0", "5.127.255.255"),       # Various IL ISPs
+        ("37.0.0.0", "37.127.255.255"),     # Various IL ISPs
+        ("46.0.0.0", "46.127.255.255"),     # Various IL ISPs
+        ("77.0.0.0", "77.127.255.255"),     # Various IL ISPs
+        ("79.0.0.0", "79.127.255.255"),     # Various IL ISPs
+        ("80.0.0.0", "80.127.255.255"),     # Various IL ISPs
+        ("82.0.0.0", "82.127.255.255"),     # Various IL ISPs
+        ("85.0.0.0", "85.127.255.255"),     # Various IL ISPs
+    ],
+    "Poland": [
+        ("5.0.0.0", "5.127.255.255"),       # Various PL ISPs
+        ("31.0.0.0", "31.127.255.255"),     # Various PL ISPs
+        ("37.0.0.0", "37.127.255.255"),     # Various PL ISPs
+        ("46.0.0.0", "46.127.255.255"),     # Various PL ISPs
+        ("77.0.0.0", "77.127.255.255"),     # Various PL ISPs
+        ("78.0.0.0", "78.127.255.255"),     # Various PL ISPs
+        ("79.0.0.0", "79.127.255.255"),     # Various PL ISPs
+        ("80.0.0.0", "80.127.255.255"),     # Various PL ISPs
+        ("81.0.0.0", "81.127.255.255"),     # Various PL ISPs
+        ("83.0.0.0", "83.127.255.255"),     # Various PL ISPs
+        ("89.0.0.0", "89.127.255.255"),     # Various PL ISPs
+    ],
+    "Nigeria": [
+        ("41.0.0.0", "41.127.255.255"),     # AfriNIC - NG ISPs
+        ("102.0.0.0", "102.127.255.255"),   # AfriNIC - NG ISPs
+        ("105.0.0.0", "105.127.255.255"),   # AfriNIC - NG ISPs
+        ("154.0.0.0", "154.127.255.255"),   # AfriNIC - NG ISPs
+        ("196.0.0.0", "196.127.255.255"),   # AfriNIC - NG ISPs
+        ("197.0.0.0", "197.127.255.255"),   # AfriNIC - NG ISPs
+    ],
+}
+
+# Use well-known public IP ranges as fallback (Google Public DNS and Cloudflare)
+DEFAULT_IP_RANGES = [
+    ("8.8.8.0", "8.8.8.255"),              # Google DNS (US)
+    ("1.1.1.0", "1.1.1.255"),              # Cloudflare (US)
+]
+
+
+def ip_to_int(ip_str: str) -> int:
+    """Convert IP address string to integer"""
+    parts = ip_str.split('.')
+    return (int(parts[0]) << 24) + (int(parts[1]) << 16) + (int(parts[2]) << 8) + int(parts[3])
+
+
+def int_to_ip(ip_int: int) -> str:
+    """Convert integer to IP address string"""
+    return f"{(ip_int >> 24) & 255}.{(ip_int >> 16) & 255}.{(ip_int >> 8) & 255}.{ip_int & 255}"
+
+
+def generate_ip_for_country(country: str, seed: int = None) -> str:
+    """
+    Generate a random IP address within known ranges for a given country.
+    
+    Args:
+        country: Country name
+        seed: Random seed for reproducibility
+        
+    Returns:
+        IP address string that should resolve in GeoIP database
+    """
+    if seed is not None:
+        rng = np.random.default_rng(seed)
+    else:
+        rng = np.random.default_rng()
+    
+    # Get IP ranges for this country, or use default
+    ip_ranges = COUNTRY_IP_RANGES.get(country, DEFAULT_IP_RANGES)
+    
+    # Select a random range
+    start_ip, end_ip = ip_ranges[rng.integers(0, len(ip_ranges))]
+    
+    # Convert to integers
+    start_int = ip_to_int(start_ip)
+    end_int = ip_to_int(end_ip)
+    
+    # Generate random IP within range
+    ip_int = rng.integers(start_int, end_int + 1)
+    
+    return int_to_ip(ip_int)
+
+
+def generate_random_ips(count: int, seed: int = None) -> list:
+    """
+    Generate random IP addresses from various countries.
+    
+    Args:
+        count: Number of IPs to generate
+        seed: Random seed for reproducibility
+        
+    Returns:
+        List of IP address strings
+    """
+    if seed is not None:
+        rng = np.random.default_rng(seed)
+    else:
+        rng = np.random.default_rng()
+    
+    # Get all available countries
+    all_countries = list(COUNTRY_IP_RANGES.keys())
+    
+    ips = []
+    for i in range(count):
+        # Pick a random country
+        country = all_countries[rng.integers(0, len(all_countries))]
+        # Generate IP for that country
+        ip = generate_ip_for_country(country, seed=seed + i if seed else None)
+        ips.append(ip)
+    
+    return ips
+
+
+def generate_ips_for_countries(countries: list, seed: int = None) -> list:
+    """
+    Generate IP addresses for specific countries (one IP per country in list).
+    
+    Args:
+        countries: List of country names
+        seed: Random seed for reproducibility
+        
+    Returns:
+        List of IP address strings matching the countries list
+    """
+    ips = []
+    for i, country in enumerate(countries):
+        ip = generate_ip_for_country(country, seed=seed + i if seed else None)
+        ips.append(ip)
+    
+    return ips
+
+
+# ---------------------------
 # Utility / fixed generators
 # ---------------------------
+
 
 def generate_merchant_details(rows: int, start_date: datetime, end_date: datetime) -> pl.DataFrame:
     """Generate merchant details DataFrame"""
@@ -207,6 +593,8 @@ def generate_credit_card_transactions_from_existing(
     """
     Create transactions by sampling existing card_df (cc_num, account_id) and merchant_df (merchant_id).
     Returns a Polars DataFrame with columns: t_id, cc_num, account_id, merchant_id, amount, ip_address, card_present, ts
+    
+    IP addresses are generated to match merchant countries and resolve in GeoIP database.
     """
     print("Generating credit card transactions from existing card + merchant tables...")
     rows = int(rows)
@@ -217,24 +605,22 @@ def generate_credit_card_transactions_from_existing(
     if not required_card_cols.issubset(set(card_df.columns)):
         raise ValueError(f"card_df must contain columns: {required_card_cols}")
 
-    if "merchant_id" not in merchant_df.columns:
-        raise ValueError("merchant_df must contain 'merchant_id' column")
+    required_merchant_cols = {"merchant_id", "country"}
+    if not required_merchant_cols.issubset(set(merchant_df.columns)):
+        raise ValueError("merchant_df must contain 'merchant_id' and 'country' columns")
 
     # 1) Sample (cc_num, account_id)
     # Polars sampling with replacement
     cards_sample = card_df.select(["cc_num", "account_id"]).sample(n=rows, with_replacement=True, shuffle=True, seed=seed)
-    merchants_sample = merchant_df.select(["merchant_id"]).sample(n=rows, with_replacement=True, shuffle=True, seed=seed + 1)
+    merchants_sample = merchant_df.select(["merchant_id", "country"]).sample(n=rows, with_replacement=True, shuffle=True, seed=seed + 1)
 
     # 2) Amounts (log-normal) and card_present flag
     amounts = np.round(rng.lognormal(mean=3.5, sigma=1.2, size=rows), 2).tolist()
     card_present = rng.integers(0, 2, size=rows).astype(bool).tolist()
 
-    # 3) IP addresses (random)
-    a = rng.integers(1, 256, size=rows)
-    b = rng.integers(0, 256, size=rows)
-    c = rng.integers(0, 256, size=rows)
-    d = rng.integers(0, 256, size=rows)
-    ip_address = [f"{int(x)}.{int(y)}.{int(z)}.{int(w)}" for x, y, z, w in zip(a, b, c, d)]
+    # 3) IP addresses based on merchant countries - now using GeoIP-valid IPs
+    merchant_countries = merchants_sample["country"].to_list()
+    ip_address = generate_ips_for_countries(merchant_countries, seed=seed)
 
     # 4) timestamps uniform in [start_date, end_date)
     total_seconds = max(int((end_date - start_date).total_seconds()), 1)
@@ -263,7 +649,8 @@ def generate_credit_card_transactions_from_existing(
 # Feature group helper - add account_id description
 # ---------------------------
 
-def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, features=None):
+def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, 
+                                           features=None, time_travel_format="HUDI"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
     if topic_name is None:
@@ -281,6 +668,7 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             event_time=event_time_col,
             topic_name=topic_name,
             online_enabled=online_enabled,
+            time_travel_format=time_travel_format
         )
     else:
         fg = fs.create_feature_group(
@@ -291,6 +679,7 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             event_time=event_time_col,
             topic_name=topic_name,
             online_enabled=online_enabled,
+            time_travel_format=time_travel_format,
             features=features
         )
 
@@ -364,7 +753,6 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
 
 
 
-
 def generate_fraud(
     transaction_df: pl.DataFrame,
     card_df: pl.DataFrame,
@@ -375,6 +763,7 @@ def generate_fraud(
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
     Generate fraudulent transaction records and add them to the transaction DataFrame.
+    IP addresses are generated to resolve in GeoIP database.
     
     Args:
         transaction_df: DataFrame with legitimate transactions (must have: t_id, cc_num, ts, amount, card_present)
@@ -428,8 +817,8 @@ def generate_fraud(
         max_ts = transaction_df["ts"].max()
         total_seconds = int((max_ts - min_ts).total_seconds())
         
-        # Sample merchants
-        available_merchants = merchant_df["merchant_id"].to_list()
+        # Sample merchants with countries
+        available_merchants = merchant_df.select(["merchant_id", "country"])
         
         transactions_generated = 0
         
@@ -453,8 +842,9 @@ def generate_fraud(
             # Duration of attack: 10 minutes to 2 hours
             attack_duration_seconds = random.randint(600, 7200)
             
-            # Generate IP address for this attack (all transactions from same IP)
-            ip_address = f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
+            # Generate IP address for this attack - use a random country from GeoIP-valid ranges
+            attack_country = random.choice(list(COUNTRY_IP_RANGES.keys()))
+            ip_address = generate_ip_for_country(attack_country, seed=seed + attack_idx)
             
             # Generate transactions in this chain
             for txn_idx in range(num_txns_in_chain):
@@ -466,7 +856,8 @@ def generate_fraud(
                 amount = round(random.uniform(5.0, 49.99), 2)
                 
                 # Merchant for this transaction
-                merchant_id = random.choice(available_merchants)
+                merchant_sample = available_merchants.sample(n=1, shuffle=True, seed=seed + attack_idx + txn_idx)
+                merchant_id = merchant_sample["merchant_id"][0]
                 
                 # Create fraud record
                 fraud_records.append({
@@ -493,97 +884,121 @@ def generate_fraud(
         available_cards = card_df.select(["cc_num", "account_id"]).unique()
         merchants_with_country = merchant_df.select(["merchant_id", "country"])
         
-        # Get unique countries
-        countries = merchants_with_country["country"].unique().to_list()
+        # Define pairs of geographically distant countries for impossible travel scenarios
+        # These are intentionally far apart to create clear fraud signals
+        distant_country_pairs = [
+            ("United States", "China"),      # ~11,000 km
+            ("United States", "Japan"),      # ~10,000 km
+            ("United States", "Australia"),  # ~15,000 km
+            ("United Kingdom", "Australia"), # ~17,000 km
+            ("United Kingdom", "Japan"),     # ~9,500 km
+            ("Germany", "China"),            # ~7,500 km
+            ("France", "India"),             # ~7,000 km
+            ("Canada", "Russia"),            # ~7,000 km
+            ("Brazil", "China"),             # ~17,000 km
+            ("Spain", "Australia"),          # ~18,000 km
+            ("Italy", "Japan"),              # ~9,700 km
+            ("Mexico", "India"),             # ~14,500 km
+        ]
         
-        # Create pairs of geographically distant countries
-        country_pairs = []
-        for i in range(len(countries)):
-            for j in range(i + 1, len(countries)):
-                if countries[i] != countries[j]:
-                    country_pairs.append((countries[i], countries[j]))
+        # Filter to only use country pairs where we have merchants for both countries
+        available_countries = set(merchants_with_country["country"].unique().to_list())
+        valid_country_pairs = [
+            (c1, c2) for c1, c2 in distant_country_pairs 
+            if c1 in available_countries and c2 in available_countries
+        ]
         
-        if not country_pairs:
-            print("Warning: Not enough distinct countries for geographic fraud")
-            country_pairs = [(countries[0], countries[0])] if countries else []
+        if not valid_country_pairs:
+            print("Warning: No valid distant country pairs found for geographic fraud")
+            # Fallback: use any two different countries
+            countries_list = list(available_countries)
+            if len(countries_list) >= 2:
+                valid_country_pairs = [(countries_list[i], countries_list[j]) 
+                                      for i in range(len(countries_list)) 
+                                      for j in range(i+1, len(countries_list))][:10]
+            else:
+                valid_country_pairs = []
         
-        # Get time range from transaction_df
-        min_ts = transaction_df["ts"].min()
-        max_ts = transaction_df["ts"].max()
-        total_seconds = int((max_ts - min_ts).total_seconds())
-        
-        # Each geographic fraud is a pair of transactions
-        num_geographic_pairs = max(geographic_fraud_transactions // 2, 1)
-        
-        for pair_idx in range(num_geographic_pairs):
-            # Select a random card
-            card_sample = available_cards.sample(n=1, shuffle=True, seed=seed + 1000 + pair_idx)
-            cc_num = card_sample["cc_num"][0]
-            account_id = card_sample["account_id"][0]
+        if not valid_country_pairs:
+            print("Warning: Cannot generate geographic fraud - insufficient countries")
+        else:
+            # Get time range from transaction_df
+            min_ts = transaction_df["ts"].min()
+            max_ts = transaction_df["ts"].max()
+            total_seconds = int((max_ts - min_ts).total_seconds())
             
-            # Select two different countries
-            country1, country2 = random.choice(country_pairs)
+            # Each geographic fraud is a pair of transactions
+            num_geographic_pairs = max(geographic_fraud_transactions // 2, 1)
             
-            # Get merchants from each country
-            merchants_c1 = merchants_with_country.filter(pl.col("country") == country1)["merchant_id"].to_list()
-            merchants_c2 = merchants_with_country.filter(pl.col("country") == country2)["merchant_id"].to_list()
-            
-            if not merchants_c1 or not merchants_c2:
-                continue
-            
-            merchant1 = random.choice(merchants_c1)
-            merchant2 = random.choice(merchants_c2)
-            
-            # First transaction time
-            txn1_seconds = random.randint(0, max(1, total_seconds - 7200))
-            txn1_ts = min_ts + timedelta(seconds=txn1_seconds)
-            
-            # Second transaction: 10 minutes to 2 hours later (impossible to travel)
-            time_gap_seconds = random.randint(600, 7200)  # 10 min to 2 hours
-            txn2_ts = txn1_ts + timedelta(seconds=time_gap_seconds)
-            
-            # Amounts for both transactions
-            amount1 = round(np.random.lognormal(mean=3.5, sigma=1.2), 2)
-            amount2 = round(np.random.lognormal(mean=3.5, sigma=1.2), 2)
-            
-            # Generate different IP addresses for each location
-            ip_address1 = f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
-            ip_address2 = f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}"
-            
-            # Distance explanation
-            time_gap_minutes = time_gap_seconds // 60
-            
-            # First transaction
-            fraud_records.append({
-                "t_id": next_t_id,
-                "cc_num": cc_num,
-                "account_id": account_id,
-                "merchant_id": merchant1,
-                "amount": amount1,
-                "ip_address": ip_address1,
-                "explanation": f"Geographic fraud: Transaction in {country1}, followed by transaction in {country2} only {time_gap_minutes} minutes later (impossible travel time)",
-                "ts": txn1_ts,
-                "fraud_type": "geographic",
-                "card_present": True
-            })
-            
-            next_t_id += 1
-            
-            # Second transaction
-            fraud_records.append({
-                "t_id": next_t_id,
-                "cc_num": cc_num,
-                "account_id": account_id,
-                "merchant_id": merchant2,
-                "amount": amount2,
-                "ip_address": ip_address2,
-                "explanation": f"Geographic fraud: Transaction in {country2}, preceded by transaction in {country1} only {time_gap_minutes} minutes earlier (impossible travel time)",
-                "ts": txn2_ts,
-                "fraud_type": "geographic",
-                "card_present": True
-            })
-            
-            next_t_id += 1
+            for pair_idx in range(num_geographic_pairs):
+                # Select a random card
+                card_sample = available_cards.sample(n=1, shuffle=True, seed=seed + 1000 + pair_idx)
+                cc_num = card_sample["cc_num"][0]
+                account_id = card_sample["account_id"][0]
+                
+                # Select two distant countries (cycle through the list)
+                country1, country2 = valid_country_pairs[pair_idx % len(valid_country_pairs)]
+                
+                # Get merchants from each country
+                merchants_c1 = merchants_with_country.filter(pl.col("country") == country1)["merchant_id"].to_list()
+                merchants_c2 = merchants_with_country.filter(pl.col("country") == country2)["merchant_id"].to_list()
+                
+                if not merchants_c1 or not merchants_c2:
+                    continue
+                
+                merchant1 = random.choice(merchants_c1)
+                merchant2 = random.choice(merchants_c2)
+                
+                # First transaction time
+                txn1_seconds = random.randint(0, max(1, total_seconds - 3600))
+                txn1_ts = min_ts + timedelta(seconds=txn1_seconds)
+                
+                # Second transaction: 15 minutes to 1 hour later (clearly impossible to travel between distant countries)
+                time_gap_seconds = random.randint(900, 3600)  # 15 min to 1 hour
+                txn2_ts = txn1_ts + timedelta(seconds=time_gap_seconds)
+                
+                # Amounts for both transactions
+                amount1 = round(np.random.lognormal(mean=3.5, sigma=1.2), 2)
+                amount2 = round(np.random.lognormal(mean=3.5, sigma=1.2), 2)
+                
+                # Generate IPs for each country - using GeoIP-valid IPs
+                ip_address1 = generate_ip_for_country(country1, seed=seed + pair_idx * 2)
+                ip_address2 = generate_ip_for_country(country2, seed=seed + pair_idx * 2 + 1)
+                
+                # Distance explanation
+                time_gap_minutes = time_gap_seconds // 60
+                
+                # First transaction - card present (physical terminal)
+                fraud_records.append({
+                    "t_id": next_t_id,
+                    "cc_num": cc_num,
+                    "account_id": account_id,
+                    "merchant_id": merchant1,
+                    "amount": amount1,
+                    "ip_address": ip_address1,
+                    "explanation": f"Geographic fraud: Card present transaction in {country1}, followed by card present transaction in {country2} only {time_gap_minutes} minutes later (impossible travel)",
+                    "ts": txn1_ts,
+                    "fraud_type": "geographic",
+                    "card_present": True  # Physical card used
+                })
+                
+                next_t_id += 1
+                
+                # Second transaction - card present (physical terminal)
+                fraud_records.append({
+                    "t_id": next_t_id,
+                    "cc_num": cc_num,
+                    "account_id": account_id,
+                    "merchant_id": merchant2,
+                    "amount": amount2,
+                    "ip_address": ip_address2,
+                    "explanation": f"Geographic fraud: Card present transaction in {country2}, preceded by card present transaction in {country1} only {time_gap_minutes} minutes earlier (impossible travel)",
+                    "ts": txn2_ts,
+                    "fraud_type": "geographic",
+                    "card_present": True  # Physical card used
+                })
+                
+                next_t_id += 1
     
     # Convert to DataFrame
     if not fraud_records:
