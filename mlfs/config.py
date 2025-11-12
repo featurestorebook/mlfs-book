@@ -83,22 +83,6 @@ class HopsworksSettings(BaseSettings):
         aqicn_api_key = self.AQICN_API_KEY or os.getenv("AQICN_API_KEY")
         if not aqicn_api_key:
             missing.append("AQICN_API_KEY")
-        # 3. AQICN_COUNTRY
-        aqicn_country = self.AQICN_COUNTRY or os.getenv("AQICN_COUNTRY")
-        if not aqicn_country:
-            missing.append("AQICN_COUNTRY")
-        # 4. AQICN_CITY
-        aqicn_city = self.AQICN_CITY or os.getenv("AQICN_CITY")
-        if not aqicn_city:
-            missing.append("AQICN_CITY")
-        # 5. AQICN_STREET
-        aqicn_street = self.AQICN_STREET or os.getenv("AQICN_STREET")
-        if not aqicn_street:
-            missing.append("AQICN_STREET")
-        # 6. AQICN_URL
-        aqicn_url = self.AQICN_URL or os.getenv("AQICN_URL")
-        if not aqicn_url:
-            missing.append("AQICN_URL")
 
         if missing:
             raise ValueError(
