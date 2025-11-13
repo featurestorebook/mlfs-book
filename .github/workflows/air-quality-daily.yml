@@ -31,7 +31,8 @@ jobs:
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          make aq-inference
+          ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+          ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

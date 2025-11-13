@@ -106,7 +106,7 @@ if files_to_clean == "cc":
     
     
     for feature_view in [
-        "",
+        #"",
     ]:
         delete_feature_view(feature_view)
     
