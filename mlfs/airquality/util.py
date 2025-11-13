@@ -298,3 +298,60 @@ def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, 
     df = df.drop('pm25', axis=1)
     monitor_fg.insert(df, write_options={"wait_for_job": True})
     return hindcast_df
+
+def add_lagged_features(df, target_column='pm25', lags=[1, 2, 3]):
+    """
+    Add lagged features to the dataframe for time series prediction.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame containing at least 'date', 'city', 'street', and target_column
+    target_column : str
+        Name of the column to create lagged features for (default: 'pm25')
+    lags : list
+        List of lag periods (default: [1, 2, 3] for 1, 2, 3 days ago)
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame with additional lagged feature columns
+    
+    Example:
+    --------
+    >>> df = add_lagged_features(df, target_column='pm25', lags=[1, 2, 3])
+    >>> # Creates columns: lag_1_pm25, lag_2_pm25, lag_3_pm25
+    """
+    import pandas as pd
+    
+    # Make a copy to avoid modifying the original
+    df = df.copy()
+    
+    # Ensure the dataframe is sorted by date
+    df = df.sort_values('date').reset_index(drop=True)
+    
+    # Create lagged features for each location separately
+    if 'city' in df.columns and 'street' in df.columns:
+        # Group by location to ensure lags are calculated within each location
+        for lag in lags:
+            col_name = f'lag_{lag}_{target_column}'
+            df[col_name] = df.groupby(['city', 'street'])[target_column].shift(lag)
+            print(f"Created feature: {col_name}")
+    else:
+        # If no location columns, create lags for the entire dataset
+        for lag in lags:
+            col_name = f'lag_{lag}_{target_column}'
+            df[col_name] = df[target_column].shift(lag)
+            print(f"Created feature: {col_name}")
+    
+    # Drop rows with NaN values (first few rows won't have complete lag history)
+    initial_rows = len(df)
+    df = df.dropna()
+    dropped_rows = initial_rows - len(df)
+    
+    print(f"\nLagged features summary:")
+    print(f"  - Initial rows: {initial_rows}")
+    print(f"  - Rows after dropping NaN: {len(df)}")
+    print(f"  - Dropped rows: {dropped_rows}")
+    
+    return df
