@@ -28,6 +28,10 @@ class HopsworksSettings(BaseSettings):
 
     # Air Quality
     AQICN_API_KEY: SecretStr | None = None
+    AQICN_URL: str
+    AQICN_COUNTRY: str
+    AQICN_CITY: str
+    AQICN_STREET: str
     
     # Other API Keys
     FELDERA_API_KEY: SecretStr | None = None    
