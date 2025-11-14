@@ -79,7 +79,7 @@ def install_recommender(c):
 @task
 def aq_backfill_1(c):
     check_venv()
-    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    c.run('papermill notebooks/airquality/1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
     -p city "scotland" \
     -p street "edinburgh-salamander-st" \
     -p aqicn_url "https://api.waqi.info/feed/@5986" \
@@ -88,7 +88,7 @@ def aq_backfill_1(c):
 @task
 def aq_backfill_2(c):
     check_venv()
-    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    c.run('papermill notebooks/airquality/1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
     -p city "scotland" \
     -p street "edinburgh-queensferry-road" \
     -p aqicn_url "https://api.waqi.info/feed/@5985" \
@@ -98,7 +98,7 @@ def aq_backfill_2(c):
 @task
 def aq_backfill_3(c):
     check_venv()
-    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    c.run('papermill notebooks/airquality/1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
     -p city "scotland" \
     -p street "east-lothian-musselburgh-n-high-st" \
     -p aqicn_url "https://api.waqi.info/feed/@6339" \
@@ -107,7 +107,7 @@ def aq_backfill_3(c):
 @task
 def aq_backfill_4(c):
     check_venv()
-    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    c.run('papermill notebooks/airquality/1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
     -p city "scotland" \
     -p street "west-lothian-broxburn" \
     -p aqicn_url "https://api.waqi.info/feed/@6025" \
@@ -116,11 +116,65 @@ def aq_backfill_4(c):
 @task
 def aq_backfill_5(c):
     check_venv()
-    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    c.run('papermill notebooks/airquality/1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
     -p city "scotland" \
     -p street "edinburgh-st-leonards" \
     -p aqicn_url "https://api.waqi.info/feed/@3176" \
     -p csv_file "/data/edinburgh-st leonards-air-quality.csv"')
+
+
+
+@task
+def aq_features_1(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/2_air_quality_feature_pipeline.ipynb output.ipynb \
+    -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "edinburgh-salamander-st" \
+    -p aqicn_url "https://api.waqi.info/feed/@5986"')
+
+
+@task
+def aq_features_2(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/2_air_quality_feature_pipeline.ipynb output.ipynb \
+    -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "edinburgh-queensferry-road" \
+    -p aqicn_url "https://api.waqi.info/feed/@5985"')
+
+@task
+def aq_features_3(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/2_air_quality_feature_pipeline.ipynb output.ipynb \
+    -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "east-lothian-musselburgh-n-high-st" \
+    -p aqicn_url "https://api.waqi.info/feed/@6339"')
+
+@task
+def aq_features_4(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/2_air_quality_feature_pipeline.ipynb output.ipynb \
+    -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "west-lothian-broxburn" \
+    -p aqicn_url "https://api.waqi.info/feed/@6025"')
+
+
+@task
+def aq_features_5(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/2_air_quality_feature_pipeline.ipynb output.ipynb \
+    -p country "united-kingdom" \
+   -p city "scotland" \
+    -p street "edinburgh-st-leonards" \
+    -p aqicn_url "https://api.waqi.info/feed/@3176" ')
+
+@task(pre=[aq_features_1, aq_features_2, aq_features_3, aq_features_4, aq_features_5])
+def aq_features_all(c):
+    """Run all air quality feature pipelines (1-5)."""
+    pass
 
 
 
