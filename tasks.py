@@ -76,6 +76,56 @@ def install_recommender(c):
     c.run("uv pip install -r requirements-llm.txt")
 
 
+@task
+def aq_backfill_1(c):
+    check_venv()
+    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "edinburgh-salamander-st" \
+    -p aqicn_url "https://api.waqi.info/feed/@5986" \
+    -p csv_file "/data/edinburgh-salamander st-air-quality.csv"')
+
+@task
+def aq_backfill_2(c):
+    check_venv()
+    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "edinburgh-queensferry-road" \
+    -p aqicn_url "https://api.waqi.info/feed/@5985" \
+    -p csv_file "/data/edinburgh-queensferry road-air-quality.csv"')
+
+
+@task
+def aq_backfill_3(c):
+    check_venv()
+    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "east-lothian-musselburgh-n-high-st" \
+    -p aqicn_url "https://api.waqi.info/feed/@6339" \
+    -p csv_file "/data/east-lothian musselburgh n high st-air-quality.csv"')
+
+@task
+def aq_backfill_4(c):
+    check_venv()
+    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "west-lothian-broxburn" \
+    -p aqicn_url "https://api.waqi.info/feed/@6025" \
+    -p csv_file "/data/west-lothian broxburn-air-quality.csv"')
+
+@task
+def aq_backfill_5(c):
+    check_venv()
+    c.run('papermill 1_air_quality_feature_backfill.ipynb output.ipynb -p country "united-kingdom" \
+    -p city "scotland" \
+    -p street "edinburgh-st-leonards" \
+    -p aqicn_url "https://api.waqi.info/feed/@3176" \
+    -p csv_file "/data/edinburgh-st leonards-air-quality.csv"')
+
+
+
+
+
 ##########################################
 # Credit Card Fraud Real-Time ML System
 ##########################################
