@@ -2,7 +2,7 @@
 #        conda activate mlsfs
 #	conda install twofish clang -y
 
-include .env
+-include .env
 export $(shell sed 's/=.*//' .env)
 	
 check-venv:
