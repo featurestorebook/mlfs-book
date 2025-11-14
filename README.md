@@ -9,6 +9,11 @@ conda activate mlfs
 python -m pip install --upgrade pip setuptools wheel
 pip install -r ./requirements.txt
 python -m ipykernel install --user --name mlfs --display-name "Python (mlfs)"
+
+<!-- clears out data for a clean pipeline run -->
+make aq-clean
+<!-- runs pipeline -->
+make aq-all
 ```
 
 
