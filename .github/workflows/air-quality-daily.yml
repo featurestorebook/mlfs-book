@@ -3,15 +3,11 @@ name: air-quality-daily
 on:
   workflow_dispatch:
   schedule:
-    - cron: '34 17 * * *'  # Runs daily 06:11 UTC
+    - cron: '40 17 * * *'  # Runs daily 06:11 UTC
 
 jobs:
-  schedule_pipelines:
+  run-pipeline:
     runs-on: ubuntu-latest
-
-    permissions:
-      pages: write
-      contents: write
 
     steps:
       - name: checkout repo content
@@ -21,7 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+
       - name: install python packages
         run: |
           python -m pip install --upgrade pip
@@ -33,22 +29,4 @@ jobs:
         run: |
           ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
           ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
-      - name: github pages publish
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Air Quality Dashboard published"
-          commit_options: '--no-verify --signoff'
 
-          file_pattern: 'docs/air-quality/assets/img/* docs/_includes/*'
-
-          repository: .
-
-          status_options: '--untracked-files=no'
-
-          skip_dirty_check: true
-
-          skip_fetch: true
-
-          skip_checkout: true
-
-          push_options: '--force'
