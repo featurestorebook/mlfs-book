@@ -84,7 +84,7 @@ def get_hourly_weather_forecast(city, latitude, longitude):
     params = {
         "latitude": latitude,
         "longitude": longitude,
-        "hourly": ["temperature_2m", "precipitation", "wind_speed_10m", "wind_direction_10m","relative_humidity_2m_mean", "surface_pressure_mean"]
+        "hourly": ["temperature_2m", "precipitation", "wind_speed_10m", "wind_direction_10m","relative_humidity_2m", "surface_pressure"]
     }
     responses = openmeteo.weather_api(url, params=params)
 
