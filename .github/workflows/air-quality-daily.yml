@@ -3,30 +3,30 @@ name: air-quality-daily
 on:
   workflow_dispatch:
   schedule:
-    - cron: '40 17 * * *'  # Runs daily 06:11 UTC
+    - cron: '42 17 * * *'  # Körs 17:40 UTC varje dag
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout repo content
+      - name: Checkout repo content
         uses: actions/checkout@v4
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: install python packages
+      - name: Install python packages
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install nbconvert
 
-      - name: execute python workflows from bash script
+      - name: Execute pipelines
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
-          ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
-
+          jupyter nbconvert --to notebook --inplace --execute notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+          jupyter nbconvert --to notebook --inplace --execute notebooks/airquality/4_air_quality_batch_inference.ipynb
