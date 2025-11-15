@@ -3,7 +3,7 @@ name: air-quality-daily
 on:
   workflow_dispatch:
   schedule:
-    - cron: '28 18 * * *'
+    - cron: '29 18 * * *'  # Runs daily 06:11 UTC
 
 jobs:
   schedule_pipelines:
@@ -14,41 +14,31 @@ jobs:
       contents: write
 
     steps:
-      - name: checkout repo content
+      - name: Checkout repo content
         uses: actions/checkout@v4
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: install python packages
+
+      - name: Install python packages
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install nbconvert
 
-      - name: execute python workflows from bash script
+      - name: Execute python workflows from notebooks
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
-          ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
-      - name: github pages publish
+          jupyter nbconvert --to notebook --inplace --execute notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+          jupyter nbconvert --to notebook --inplace --execute notebooks/airquality/4_air_quality_batch_inference.ipynb
+
+      - name: Publish to GitHub Pages
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Air Quality Dashboard published"
-          commit_options: '--no-verify --signoff'
-
           file_pattern: 'docs/air-quality/assets/img/* docs/_includes/*'
-
-          repository: .
-
-          status_options: '--untracked-files=no'
-
-          skip_dirty_check: true
-
-          skip_fetch: true
-
-          skip_checkout: true
-
           push_options: '--force'
