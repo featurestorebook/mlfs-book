@@ -8,6 +8,7 @@ on:
 jobs:
   schedule_pipelines:
     runs-on: ubuntu-latest
+    environment: prod
 
     permissions:
       pages: write
@@ -30,6 +31,7 @@ jobs:
       - name: execute python workflows from bash script
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          AQICN_API_KEY: ${{ secrets.AQICN_API_KEY }}
         run: |
           ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
           ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
