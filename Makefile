@@ -48,21 +48,102 @@ cc-deploy:
 
 cc-all: cc-datagen cc-features cc-streaming-features cc-train cc-deploy
 
+CSV_PATH := air-quality-data-holmsjo.csv \
+            air-quality-data-vaxjo.csv \
+            air-quality-data-tingsryds-kommun.csv \
+            air-quality-data-vaxjovagen.csv \
+            air-quality-data-klackens-ostergrand.csv
+
+AQICN_URLS := https://api.waqi.info/feed/A59899 \
+              https://api.waqi.info/feed/A63646 \
+              https://api.waqi.info/feed/A59650 \
+              https://api.waqi.info/feed/A61867 \
+              https://api.waqi.info/feed/A415030
+
+AQICN_COUNTRY := sweden sweden sweden sweden sweden
+AQICN_CITY    := karlskrona kronoberg tingsryds-kommun halmstad halmstad
+AQICN_STREET  := holmsjö vaxjo g-651 växjövägen klackens-östergränd
+
+# Compute list length (all lists assumed equal length)
+NUM_ITEMS := $(words $(CSV_PATH))
+
+# Enable secondary expansion for dynamic variable evaluation
+.SECONDEXPANSION:
+
 aq-clean:
 	python mlfs/clean_hopsworks_resources.py aq
 
-aq-features:
-	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
+# aq-features:
+# 	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
+aq-features: $(addprefix run-, $(shell seq 1 $(NUM_ITEMS)))
 
-aq-train:
-	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb
+# Rule for each index
+# Use secondary expansion to evaluate word function with the index
+run-%:
+	@idx=$*; \
+	csv=$(word $*, $(CSV_PATH)); \
+	url=$(word $*, $(AQICN_URLS)); \
+	country=$(word $*, $(AQICN_COUNTRY)); \
+	city=$(word $*, $(AQICN_CITY)); \
+	street=$(word $*, $(AQICN_STREET)); \
+	echo "Running index $$idx:"; \
+	echo "  CSV      = $$csv"; \
+	echo "  URL      = $$url"; \
+	echo "  COUNTRY  = $$country"; \
+	echo "  CITY     = $$city"; \
+	echo "  STREET   = $$street"; \
+	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street"
 
-aq-inference:
-	ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
-	ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
+aq-train: $(addprefix train-, $(shell seq 1 $(NUM_ITEMS)))
 
-aq-llm:
-	ipython notebooks/airquality/5_function_calling.ipynb
+# Rule for training with each city
+train-%:
+	@idx=$*; \
+	csv=$(word $*, $(CSV_PATH)); \
+	url=$(word $*, $(AQICN_URLS)); \
+	country=$(word $*, $(AQICN_COUNTRY)); \
+	city=$(word $*, $(AQICN_CITY)); \
+	street=$(word $*, $(AQICN_STREET)); \
+	echo "Training for index $$idx:"; \
+	echo "  CITY     = $$city"; \
+	echo "  STREET   = $$street"; \
+	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street"
+
+aq-inference: $(addprefix inference-, $(shell seq 1 $(NUM_ITEMS)))
+
+# Rule for inference with each city
+inference-%:
+	@idx=$*; \
+	csv=$(word $*, $(CSV_PATH)); \
+	url=$(word $*, $(AQICN_URLS)); \
+	country=$(word $*, $(AQICN_COUNTRY)); \
+	city=$(word $*, $(AQICN_CITY)); \
+	street=$(word $*, $(AQICN_STREET)); \
+	echo "Inference for index $$idx:"; \
+	echo "  CITY     = $$city"; \
+	echo "  STREET   = $$street"; \
+	ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street"; \
+	ipython notebooks/airquality/4_air_quality_batch_inference.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street"
+
+aq-llm: $(addprefix llm-, $(shell seq 1 $(NUM_ITEMS)))
+
+# Rule for LLM function calling with each city
+llm-%:
+	@idx=$*; \
+	csv=$(word $*, $(CSV_PATH)); \
+	url=$(word $*, $(AQICN_URLS)); \
+	country=$(word $*, $(AQICN_COUNTRY)); \
+	city=$(word $*, $(AQICN_CITY)); \
+	street=$(word $*, $(AQICN_STREET)); \
+	echo "LLM function calling for index $$idx:"; \
+	echo "  CITY     = $$city"; \
+	echo "  STREET   = $$street"; \
+	ipython notebooks/airquality/5_function_calling.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street"
 
 aq-all: aq-features aq-train aq-inference
 
