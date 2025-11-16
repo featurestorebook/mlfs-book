@@ -178,6 +178,58 @@ def aq_features_all(c):
 
 
 
+@task
+def aq_train_1(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/3_air_quality_training_pipeline.ipynb output.ipynb \
+  -p country "united-kingdom" \
+  -p city "scotland" \
+  -p street "edinburgh-salamander-st" \
+  -p model_number "1"')
+
+
+@task
+def aq_train_2(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/3_air_quality_training_pipeline.ipynb output.ipynb \
+  -p country "united-kingdom" \
+  -p city "scotland" \
+  -p street "edinburgh-queensferry-road" \
+  -p model_number "2"')
+    
+@task
+def aq_train_3(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/3_air_quality_training_pipeline.ipynb output.ipynb \
+  -p country "united-kingdom" \
+  -p city "scotland" \
+  -p street "east-lothian-musselburgh-n-high-st" \
+  -p model_number "3"')
+    
+
+@task
+def aq_train_4(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/3_air_quality_training_pipeline.ipynb output.ipynb \
+  -p country "united-kingdom" \
+  -p city "scotland" \
+  -p street "west-lothian-broxburn" \
+  -p model_number "4"')
+
+
+@task
+def aq_train_5(c):
+    check_venv()
+    c.run('papermill notebooks/airquality/3_air_quality_training_pipeline.ipynb output.ipynb \
+  -p country "united-kingdom" \
+  -p city "scotland" \
+  -p street "edinburgh-st-leonards"  \
+  -p model_number "5"')
+
+@task(pre=[aq_train_1, aq_train_2, aq_train_3, aq_train_4, aq_train_5])
+def aq_train_all(c):
+    """Run all air quality train pipelines (1-5)."""
+    pass
 
 
 ##########################################
