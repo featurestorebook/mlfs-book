@@ -1,0 +1,2 @@
+pm25,country,city,street,date,url,Area
+10.0,Spain,Malaga,Carranque,2025-11-16,https://api.waqi.info/feed/@8488/,Station-8488
