@@ -1,0 +1,76 @@
+# config_sensors.py
+
+SENSORS = [
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "anderston",
+        "aqicn_url": "https://api.waqi.info/feed/@6341",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "broomhill",
+        "aqicn_url": "https://api.waqi.info/feed/@5997",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "burgher-street",
+        "aqicn_url": "https://api.waqi.info/feed/@5998",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "byres-road",
+        "aqicn_url": "https://api.waqi.info/feed/@5999",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "dumbarton-road",
+        "aqicn_url": "https://api.waqi.info/feed/@6000",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "high-street",
+        "aqicn_url": "https://api.waqi.info/feed/@8915/",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "kerbside",
+        "aqicn_url": "https://api.waqi.info/feed/@6001",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "nithsdale-road",
+        "aqicn_url": "https://api.waqi.info/feed/@6002",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    },
+    {
+        "country": "united-kingdom",
+        "city": "glasgow",
+        "street": "townhead",
+        "aqicn_url": "https://api.waqi.info/feed/@6003",
+        "latitude": 55.85237121582031,
+        "longitude": -4.22448730,
+    }
+]
