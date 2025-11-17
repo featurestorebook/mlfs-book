@@ -39,7 +39,7 @@ jobs:
           commit_message: "Air Quality Dashboard published"
           commit_options: '--no-verify --signoff'
 
-          file_pattern: 'docs/air-quality/assets/img/* docs/_includes/*'
+          file_pattern: 'docs/air-quality/assets/img/*, docs/_includes/*'
 
           repository: .
 
