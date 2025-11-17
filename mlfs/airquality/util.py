@@ -298,3 +298,51 @@ def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, 
     df = df.drop('pm25', axis=1)
     monitor_fg.insert(df, write_options={"wait_for_job": True})
     return hindcast_df
+
+def backfill_predictions_for_monitoring_with_lagged_features(weather_fg, air_quality_df, monitor_fg, model):
+    # 1. Read and select recent weather history
+    features_df = weather_fg.read()
+    features_df = features_df.sort_values(by=['date'], ascending=True)
+    features_df = features_df.tail(10)
+
+    # 2. Make sure dates are merge-compatible (drop timezone if present)
+    features_df['date'] = pd.to_datetime(features_df['date']).dt.tz_localize(None)
+    air_quality_df['date'] = pd.to_datetime(air_quality_df['date']).dt.tz_localize(None)
+
+    # 3. Join with air quality to bring in pm25 + lagged features + location
+    #    Assumes air_quality_df has: pm25, pm25_lag_1/2/3, street, country
+    merged = pd.merge(
+        features_df,
+        air_quality_df[['date', 'pm25', 'pm25_lag_1', 'pm25_lag_2', 'pm25_lag_3', 'street', 'country']],
+        on="date",
+        how="inner"
+    )
+
+    # 4. Build feature matrix using the same columns/order as the trained model
+    feature_cols = model.get_booster().feature_names
+    X = merged[feature_cols]
+
+    # 5. Predict pm25
+    merged['predicted_pm25'] = model.predict(X)
+
+    # 6. Add monitoring metadata
+    merged['days_before_forecast_day'] = 1
+
+    # This will be returned (contains both prediction and true pm25)
+    hindcast_df = merged.copy()
+
+    # 7. Drop the outcome column before inserting into the monitoring FG
+    insert_df = merged.drop(columns=['pm25'])
+
+    # (Optional) make sure numeric columns are float32 if your FG expects that
+    # for col in ['temperature_2m_mean', 'precipitation_sum',
+    #             'wind_speed_10m_max', 'wind_direction_10m_dominant',
+    #             'pm25_lag_1', 'pm25_lag_2', 'pm25_lag_3', 'predicted_pm25']:
+    #     if col in insert_df.columns:
+    #         insert_df[col] = insert_df[col].astype('float32')
+
+    # 8. Insert into monitoring feature group
+    monitor_fg.insert(insert_df, write_options={"wait_for_job": True})
+
+    return hindcast_df
+
