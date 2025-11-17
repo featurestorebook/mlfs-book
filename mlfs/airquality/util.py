@@ -190,6 +190,38 @@ def get_pm25(aqicn_url: str, country: str, city: str, street: str, day: datetime
     return aq_today_df
 
 
+def get_pm25_in_city(aqicn_url: str, day: datetime.date, AQI_API_KEY: str):
+    """
+    Returns DataFrame with air quality (pm25) as dataframe
+    """
+    # The API endpoint URL
+    url = f"{aqicn_url}/?token={AQI_API_KEY}"
+
+    # Make a GET request to fetch the data from the API
+    data = trigger_request(url)
+
+    # Check if the API response contains the data
+    if data['status'] == 'ok':
+        # Extract the air quality data
+        aqi_data = data['data']
+        aq_today_df = pd.DataFrame()
+        aq_today_df['pm25'] = [aqi_data['iaqi'].get('pm25', {}).get('v', None)]
+        aq_today_df['pm25'] = aq_today_df['pm25'].astype('float32')
+
+        aq_today_df['country'] = (aqi_data.get("country", {}) or {}).get("name"),
+        aq_today_df['city'] = aqi_data.get("city", {}).get("name"),
+        aq_today_df['street'] = aqi_data.get("station", {}).get("name")
+        aq_today_df['date'] = day
+        aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])
+        aq_today_df['url'] = aqicn_url
+    else:
+        print("Error: There may be an incorrect  URL for your Sensor or it is not contactable right now. The API response does not contain data.  Error message:", data['data'])
+        raise requests.exceptions.RequestException(data['data'])
+
+    return aq_today_df
+
+
+
 def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_path: str, hindcast=False):
     fig, ax = plt.subplots(figsize=(10, 6))
 
