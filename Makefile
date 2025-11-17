@@ -66,6 +66,7 @@ AQICN_STREET  := holmsjö vaxjo g-651 växjövägen klackens-östergränd
 
 # Compute list length (all lists assumed equal length)
 NUM_ITEMS := $(words $(CSV_PATH))
+# NUM_ITEMS := 2
 
 # Enable secondary expansion for dynamic variable evaluation
 .SECONDEXPANSION:
@@ -92,7 +93,7 @@ run-%:
 	echo "  COUNTRY  = $$country"; \
 	echo "  CITY     = $$city"; \
 	echo "  STREET   = $$street"; \
-	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb \
+	time ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb \
 		"$$csv" "$$url" "$$country" "$$city" "$$street"
 
 aq-train: $(addprefix train-, $(shell seq 1 $(NUM_ITEMS)))
@@ -100,50 +101,38 @@ aq-train: $(addprefix train-, $(shell seq 1 $(NUM_ITEMS)))
 # Rule for training with each city
 train-%:
 	@idx=$*; \
-	csv=$(word $*, $(CSV_PATH)); \
-	url=$(word $*, $(AQICN_URLS)); \
-	country=$(word $*, $(AQICN_COUNTRY)); \
 	city=$(word $*, $(AQICN_CITY)); \
-	street=$(word $*, $(AQICN_STREET)); \
 	echo "Training for index $$idx:"; \
 	echo "  CITY     = $$city"; \
 	echo "  STREET   = $$street"; \
 	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb \
-		"$$csv" "$$url" "$$country" "$$city" "$$street"
+		"$$city"
 
 aq-inference: $(addprefix inference-, $(shell seq 1 $(NUM_ITEMS)))
 
 # Rule for inference with each city
 inference-%:
 	@idx=$*; \
-	csv=$(word $*, $(CSV_PATH)); \
-	url=$(word $*, $(AQICN_URLS)); \
-	country=$(word $*, $(AQICN_COUNTRY)); \
 	city=$(word $*, $(AQICN_CITY)); \
-	street=$(word $*, $(AQICN_STREET)); \
-	echo "Inference for index $$idx:"; \
+	echo "Inference with city $$city for index $$idx:"; \
 	echo "  CITY     = $$city"; \
 	echo "  STREET   = $$street"; \
 	ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb \
-		"$$csv" "$$url" "$$country" "$$city" "$$street"; \
+		"$$city" \
 	ipython notebooks/airquality/4_air_quality_batch_inference.ipynb \
-		"$$csv" "$$url" "$$country" "$$city" "$$street"
+		"$$city"
 
 aq-llm: $(addprefix llm-, $(shell seq 1 $(NUM_ITEMS)))
 
 # Rule for LLM function calling with each city
 llm-%:
 	@idx=$*; \
-	csv=$(word $*, $(CSV_PATH)); \
-	url=$(word $*, $(AQICN_URLS)); \
-	country=$(word $*, $(AQICN_COUNTRY)); \
 	city=$(word $*, $(AQICN_CITY)); \
-	street=$(word $*, $(AQICN_STREET)); \
-	echo "LLM function calling for index $$idx:"; \
+	echo "LLM function calling with city $$city for index $$idx:"; \
 	echo "  CITY     = $$city"; \
 	echo "  STREET   = $$street"; \
 	ipython notebooks/airquality/5_function_calling.ipynb \
-		"$$csv" "$$url" "$$country" "$$city" "$$street"
+		""$$city"
 
 aq-all: aq-features aq-train aq-inference
 
