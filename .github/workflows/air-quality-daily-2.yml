@@ -1,9 +1,9 @@
-name: air-quality-daily
+name: air-quality-daily-2
 
 on:
   workflow_dispatch:
-    # schedule:
-    # - cron: '11 6 * * *'
+  schedule:
+    - cron: "11 6 * * *"
 
 jobs:
   schedule_pipelines:
@@ -29,7 +29,7 @@ jobs:
 
       - name: execute python workflows from bash script
         env:
-          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY_2 }}
         run: |
           ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
           ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
