@@ -30,7 +30,6 @@ jobs:
       - name: execute python workflows from bash script
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
-          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
         run: |
           ipython notebooks/daily/1_daily_feature_pipeline.ipynb
           ipython notebooks/daily/2_daily_batch_inference.ipynb
