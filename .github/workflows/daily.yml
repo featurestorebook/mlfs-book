@@ -1,0 +1,36 @@
+name: daily
+
+on:
+  workflow_dispatch:
+    schedule:
+    - cron: '0 7 * * *'
+
+jobs:
+  schedule_pipelines:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      contents: write
+
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: install python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: execute python workflows from bash script
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        run: |
+          ipython notebooks/daily/1_daily_feature_pipeline.ipynb
+          ipython notebooks/daily/2_daily_batch_inference.ipynb
