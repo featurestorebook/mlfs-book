@@ -3,7 +3,7 @@
 This project builds an Air Quality Forecasting Service for an Air Quality sensor available at https://waqi.info/.
 
 
-The output is a forecast for the air quality in Visby, Sweden
+The output is a forecast for the air quality in Visby, Sweden. An example for one of the sensors:
 
 ![Air quality Prediction](https://raw.githubusercontent.com/jpruzcuen/mlfs-book/refs/heads/main/docs/air-quality/assets/img/bromsebrovag_8/pm25_forecast.png)
 
