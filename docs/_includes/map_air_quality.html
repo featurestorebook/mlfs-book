@@ -1,0 +1,447 @@
+<style>
+  :root {
+    --primary: #416fd3;
+    --primary-light: #5b88e8;
+    --success: #32ca24;
+    --danger: #dc2626;
+    --warning: #f59e0b;
+    --bg: #ffffff;
+    --bg-secondary: #f8fafc;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg-secondary);
+    margin: 0;
+    padding: 1rem;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 2rem;
+  }
+
+
+  h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text);
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .control-group {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  select {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    font-size: 0.95rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  select:hover {
+    border-color: var(--primary-light);
+  }
+
+  select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(65, 111, 211, 0.1);
+  }
+
+  #aq-map {
+    width: 100%;
+    height: 450px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #aq-station-details {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  #aq-station-details h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.25rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  #aq-station-details {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  #aq-station-select {
+    margin: 0.5rem 0 0.75rem 0;
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.9rem;
+  }
+
+  #aq-station-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  #aq-station-images figure {
+    margin: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+  }
+
+  #aq-station-images img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  #aq-station-images figcaption {
+    padding: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .aq-marker {
+    background: var(--primary);
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    width: 20px;
+    height: 20px;
+    transform: translate(-10px, -10px);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .aq-marker:hover {
+    transform: translate(-10px, -10px) scale(1.2);
+  }
+
+  .aq-marker-selected {
+    background: rgba(36, 113, 202, 0.6);
+    box-shadow: 0 2px 12px rgba(36, 113, 202, 0.6);
+    width: 24px;
+    height: 24px;
+    transform: translate(-12px, -12px);
+    animation: pulse 2s infinite;
+  }
+
+  .leaflet-marker-icon.aq-marker {
+    background-color: #7c8db1;
+    background-image: none !important;   /* <- quita el icono azul */
+    border-radius: 999px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+    width: 18px;
+    height: 18px;
+    transform: translate(-9px, -9px);
+  }
+
+  .leaflet-marker-icon.aq-marker-selected {
+    background-color: #2450ca;
+    background-image: none !important;
+    box-shadow: 0 0 0 3px rgba(36, 89, 202, 0.5);
+    width: 22px;
+    height: 22px;
+    transform: translate(-11px, -11px);
+  }
+</style>
+
+<h2>🌍 Air Quality Monitoring Dashboard</h2>
+<p class="subtitle">
+  Interactive map of the air quality monitoring stations. Use the dropdown or click
+  on a marker to see details and open the live AQICN page.
+</p>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="aq-station-select">Select Monitoring Station</label>
+    <select id="aq-station-select">
+      <option value="">— Choose a station —</option>
+    </select>
+  </div>
+</div>
+
+<div id="aq-map"></div>
+
+<div id="aq-station-details">
+  <h3>No station selected</h3>
+  <p>Click on any marker or use the dropdown above.</p>
+</div>
+
+<!-- NEW: container for the PNGs -->
+<div id="aq-station-images">
+  <p>No station selected.</p>
+</div>
+
+<!-- Leaflet CSS & JS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet-windy"></script>
+
+<script>
+  // Carga stations.json con fetch. Jekyll resolverá la URL correcta.
+  const stationsUrl = '{{ "/stations.json" | relative_url }}';
+
+  // NEW: base path for images (folders 2850, 2855, etc.)
+  const imgBaseUrl = "assets/img";
+
+  // NUEVO: iconos para los pines
+  const defaultMarkerIcon = L.divIcon({
+    className: "aq-marker",
+    iconSize: [18, 18]
+  });
+
+  const selectedMarkerIcon = L.divIcon({
+    className: "aq-marker aq-marker-selected",
+    iconSize: [22, 22]
+  });
+
+
+  fetch(stationsUrl)
+    .then((resp) => resp.json())
+    .then((stations) => {
+      // Mapa centrado en Viena
+      const map = L.map("aq-map").setView([48.21, 16.37], 12);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+
+      // Wind layer
+      fetch("wind.json")
+        .then(r => r.json())
+        .then(windData => {
+          const windy = L.windy({
+            map: map,
+            data: windData
+          });
+          windy.start();
+        });
+
+      const details = document.getElementById("aq-station-details");
+      const select = document.getElementById("aq-station-select");
+      const images = document.getElementById("aq-station-images"); // NEW
+      const markersByUid = {};
+      let selectedMarker = null;
+
+      // Heatmap layer from station values
+      const values = stations.map(s => s.aqi ?? s.pm25 ?? 50); // fallback if missing
+      console.log(values);
+      //const values = stations.map(s => s.predicted_pm25);
+      const maxValue = Math.max(...values);
+
+      const heatPoints = stations.map((s, i) => {
+        const v = values[i];
+        // normalize 0–1 for Leaflet.heat
+        let intensity = maxValue > 0 ? v / maxValue : 0.5;
+        intensity = Math.sqrt(intensity); //
+
+        return [s.lat, s.lon, intensity];
+      });
+
+      const heatLayer = L.heatLayer(heatPoints, {
+        radius: 55,       // bigger = more “blob”
+        blur: 25,         // smoother edges
+        minOpacity: 0.4,  // don’t fade too much
+        maxZoom: 17,
+        gradient: {       // stronger colors
+          0.0: 'blue',
+          0.3: 'lime',
+          0.6: 'orange',
+          1.0: 'red'
+        }
+      }).addTo(map);
+
+
+      function updateDetails(station) {
+        details.innerHTML = `
+        <h3>
+          ${station.name}
+          <span class="aqi-badge aqi-good">Good AQI</span>
+        </h3>
+        <p><strong>Location:</strong> ${station.street}, ${station.city}, ${station.country}</p>
+        <p><strong>Coordinates:</strong> ${station.lat.toFixed(4)}°N, ${station.lon.toFixed(4)}°E</p>
+        <p><strong>Station ID:</strong> ${station.uid}</p>
+        <a href="${station.url}" target="_blank" rel="noopener">📊 View Live Data on AQICN</a>
+      `;
+      }
+
+      // NEW: update images for a station
+      function updateImages(station) {
+        if (!station) {
+          images.innerHTML = "<p>No station selected.</p>";
+          return;
+        }
+
+        const folder = `${imgBaseUrl}/${station.uid}`;
+
+        images.innerHTML = `
+          <figure>
+            <img src="${folder}/pm25_forecast.png"
+                 alt="PM2.5 forecast for ${station.name}">
+            <figcaption>PM2.5 forecast</figcaption>
+          </figure>
+          <figure>
+            <img src="${folder}/pm25_hindcast_1day.png"
+                 alt="PM2.5 1-day hindcast for ${station.name}">
+            <figcaption>PM2.5 1-day hindcast</figcaption>
+          </figure>
+        `;
+      }
+
+      // Rellena el dropdown
+      stations.forEach((s) => {
+        const opt = document.createElement("option");
+        opt.value = s.uid;
+        opt.textContent = `${s.name} (${s.city})`;
+        select.appendChild(opt);
+      });
+
+      // Crea marcadores
+      stations.forEach((s, index) => {
+        const marker = L.marker([s.lat, s.lon], { icon: defaultMarkerIcon }).addTo(map);
+        marker.bindPopup(`<strong>${s.name}</strong><br/>${s.street}`);
+        markersByUid[s.uid] = { marker, station: s };
+
+        marker.on("click", () => {
+          updateDetails(s);
+          updateImages(s);
+
+          // actualizar dropdown
+          select.value = String(s.uid);
+
+          // resaltar marcador seleccionado
+          if (selectedMarker) {
+            selectedMarker.setIcon(defaultMarkerIcon);
+          }
+          marker.setIcon(selectedMarkerIcon);
+          selectedMarker = marker;
+        });
+
+        // Seleccionar el primero por defecto
+        if (index === 0) {
+          updateDetails(s);
+          updateImages(s);
+          select.value = String(s.uid);
+          marker.setIcon(selectedMarkerIcon);
+          selectedMarker = marker;
+        }
+      });
+
+
+      // Cuando el usuario cambia el select
+      select.addEventListener("change", (e) => {
+        const uid = Number(e.target.value);
+        if (!uid) {
+          details.innerHTML = `
+            <h3>No station selected</h3>
+            <p>Click on any marker or use the dropdown above.</p>
+          `;
+          updateImages(null);
+
+          // deseleccionar marcador
+          if (selectedMarker) {
+            selectedMarker.setIcon(defaultMarkerIcon);
+            selectedMarker = null;
+          }
+          return;
+        }
+
+        const entry = markersByUid[uid];
+        if (entry) {
+          updateDetails(entry.station);
+          updateImages(entry.station);
+
+          // centrar mapa + popup
+          map.setView(entry.marker.getLatLng(), 13);
+          entry.marker.openPopup();
+
+          // actualizar iconos
+          if (selectedMarker) {
+            selectedMarker.setIcon(defaultMarkerIcon);
+          }
+          entry.marker.setIcon(selectedMarkerIcon);
+          selectedMarker = entry.marker;
+        }
+      });
+
+    })
+    .catch((err) => {
+      console.error("Error loading stations.json", err);
+      const details = document.getElementById("aq-station-details");
+      details.innerHTML = "<p style='color:red;'>Error loading stations metadata.</p>";
+    });
+</script>

@@ -1,0 +1,229 @@
+<!-- Leaflet CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+
+<style>
+  #aq-map {
+    width: 100%;
+    height: 500px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin: 2rem 0;
+    background: #f0f0f0;
+  }
+  
+  .intro-text {
+    margin: 1rem 0;
+  }
+  
+  .station-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .station-info h3 {
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .station-info p {
+    margin: 0;
+    opacity: 0.9;
+  }
+  
+  .station-info a {
+    color: white;
+  }
+  
+  .chart-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  .chart-container h3 {
+    margin: 0 0 1rem 0;
+  }
+  
+  .chart-container img {
+    max-width: 100%;
+    border-radius: 6px;
+    display: block;
+  }
+  
+  .chart-container figcaption {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+  }
+  
+  .no-selection {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #999;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #ddd;
+    margin: 2rem 0;
+  }
+</style>
+
+<h2>Monitoring Stations</h2>
+<p class="intro-text">
+  Interactive map of air quality monitoring stations.
+  <strong>Click on a marker</strong> to view PM2.5 predictions for that station.
+</p>
+
+<div id="aq-map"></div>
+
+<div id="station-details">
+  <div class="no-selection">
+    📍 Click on a station marker to view its forecasts
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<script>
+(function() {
+  'use strict';
+  
+  // Station configuration
+  const stations = [
+    {
+      uid: 2860,
+      name: "Ecke Taborstraße - Glockengasse",
+      city: "Vienna",
+      lat: 48.216739,
+      lng: 16.380918,
+      url: "https://aqicn.org/station/@2860/",
+      forecastImg: "./assets/img/s1/pm25_forecast.png",
+      hindcastImg: "./assets/img/s1/pm25_hindcast_1day.png"
+    },
+    {
+      uid: 10009,
+      name: "Hornsgatan 108",
+      city: "Stockholm",
+      lat: 59.3208,
+      lng: 18.0455,
+      url: "https://aqicn.org/station/@10009/",
+      forecastImg: "./assets/img/s2/pm25_forecast.png",
+      hindcastImg: "./assets/img/s2/pm25_hindcast_1day.png"
+    }
+  ];
+
+  function showStationData(station) {
+    const detailsDiv = document.getElementById("station-details");
+    if (!detailsDiv) return;
+    
+    detailsDiv.innerHTML = `
+      <div class="station-info">
+        <h3>${station.name}</h3>
+        <p>
+          <strong>City:</strong> ${station.city} | 
+          <strong>UID:</strong> ${station.uid} | 
+          <a href="${station.url}" target="_blank">View on AQICN →</a>
+        </p>
+      </div>
+      
+      <div class="chart-container">
+        <h3>📊 PM2.5 Forecast</h3>
+        <figure>
+          <img src="${station.forecastImg}" 
+               alt="PM2.5 forecast for ${station.name}" />
+          <figcaption>Predicted PM2.5 levels for ${station.name}</figcaption>
+        </figure>
+      </div>
+      
+      <div class="chart-container">
+        <h3>🎯 Model Performance - 1-Day Hindcast</h3>
+        <figure>
+          <img src="${station.hindcastImg}" 
+               alt="PM2.5 hindcast for ${station.name}" />
+          <figcaption>Predictions vs observed PM2.5 for ${station.name}</figcaption>
+        </figure>
+      </div>
+    `;
+    
+    setTimeout(function() {
+      detailsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  function initMap() {
+    const mapDiv = document.getElementById('aq-map');
+    if (!mapDiv) {
+      console.error('Map div not found');
+      return;
+    }
+
+    try {
+      // Create map
+      const map = L.map('aq-map').setView([53.5, 12.5], 5);
+      
+      // Add tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Add markers
+      stations.forEach(function(station) {
+        const marker = L.marker([station.lat, station.lng]).addTo(map);
+        
+        marker.bindPopup(
+          '<strong>' + station.name + '</strong><br/>' +
+          station.city + '<br/>' +
+          '<small>UID: ' + station.uid + '</small><br/>' +
+          '<em style="color: #667eea;">Click to view data</em>'
+        );
+        
+        marker.on('click', function() {
+          showStationData(station);
+        });
+      });
+
+      // Fix map size
+      setTimeout(function() {
+        map.invalidateSize();
+      }, 250);
+      
+      console.log('Map initialized successfully');
+      
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">Map failed to load. Please refresh the page.</div>';
+    }
+  }
+
+  // Initialize when ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initMap, 100);
+    });
+  } else {
+    setTimeout(initMap, 100);
+  }
+  
+  // Also try on window load as backup
+  window.addEventListener('load', function() {
+    if (!window.mapInitialized) {
+      initMap();
+      window.mapInitialized = true;
+    }
+  });
+})();
+</script>
