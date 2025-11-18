@@ -1,0 +1,92 @@
+[
+  {
+    "uid": 4738,
+    "name": "Floridsdorf",
+    "street": "Floridsdorf, Gerichtsgasse 1a (Prager Str. 65m)",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.261086,
+    "lon": 16.396954,
+    "url": "https://aqicn.org/station/@4738/"
+  },
+  {
+    "uid": 4739,
+    "name": "Schafbergbad",
+    "street": "Schafbergbad, Josef Redl Gasse 2, Gstr.Nr. 698",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.235370,
+    "lon": 16.301563,
+    "url": "https://aqicn.org/station/@4739/"
+  },
+  {
+    "uid": 4736,
+    "name": "Wehlistraße",
+    "street": "Wehlistraße 366, Gstr.Nr.2157",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.203060,
+    "lon": 16.434550,
+    "url": "https://aqicn.org/station/@4736/"
+  },
+  {
+    "uid": 14537,
+    "name": "Allgemeines Krankenhaus (AKH)",
+    "street": "Ostringweg (zwischen Gebäuden BT25)",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.219110,
+    "lon": 16.349818,
+    "url": "https://aqicn.org/station/@14537/"
+  },
+  {
+    "uid": 2855,
+    "name": "Hausgrundweg",
+    "street": "Hausgrundweg 23, Gstr. 254",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.226361,
+    "lon": 16.458345,
+    "url": "https://aqicn.org/station/@2855/"
+  },
+  {
+    "uid": 2857,
+    "name": "Gaudenzdorfer Gürtel",
+    "street": "Umspannwerk Gaudenzdorfer Gürtel",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.187147,
+    "lon": 16.339331,
+    "url": "https://aqicn.org/station/@2857/"
+  },
+  {
+    "uid": 2850,
+    "name": "Kendlerstraße",
+    "street": "Kendlerstraße 40 (Umspannwerk)",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.205000,
+    "lon": 16.309750,
+    "url": "https://aqicn.org/station/@2850/"
+  },
+  {
+    "uid": 2870,
+    "name": "Belgradplatz",
+    "street": "Belgradplatz (Südostecke), Gstr.Nr. 816",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.174353,
+    "lon": 16.361417,
+    "url": "https://aqicn.org/station/@2870/"
+  },
+  {
+    "uid": 2860,
+    "name": "Taborstraße",
+    "street": "Ecke Taborstraße - Glockengasse",
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.216739,
+    "lon": 16.380918,
+    "url": "https://aqicn.org/station/@2860/"
+  }
+]

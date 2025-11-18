@@ -2,8 +2,8 @@ name: air-quality-daily
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '11 6 * * *'
+    schedule:
+     - cron: '11 6 * * *'
 
 jobs:
   schedule_pipelines:
@@ -20,26 +20,49 @@ jobs:
       - name: setup python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
           cache: 'pip'
+
       - name: install python packages
         run: |
+          cd .
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: execute python workflows from bash script
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
-          AQICN_API_KEY: ${{ secrets.AQICN_API_KEY }}
-          AQICN_URL: ${{ secrets.AQICN_URL }}
-          AQICN_COUNTRY: ${{ secrets.AQICN_COUNTRY }}
-          AQICN_CITY: ${{ secrets.AQICN_CITY }}
-          AQICN_STREET: ${{ secrets.AQICN_STREET }}
-
         run: |
+          set -e
           cd notebooks/airquality
-          jupyter nbconvert --to notebook --execute 2_air_quality_feature_pipeline.ipynb
-          jupyter nbconvert --to notebook --execute 4_air_quality_batch_inference.ipynb
+
+          # List of ALL station secret names (Hopsworks secrets)
+          for SENSOR_NAME in \
+            SENSOR_LOCATION_JSON_belgradplatz--s--dostecke---gstr-nr--816 \
+            SENSOR_LOCATION_JSON_ecke-taborstra--e---glockengasse \
+            SENSOR_LOCATION_JSON_floridsdorf--gerichtsgasse-1a--prager-str--65m \
+            SENSOR_LOCATION_JSON_hausgrundweg-23--gstr--254 \
+            SENSOR_LOCATION_JSON_kendlerstra--e-40--umspannwerk \
+            SENSOR_LOCATION_JSON_ostringweg--zwischen-geb--uden-bt25 \
+            SENSOR_LOCATION_JSON_schafbergbad--josef-redl-gasse-2--gstr-nr--698 \
+            SENSOR_LOCATION_JSON_umspannwerk-gaudenzdorfer-g--rtel \
+            SENSOR_LOCATION_JSON_wehlistra--e-366--gstr-nr-2157
+          do
+            echo "=================================================="
+            echo "Running feature & hindcast pipeline for ${SENSOR_NAME}"
+            echo "=================================================="
+
+            # Pass the secret NAME to the notebook
+            export SENSOR_LOCATION_JSON="${SENSOR_NAME}"
+
+            # Book 2 – feature pipeline for this station
+            jupyter nbconvert --to notebook --execute 2_scale_air_quality_feature_pipeline.ipynb
+
+            # Book 4 – batch inference / hindcast for this station
+            jupyter nbconvert --to notebook --execute 4_sliding_window_air_quality_batch_inference.ipynb
+          done
+
+
       - name: github pages publish
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
