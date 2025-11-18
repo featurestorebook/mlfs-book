@@ -7,11 +7,9 @@
 
 ## Sensor 1: Brömsebroväg 8
 
-### Forecast
+Forecast
 
 ![Forecast](./assets/img/bromsebrovag_8/pm25_forecast.png)
-
-### Model Performance Monitoring
 
 1-Day Hindcast: Predictions vs Outcomes
 
@@ -19,11 +17,9 @@
 
 ### Sensor 2: Österväg 17
 
-### Forecast
+Forecast
 
 ![Forecast](./assets/img/ostervag_17/pm25_forecast.png)
-
-### Model Performance Monitoring
 
 1-Day Hindcast: Predictions vs Outcomes
 
