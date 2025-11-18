@@ -3,32 +3,15 @@
 This project builds an Air Quality Forecasting Service for an Air Quality sensor available at https://waqi.info/.
 
 
-The output is a forecast for air quality, like this one:
+The output is a forecast for the air quality in Visby, Sweden. An example for one of the sensors:
 
-![Air quality Prediction](https://featurestorebook.github.io/mlfs-book/air-quality/assets/img/pm25_forecast.png)
+![Air quality Prediction](https://raw.githubusercontent.com/jpruzcuen/mlfs-book/refs/heads/main/docs/air-quality/assets/img/bromsebrovag_8/pm25_forecast.png)
+
 
 
 ## Personalized Air Quality Predictions with a LLM
 
-This air quality forecasting service has been augmented with LLM capabilities. You can ask it both future (forecasting) and historical questions about air quality at your location via a microphone or text input dialog.
+This air quality forecasting service has been augmented with some features including lagged measurements of PM25 for 1, 2 and 3 days. These are good short term indicators of the air quality. In addition, rolling averages with windows 3, 7 and 14 days are also used as features to include the longer trends in the air quality.
 
-We augment the prompt with:
- * your location,
- * today’s date,
- * predicted air quality (from a ML model),
- * historical air quality (from the feature store),
- * are you in a sensitive group (coming soon).
-
-
-![Personalized Air Quality with LLMs Architecture](personalized-air-quality-with-llms.png)
-
-
-## Application Architecture
-
-![Application Architecture Air Quality with LLMs Architecture](app-air-quality-with-llms.png)
-
-
-## Tutorial Instructions
-
-You can find [instructions for running this tutorial in this Google Doc](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing).
+In addition, 2 sensors for Visby are being automatically monitored, with forecasts and hindcasts run in a daily schedule.
 
