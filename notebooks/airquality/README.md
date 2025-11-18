@@ -5,7 +5,7 @@ This project builds an Air Quality Forecasting Service for an Air Quality sensor
 
 The output is a forecast for the air quality in Visby, Sweden
 
-![Air quality Prediction](https://featurestorebook.github.io/mlfs-book/air-quality/assets/img/bromsebrovag_8/pm25_forecast.png)
+![Air quality Prediction](https://raw.githubusercontent.com/jpruzcuen/mlfs-book/refs/heads/main/docs/air-quality/assets/img/bromsebrovag_8/pm25_forecast.png)
 
 
 
