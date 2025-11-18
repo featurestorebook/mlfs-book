@@ -12,7 +12,7 @@ Our solution goes significantly beyond the single-sensor example by supporting:
 - Lag features (t-1, t-2, t-3) computed per station
 - Parametrized pipelines
 - Daily batch inference for every station
-- A dashboard with a map and interactive station-level forecasts. See the dashboard here: [Vienna Air Quality Dashboard](https://lpareja99.github.io/mlfs-book/air-quality/)
+- A dashboard with a map and interactive station-level forecasts. See the dashboard here: [Vienna Air Quality Dashboard](https://loretapajaziti.github.io/mlfs-book/air-quality/)
 
 
 
