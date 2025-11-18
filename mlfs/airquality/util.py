@@ -287,14 +287,67 @@ def check_file_path(file_path):
     else:
         print(f"File successfully found at the path: {file_path}")
 
-def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, model):
-    features_df = weather_fg.read()
-    features_df = features_df.sort_values(by=['date'], ascending=True)
-    features_df = features_df.tail(10)
-    features_df['predicted_pm25'] = model.predict(features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']])
-    df = pd.merge(features_df, air_quality_df[['date','pm25','street','country']], on="date")
-    df['days_before_forecast_day'] = 1
-    hindcast_df = df
-    df = df.drop('pm25', axis=1)
-    monitor_fg.insert(df, write_options={"wait_for_job": True})
+def make_features(df):
+    df = df.copy()
+    df = df.set_index("date")
+
+    # lag features
+    for lag in [1, 2, 3]:
+        df[f"pm25_lag{lag}"] = df["pm25"].shift(lag)
+
+    # rolling windows
+    for window in [3, 7, 14]:
+        df[f"pm25_roll{window}"] = df["pm25"].shift(1).rolling(window).mean()
+
+    df = df.reset_index()
+    return df
+
+
+def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, model, feature_columns):
+    
+    weather_df = weather_fg.read()
+
+    if feature_columns is not ['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']:
+        df = pd.merge(weather_df,air_quality_df[["date", "pm25"]],on="date",how="left")
+        df = df.sort_values("date").tail(50)
+        features_df = make_features(df)
+
+    else:
+        features_df = weather_df.copy()
+
+    features_df["predicted_pm25"] = model.predict(features_df[feature_columns])
+
+    
+
+    hindcast_df = features_df[["date","temperature_2m_mean","precipitation_sum","wind_speed_10m_max",
+        "wind_direction_10m_dominant","predicted_pm25","pm25"]]
+
+    # print(features_df.columns)
+    # print(hindcast_df.columns)
+
+    insert_df = features_df.copy()
+
+    # Merge to get street and country
+    insert_df = insert_df.merge(
+        air_quality_df[['date', 'city', 'street', 'country']],
+        on=['date', 'city'],
+        how='left'
+    )
+
+    # Add required column for monitoring
+    insert_df['days_before_forecast_day'] = 1
+
+    # Keep only the columns that exist in the Feature Group
+    insert_df = insert_df[
+        ['date', 'temperature_2m_mean', 'precipitation_sum', 
+        'wind_speed_10m_max', 'wind_direction_10m_dominant',
+        'city', 'street', 'country', 'predicted_pm25', 'days_before_forecast_day']
+    ]
+    insert_df = insert_df.dropna()
+
+    monitor_fg.insert(insert_df, write_options={"wait_for_job": True})
+
+    
     return hindcast_df
+
+
