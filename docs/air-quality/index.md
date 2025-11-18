@@ -1,19 +1,31 @@
-import os
+# Air Quality in Visby, Sweden
 
-img_dir = "docs/air-quality/assets/img"
-sensors = [d for d in os.listdir(img_dir) if os.path.isdir(os.path.join(img_dir, d))]
-sensors.sort()
+![Hopsworks Logo](../titanic/assets/img/logo.png)
 
-dashboard_md = "# Air Quality Dashboard\n\n"
+{% include air-quality.html %}
 
-# Include logo at the top
-dashboard_md += "![Hopsworks Logo](../titanic/assets/img/logo.png)\n\n"
 
-for sensor in sensors:
-    dashboard_md += f"## Sensor: {sensor}\n\n"
-    dashboard_md += f"![Forecast](./assets/img/{sensor}/pm25_forecast.png)\n\n"
-    dashboard_md += f"![Hindcast](./assets/img/{sensor}/pm25_hindcast_1day.png)\n\n"
+## Sensor 1: Brömsebroväg 8
 
-dashboard_file = "docs/air-quality/index.md"
-with open(dashboard_file, "w") as f:
-    f.write(dashboard_md)
+### Forecast
+
+![Forecast](./assets/img/bromsebrovag_8/pm25_forecast.png)
+
+### Model Performance Monitoring
+
+1-Day Hindcast: Predictions vs Outcomes
+
+![Hindcast](./assets/img/bromsebrovag_8/pm25_hindcast_1day.png)
+
+### Sensor 2: Österväg 17
+
+### Forecast
+
+![Forecast](./assets/img/ostervag_17/pm25_forecast.png)
+
+### Model Performance Monitoring
+
+1-Day Hindcast: Predictions vs Outcomes
+
+![Hindcast](./assets/img/ostervag_17/pm25_hindcast_1day.png)
+
