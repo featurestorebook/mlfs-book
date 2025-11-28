@@ -1,17 +1,27 @@
-# Air Quality Dashboard
+# Air Quality in Visby, Sweden
 
 ![Hopsworks Logo](../titanic/assets/img/logo.png)
 
 {% include air-quality.html %}
 
-![Forecast](./assets/img/pm25_forecast.png)
 
+## Sensor 1: Brömsebroväg 8
 
-There is also a Python program to interact with the air quality ML system using language (text, voice),
-powered by a [function-calling LLM](https://www.hopsworks.ai/dictionary/function-calling-with-llms).
+Forecast
 
-# Model Performance Monitoring
+![Forecast](./assets/img/bromsebrovag_8/pm25_forecast.png)
 
 1-Day Hindcast: Predictions vs Outcomes
 
-![Hindcast](./assets/img/pm25_hindcast_1day.png)
+![Hindcast](./assets/img/bromsebrovag_8/pm25_hindcast_1day.png)
+
+### Sensor 2: Österväg 17
+
+Forecast
+
+![Forecast](./assets/img/ostervag_17/pm25_forecast.png)
+
+1-Day Hindcast: Predictions vs Outcomes
+
+![Hindcast](./assets/img/ostervag_17/pm25_hindcast_1day.png)
+
