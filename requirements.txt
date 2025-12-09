@@ -11,3 +11,4 @@ matplotlib
 #==3.8.3
 seaborn
 nbformat
+Faker==38.2.0
