@@ -61,28 +61,26 @@ class HopsworksSettings(BaseSettings):
     def model_post_init(self, __context):
         """Runs after the model is initialized."""
         print("HopsworksSettings initialized!")
+        missing = []
 
         # Set environment variables if not already set
         if os.getenv("HOPSWORKS_API_KEY") is None:
             if self.HOPSWORKS_API_KEY is not None:
                 os.environ['HOPSWORKS_API_KEY'] = self.HOPSWORKS_API_KEY.get_secret_value()
+            else:
+                missing.append("HOPSWORKS_API_KEY")
+        api_key = os.getenv("HOPSWORKS_API_KEY")
+
+        aqicn_api_key = os.getenv("AQICN_API_KEY")
+        if not aqicn_api_key:
+            missing.append("AQICN_API_KEY")
+
         if os.getenv("HOPSWORKS_PROJECT") is None:
             if self.HOPSWORKS_PROJECT is not None:
                 os.environ['HOPSWORKS_PROJECT'] = self.HOPSWORKS_PROJECT
         if os.getenv("HOPSWORKS_HOST") is None:
             if self.HOPSWORKS_HOST is not None:
                 os.environ['HOPSWORKS_HOST'] = self.HOPSWORKS_HOST
-
-        # --- Check required .env values ---
-        missing = []
-        # 1. HOPSWORKS_API_KEY
-        api_key = self.HOPSWORKS_API_KEY or os.getenv("HOPSWORKS_API_KEY")
-        if not api_key:
-            missing.append("HOPSWORKS_API_KEY")
-        # 2. AQICN_API_KEY
-        aqicn_api_key = self.AQICN_API_KEY or os.getenv("AQICN_API_KEY")
-        if not aqicn_api_key:
-            missing.append("AQICN_API_KEY")
 
         if missing:
             raise ValueError(

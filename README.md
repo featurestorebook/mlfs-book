@@ -13,7 +13,12 @@ O'Reilly book - Building Machine Learning Systems with a feature store: batch, r
 See [tutorial instructions here](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing)
     
 # Create a conda or virtual environment for your project before you install the requirements
-    pip install -r requirements.txt
+
+    pip install uv
+    uv venv --python=3.11
+    source .venv/bin/activate
+    uv pip install -r requirements.txt
+    uv pip install -r cc-requirements.txt
 
 
 ##  Run pipelines with make commands

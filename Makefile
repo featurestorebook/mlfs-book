@@ -35,10 +35,11 @@ cc-gen-kafka:
 	ipython notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb
 
 cc-features:
-	ipython notebooks/ccfraud/1-batch-polars-feature-pipeline.ipynb
+	ipython notebooks/ccfraud/3-batch-feature-pipeline.ipynb
 
 cc-streaming-features:
-	ipython notebooks/ccfraud/1-streaming-feature-pipeline-feldera.ipynb
+	./scripts/1a-run-feldera.sh
+	ipython notebooks/ccfraud/1b-synthetic-stream-transactions.ipynb
 
 cc-train:
 	ipython notebooks/ccfraud/
