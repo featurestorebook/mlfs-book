@@ -28,7 +28,7 @@ cc-clean:
 	python mlfs/clean_hopsworks_resources.py cc
 
 cc-datagen:
-	ipython notebooks/ccfraud/0-data-generation-with-polars.ipynb
+	ipython --InteractiveShellApp.extensions=[] notebooks/ccfraud/0-data-generation-with-polars.ipynb
 
 cc-gen-kafka:
 	ipython notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb

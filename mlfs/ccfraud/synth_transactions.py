@@ -649,13 +649,14 @@ def generate_credit_card_transactions_from_existing(
 # Feature group helper - add account_id description
 # ---------------------------
 
-def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, 
-                                           features=None, time_travel_format="HUDI"):
+def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None,
+                                           topic_name=None, online_enabled=True, features=None,
+                                           time_travel_format="DELTA"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
     if topic_name is None:
         try:
-            topic_name = fs.name.removesuffix("_featurestore")
+            topic_name = fs.name.removesuffix("_featurestore") + "_onlinefs"
         except Exception:
             topic_name = None
 
