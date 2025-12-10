@@ -24,28 +24,27 @@ install-recommender: check-venv
 cc-start-ui:
 	python -m streamlit streamlit_app.py
  
-
 cc-clean:
 	python mlfs/clean_hopsworks_resources.py cc
 
 cc-datagen:
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/0-data-generation-with-polars.ipynb
+	ipython notebooks/ccfraud/0-data-generation-with-polars.ipynb
 
 cc-gen-kafka:
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb
+	ipython notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb
 
 cc-features:
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/3-batch-feature-pipeline.ipynb
+	ipython notebooks/ccfraud/3-batch-feature-pipeline.ipynb
 
 cc-streaming-features:
 	./scripts/1a-run-feldera.sh
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/1b-synthetic-stream-transactions.ipynb
+	ipython notebooks/ccfraud/1b-synthetic-stream-transactions.ipynb
 
 cc-train:
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/
+	ipython notebooks/ccfraud/
 
 cc-deploy:
-	jupyter nbconvert --to notebook --execute notebooks/ccfraud/
+	ipython notebooks/ccfraud/
 
 cc-all: cc-datagen cc-features cc-streaming-features cc-train cc-deploy
 
@@ -53,17 +52,17 @@ aq-clean:
 	python mlfs/clean_hopsworks_resources.py aq
 
 aq-features:
-	jupyter nbconvert --to notebook --execute notebooks/airquality/1_air_quality_feature_backfill.ipynb
+	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
 
 aq-train:
-	jupyter nbconvert --to notebook --execute notebooks/airquality/3_air_quality_training_pipeline.ipynb
+	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb
 
 aq-inference:
-	jupyter nbconvert --to notebook --execute notebooks/airquality/2_air_quality_feature_pipeline.ipynb
-	jupyter nbconvert --to notebook --execute notebooks/airquality/4_air_quality_batch_inference.ipynb
+	ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+	ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
 
 aq-llm:
-	jupyter nbconvert --to notebook --execute notebooks/airquality/5_function_calling.ipynb
+	ipython notebooks/airquality/5_function_calling.ipynb
 
 aq-all: aq-features aq-train aq-inference
 
@@ -71,14 +70,14 @@ titanic-clean:
 	python mlfs/clean_hopsworks_resources.py titanic
 
 titanic-features:
-	jupyter nbconvert --to notebook --execute notebooks/titanic/1-titanic-feature-group-backfill.ipynb
+	ipython notebooks/titanic/1-titanic-feature-group-backfill.ipynb
 
 titanic-train:
-	jupyter nbconvert --to notebook --execute notebooks/titanic/2-titanic-training-pipeline.ipynb
+	ipython notebooks/titanic/2-titanic-training-pipeline.ipynb
 
 titanic-inference:
-	jupyter nbconvert --to notebook --execute notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
-	jupyter nbconvert --to notebook --execute notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
+	ipython notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
+	ipython notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
 
 titanic-all: titanic-features titanic-train titanic-inference
 
