@@ -71,11 +71,12 @@ class HopsworksSettings(BaseSettings):
                 # If you are running inside Hopsworks, HOPSWORKS_PROJECT_ID is set
                 if os.getenv("HOPSWORKS_PROJECT_ID") is None:
                     missing.append("HOPSWORKS_API_KEY")
-        api_key = os.getenv("HOPSWORKS_API_KEY")
 
-        aqicn_api_key = os.getenv("AQICN_API_KEY")
+        aqicn_api_key = self.AQICN_API_KEY or os.getenv("AQICN_API_KEY")
         if not aqicn_api_key:
             missing.append("AQICN_API_KEY")
+        else:
+            self.AQICN_API_KEY = aqicn_api_key
 
         if os.getenv("HOPSWORKS_PROJECT") is None:
             if self.HOPSWORKS_PROJECT is not None:

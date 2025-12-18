@@ -1,6 +1,11 @@
 import hopsworks
 import sys
 
+sys.path.append(".")
+from mlfs import config
+
+settings = config.HopsworksSettings(_env_file=".env")
+
 files_to_clean=""
 if len(sys.argv) != 2:
     print("Usage: <prog> project_to_clean (e.g., cc or aq or titanic)")

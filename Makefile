@@ -31,20 +31,20 @@ cc-datagen:
 	ipython --InteractiveShellApp.extensions=[] notebooks/ccfraud/0-data-generation-with-polars.ipynb
 
 cc-gen-kafka:
-	ipython notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/ccfraud/transactions_synthetic_kafka_generator.ipynb
 
 cc-features:
-	ipython notebooks/ccfraud/3-batch-feature-pipeline.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/ccfraud/3-batch-feature-pipeline.ipynb
 
 cc-streaming-features:
 	./scripts/1a-run-feldera.sh
-	ipython notebooks/ccfraud/1b-synthetic-stream-transactions.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/ccfraud/1b-synthetic-stream-transactions.ipynb
 
 cc-train:
-	ipython notebooks/ccfraud/
+	ipython  --InteractiveShellApp.extensions=[] notebooks/ccfraud/
 
 cc-deploy:
-	ipython notebooks/ccfraud/
+	ipython  --InteractiveShellApp.extensions=[] notebooks/ccfraud/
 
 cc-all: cc-datagen cc-features cc-streaming-features cc-train cc-deploy
 
@@ -52,17 +52,17 @@ aq-clean:
 	python mlfs/clean_hopsworks_resources.py aq
 
 aq-features:
-	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/airquality/1_air_quality_feature_backfill.ipynb
 
 aq-train:
-	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/airquality/3_air_quality_training_pipeline.ipynb
 
 aq-inference:
-	ipython notebooks/airquality/2_air_quality_feature_pipeline.ipynb
-	ipython notebooks/airquality/4_air_quality_batch_inference.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/airquality/2_air_quality_feature_pipeline.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/airquality/4_air_quality_batch_inference.ipynb
 
 aq-llm:
-	ipython notebooks/airquality/5_function_calling.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/airquality/5_function_calling.ipynb
 
 aq-all: aq-features aq-train aq-inference
 
@@ -70,14 +70,14 @@ titanic-clean:
 	python mlfs/clean_hopsworks_resources.py titanic
 
 titanic-features:
-	ipython notebooks/titanic/1-titanic-feature-group-backfill.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/titanic/1-titanic-feature-group-backfill.ipynb
 
 titanic-train:
-	ipython notebooks/titanic/2-titanic-training-pipeline.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/titanic/2-titanic-training-pipeline.ipynb
 
 titanic-inference:
-	ipython notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
-	ipython notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/titanic/scheduled-titanic-feature-pipeline-daily.ipynb
+	ipython  --InteractiveShellApp.extensions=[] notebooks/titanic/scheduled-titanic-batch-inference-daily.ipynb
 
 titanic-all: titanic-features titanic-train titanic-inference
 

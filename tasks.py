@@ -1,32 +1,30 @@
 from invoke import task
 import os
 import sys
+from pathlib import Path
 
-# Load environment variables from .env
-from dotenv import load_dotenv
-load_dotenv()
-
+VENV_DIR= Path(".venv")
 
 def check_venv():
-    """Check if a virtual environment or Conda environment is active."""
-    conda_env = os.environ.get("CONDA_DEFAULT_ENV")
-    if conda_env:
-        print(f"You are in a Conda environment: {conda_env}")
-    elif hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix):
-        print("You are running in a Python virtual environment.")
-    else:
-        print("No virtual environment or Conda environment detected. Please create and activate one first.")
-        sys.exit(1)
+    """Check if a virtual environment exists and is active."""
 
+    # 1. Create venv if it doesn't exist
+    if not VENV_DIR.exists():
+        print("🔧 There is no virtual environment. Did you run the setup step yet?")
+        print("👉 ./setup-env.sh")
+        sys.exit(2) 
 
-@task
-def install(c):
-    """Install dependencies using uv and pip."""
-    check_venv()
-    c.run("pip install uv")
-    c.run("uv pip install -r requirements.txt")
+    virtual_env = os.environ.get("VIRTUAL_ENV")
+    venv_path = str(VENV_DIR.resolve())
 
+    if virtual_env != venv_path:
+        print("🐍 Virtual environment is NOT active.")
+        print()
+        print("👉 Activate it with:")
+        print(f"   source {VENV_DIR}/bin/activate")
+        sys.exit(1) 
 
+    
 ##########################################
 # Air Quality Batch ML System
 ##########################################

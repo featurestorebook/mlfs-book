@@ -1,41 +1,13 @@
 [project]
-name = "mlfs-book"
+name = "mlfs-air-quality"
 version = "0.1.0"
-description = "Build AI Systems with a Feature Store"
+description = "Build Air Quality AI System with Hopsworks"
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = "~=3.11"
 authors = [
     { name="Jim Dowling", email="jim@hopsworks.ai" },
 ]
-dependencies = [
-    "hopsworks[python,polars,great-expectations]>=4.1.2",
-    "feldera>=0.33.0",
-    "huggingface-hub==0.24.7",
-    "ipykernel>=6.29.5",
-    "sentence-transformers==2.2.2",
-    "streamlit==1.28.2",
-    "email-validator==2.2.0",
-    "pydantic-settings>=2.6.1",
-    "geopy==2.4.1",
-    "openmeteo-requests",
-    "requests-cache==1.2.0",
-    "retry-requests==2.0.0",
-    "xgboost==2.0.3",
-    "scikit-learn==1.2.2",
-    "plotly",
-    "seaborn",
-    "nbformat",
-    "Faker",
-    "matplotlib==3.8.3"
-]
-
-#getpass4==0.0.14.1
-#transformers==4.38.2
-#langchain==0.1.10
-#bitsandbytes==0.42.0
-#accelerate==0.27.2
-#openai==1.14.3
 
 [tool.poe]
 executor.type = "uv"
@@ -54,7 +26,7 @@ test = [
 ]
 
 [tool.setuptools]
-packages = ["tests/feature-tests","tests/ai-pipeline-tests"]
+packages = ["tests/feature-tests","tests/pipeline-tests"]
 
 
 # Following styling form https://madewithml.com/courses/mlops/styling/
