@@ -4,8 +4,8 @@ geopy==2.4.1
 openmeteo-requests
 requests-cache==1.2.0
 retry-requests==2.0.0
-xgboost==2.0.3
-scikit-learn
+xgboost>=2.1.0
+scikit-learn==1.4.0
 matplotlib
 seaborn
 nbformat

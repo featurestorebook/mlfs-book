@@ -111,7 +111,7 @@ if files_to_clean == "cc":
     
     
     for feature_view in [
-        #"",
+        "cc_fraud_fv",
     ]:
         delete_feature_view(feature_view)
     
@@ -126,8 +126,7 @@ if files_to_clean == "cc":
         "cc_trans_fg",
         "merchant_fg",
         "account_fg",
-        "bank_fg",
-        "cc_trans_aggs_fg"
+        "bank_fg"
     ]:
         delete_feature_group(feature_group)
 

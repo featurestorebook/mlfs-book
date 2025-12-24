@@ -93,10 +93,6 @@ if [ -f "$ENV_FILE" ]; then
     echo "  5. Edit $ENV_FILE and set:"
     echo "     HOPSWORKS_API_KEY=<your-api-key-here>"
     echo ""
-    echo "You'll also need an AQICN API key for air quality data:"
-    echo "  - Register at: https://aqicn.org/api/"
-    echo "  - Add it to $ENV_FILE as AQICN_API_KEY=<your-key>"
-    echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
   else

@@ -1,0 +1,6 @@
+hopsworks[python,great-expectations]
+pydantic-settings>=2.6.1
+xgboost>=2.1.0
+scikit-learn
+matplotlib
+seaborn

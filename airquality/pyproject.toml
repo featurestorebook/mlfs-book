@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Build Air Quality AI System with Hopsworks"
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = "~=3.11"
+requires-python = ">=3.7,<=3.11"
 authors = [
     { name="Jim Dowling", email="jim@hopsworks.ai" },
 ]

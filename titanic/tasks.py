@@ -61,66 +61,59 @@ def check_venv():
 
     
 ##########################################
-# Air Quality Batch ML System
+# Titanic Batch ML System
 ##########################################
 
 @task
 def clean(c):
-    """Deletes feature groups, feature views, models for air quality."""
+    """Removes all feature groups, feature views, models, deployments for this example."""
     check_venv()
     with c.cd(".."):
         print("#################################################")
         print("################## Cleanup   ####################")
         print("#################################################")
-        c.run("uv run python mlfs/clean_hopsworks_resources.py aq")
+        c.run("uv run python mlfs/clean_hopsworks_resources.py titanic")
 
 @task
 def backfill(c):
-    """Creates feature groups, backfills air quality and weather data."""
+    """Creates the feature groups and inserts synthetic data."""
     check_venv()
     print("#################################################")
     print("########## Backfill Feature Pipeline   ##########")
     print("#################################################")
-    c.run("uv run ipython notebooks/1_air_quality_feature_backfill.ipynb")
+    c.run("uv run ipython notebooks/1-titanic-feature-group-backfill.ipynb")
 
 @task
 def features(c):
-    """Incremental ingestion of historical weather data, air quality data, and weather forecast data."""
+    """Incremental addition of synthetic data to the feature groups."""
     check_venv()
     print("#################################################")
     print("######### Incremental Feature Pipeline  #########")
     print("#################################################")
-    c.run("uv run ipython notebooks/2_air_quality_feature_pipeline.ipynb")
+    c.run("uv run ipython notebooks/3-scheduled-titanic-feature-pipeline-daily.ipynb")
 
 @task
 def train(c):
-    """Creates feature view, reads training data with feature view, trains and saves XGBoost model to predict air quality."""
+    """Creates a feature view, gets training data, and trains and saves the XGBoost model."""
     check_venv()
     print("#################################################")
     print("############# Training Pipeline #################")
     print("#################################################")
-    c.run("uv run ipython notebooks/3_air_quality_training_pipeline.ipynb")
+    c.run("uv run ipython notebooks/2-titanic-training-pipeline.ipynb")
 
 @task
 def inference(c):
-    """Batch inference program that reads weather forecast from feature store, then predicts air quality, outputs PNG forecasts."""
+    """Downloads model and feature view, Uses feature view to get inference data and predicts with the model."""
     check_venv()
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run("uv run ipython notebooks/2_air_quality_feature_pipeline.ipynb")
-    c.run("uv run ipython notebooks/4_air_quality_batch_inference.ipynb")
+    c.run("uv run ipython notebooks/4-scheduled-titanic-batch-inference-daily.ipynb")
 
-
-@task
-def llm(c):
-    """Uses function calling to answer questions about air quality."""
-    check_venv()
-    c.run("uv run ipython notebooks/5_function_calling.ipynb")
 
 @task(pre=[backfill, features, train, inference])
 def all(c):
-    """Runs all FTI pipelines in order, outputs air quality predictions."""
+    """Runs all the FTI pipelines in order."""
     pass
 
 
