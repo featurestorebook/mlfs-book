@@ -84,35 +84,35 @@ Examples:
     parser.add_argument(
         '--num-merchants',
         type=int,
-        default=500,
+        default=50,
         help='Number of merchants to generate (default: 500)'
     )
 
     parser.add_argument(
         '--num-banks',
         type=int,
-        default=1000,
+        default=50,
         help='Number of banks to generate (default: 1000)'
     )
 
     parser.add_argument(
         '--num-accounts',
         type=int,
-        default=10000,
+        default=1000,
         help='Number of accounts to generate (default: 10000)'
     )
 
     parser.add_argument(
         '--num-cards',
         type=int,
-        default=20000,
+        default=2000,
         help='Number of credit cards to generate (default: 20000)'
     )
 
     parser.add_argument(
         '--num-transactions',
         type=int,
-        default=500000,
+        default=50000,
         help='Number of transactions to generate (default: 5000000)'
     )
 

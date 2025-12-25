@@ -1,5 +1,6 @@
 #hopsworks[python,great-expectations]
 hopsworks[python]
+ipython
 feldera
 pydantic-settings>=2.6.1
 polars==1.36.1
