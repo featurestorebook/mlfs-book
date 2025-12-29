@@ -514,7 +514,7 @@ def generate_merchant_details(rows: int, start_date: datetime, end_date: datetim
     ]
     
     merchant_data = {
-        "merchant_id": [f"MERCH_{i:05d}" for i in range(rows)],
+        "merchant_id": list(range(rows)),
         "category": [random.choice(categories) for _ in range(rows)],
         "country": [random.choice(countries) for _ in range(rows)],
         "cnt_chrgeback_prev_day": cnt_chrgeback_prev_day,
@@ -553,7 +553,7 @@ def generate_bank_details(rows: int, start_date: datetime, end_date: datetime) -
     days_since_cr_changed = np.clip(days_since_cr_changed, 0, 1095)  # Cap at 3 years
     
     bank_data = {
-        "bank_id": [f"BANK_{i:05d}" for i in range(rows)],
+        "bank_id": list(range(rows)),
         "country": [random.choice(countries) for _ in range(rows)],
         "credit_rating": credit_ratings.tolist(),
         "last_modified": [end_date - timedelta(days=random.randint(0, delta_days)) for _ in range(rows)],
@@ -577,7 +577,7 @@ def generate_account_details(
     rows = int(rows)
     delta_days_lm = max((current_date - account_last_modified_start_date).days, 0)
     account_data = {
-        "account_id": [f"ACC_{i:06d}" for i in range(rows)],
+        "account_id": list(range(rows)),
         "name": [fake.name() for _ in range(rows)],
         "address": [fake.address().replace('\n', ', ') for _ in range(rows)],
         "debt_end_prev_month": [round(np.random.normal(2500, 1500), 2) for _ in range(rows)],
@@ -653,18 +653,31 @@ def generate_card_details(
     num_banks: int,
     current_date: datetime,
     issue_date: datetime,
-    expiry_date: datetime
+    expiry_date: datetime,
+    transactions_start_date: datetime = None
 ) -> pl.DataFrame:
-    """Generate card details DataFrame"""
+    """
+    Generate card details DataFrame.
+
+    Args:
+        rows: Number of cards to generate
+        num_accounts: Number of accounts
+        num_banks: Number of banks
+        current_date: Current date
+        issue_date: Earliest card issue date
+        expiry_date: Latest card expiry date
+        transactions_start_date: Start date for transactions. If provided, ensures last_modified is before this date
+    """
     print("Generating card details...")
     if current_date is None or issue_date is None or expiry_date is None:
         raise ValueError("Provide current_date, issue_date and expiry_date")
 
-    account_ids = [f"ACC_{i:06d}" for i in range(num_accounts)]
-    bank_ids = [f"BANK_{i:05d}" for i in range(num_banks)]
+    account_ids = list(range(num_accounts))
+    bank_ids = list(range(num_banks))
 
     rows = int(rows)
     card_data = {
+        "card_id": list(range(rows)),
         "cc_num": [
             f"{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
             for _ in range(rows)
@@ -687,7 +700,14 @@ def generate_card_details(
     card_data["card_type"] = [random.choice(card_types) for _ in range(rows)]
     card_data["status"] = [random.choice(statuses) for _ in range(rows)]
 
-    card_data["last_modified"] = [current_date - timedelta(days=random.randint(0, delta_issue_days)) for _ in range(rows)]
+    # Ensure last_modified is always before transactions_start_date if provided
+    if transactions_start_date:
+        # Calculate max days to ensure last_modified is before transactions_start_date
+        max_last_modified_date = transactions_start_date - timedelta(days=1)
+        delta_last_modified_days = max((max_last_modified_date - issue_date).days, 0)
+        card_data["last_modified"] = [issue_date + timedelta(days=random.randint(0, delta_last_modified_days)) for _ in range(rows)]
+    else:
+        card_data["last_modified"] = [current_date - timedelta(days=random.randint(0, delta_issue_days)) for _ in range(rows)]
 
     return pl.DataFrame(card_data)
 
@@ -1010,7 +1030,7 @@ def generate_credit_card_transactions_with_location_continuity(
 # ---------------------------
 
 def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, 
-                                           features=None, time_travel_format="DELTA"):
+                                           features=None, time_travel_format="HUDI"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
     if topic_name is None:
@@ -1043,11 +1063,11 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             features=features
         )
 
-    fg.insert(df, wait=True)
+    fg.insert(df)
 
     feature_descriptions = {
         "merchant_details": {
-            "merchant_id": "Unique identifier for each merchant",
+            "merchant_id": "Unique sequential integer identifier for each merchant",
             "category": "Merchant category codes for goods or service purchased",
             "country": "Country where merchant resides",
             "cnt_chrgeback_prev_day": "Number of chargebacks for this merchant during the previous day",
@@ -1056,13 +1076,13 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             "last_modified": "Timestamp when the merchant details was last updated"
         },
         "bank_details": {
-            "bank_id": "Unique identifier for each bank",
+            "bank_id": "Unique sequential integer identifier for each bank",
             "country": "Country where bank resides",
             "credit_rating": "Bank credit rating on a scale of 1 to 10",
             "last_modified": "Timestamp when the bank details was last updated"
         },
         "account_details": {
-            "account_id": "Unique identifier for the card owner",
+            "account_id": "Unique sequential integer identifier for the card owner",
             "name": "Full name of the account owner",
             "address": "Address where account owner resides",
             "debt_end_prev_month": "Amount of debt/credit at end of previous month",
@@ -1071,10 +1091,11 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             "end_date": "Timestamp when the account was closed (null if still active)"
         },
         "card_details": {
+            "card_id": "Unique sequential integer identifier for each card",
             "cc_num": "Credit card number in format XXXX-XXXX-XXXX-XXXX",
             "cc_expiry_date": "Card's expiration date (year and month only)",
-            "account_id": "Foreign key reference to account_details table",
-            "bank_id": "Foreign key reference to bank_details table",
+            "account_id": "Foreign key reference to account_details table (bigint)",
+            "bank_id": "Foreign key reference to bank_details table (bigint)",
             "issue_date": "Card's issue date (0 to 3 years before current date)",
             "card_type": "Type of card (Credit, Debit, Prepaid)",
             "status": "Current status of the card (Active, Blocked, Lost/Stolen)",
