@@ -1,7 +1,16 @@
 ### Titanic Survival Prediction ML System
 
 
-    source setup-env.sh
+This project builds a Titantic Survival Service using historical data for training and synthetic data as a dynamic data source (for predictions and future training).
+
+
+## How to run Instructions
+
+    source set-env.sh
+    inv backfill
+    inv features
+    inv train
+    inv inference 
 
 
 

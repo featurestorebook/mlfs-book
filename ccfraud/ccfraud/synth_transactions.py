@@ -1010,7 +1010,7 @@ def generate_credit_card_transactions_with_location_continuity(
 # ---------------------------
 
 def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, 
-                                           features=None, time_travel_format="HUDI"):
+                                           features=None, time_travel_format="DELTA"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
     if topic_name is None:
@@ -1043,7 +1043,7 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
             features=features
         )
 
-    fg.insert(df)
+    fg.insert(df, wait=True)
 
     feature_descriptions = {
         "merchant_details": {

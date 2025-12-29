@@ -63,7 +63,7 @@ def delete_feature_view(feature_view):
         except Exception:
             print(f"Failed to delete feature view {fv.name}.")
 
-def delete_feature_group(feature_group):
+def delete_feature_group(feature_group, project):
     # Get all feature groups
     try:
         feature_groups = fs.get_feature_groups(name=feature_group)
@@ -74,26 +74,27 @@ def delete_feature_group(feature_group):
     # Delete each feature group
     for fg in feature_groups:
         print(f"Deleting feature group: {fg.name} (version: {fg.version})")
+        topic = fg.topic_name
         try:
             fg.delete()
         except:
             print(f"Failed to delete feature group {fv.name}.")
 
-    try:
-        kafka_topics = kafka_api.get_topics()
-        for topic in kafka_topics:
-            if topic.name == feature_group:
-                topic.delete()
-                print(f"Deleting kafka topic {feature_group}")
-    except:
-        print(f"Couldn't find any kafka topics. Skipping...")
-
-    try:
-        schema = kafka_api.get_schema(feature_group, 1)
-        if schema is not None:
-            schema.delete()
-    except:
-        print(f"Couldn't find kafka schema: {feature_group}. Skipping...")
+        try:
+            kafka_topics = kafka_api.get_topics()
+            for topic in kafka_topics:
+                if topic.name == feature_group and topic.name != f"{project}_onlinefs":
+                    name, version = topic.schema()
+                    topic.delete()
+                    print(f"Deleting kafka topic {feature_group}")
+                    try:
+                        schema = kafka_api.get_schema(name, version)
+                        if schema is not None:
+                            schema.delete()
+                    except:
+                        print(f"Couldn't find kafka schema: {feature_group}. Skipping...")
+        except:
+            print(f"Couldn't find any kafka topics. Skipping...")
 
 
 if files_to_clean == "cc":
@@ -128,25 +129,7 @@ if files_to_clean == "cc":
         "account_fg",
         "bank_fg"
     ]:
-        delete_feature_group(feature_group)
-
-    KAFKA_TOPIC_NAME = f"{project.name}_real_time_live_transactions"
-    SCHEMA_NAME = "live_transactions_schema"
-    try:
-        kafka_topics = kafka_api.get_topics()
-        for topic in kafka_topics:
-            if topic.name == KAFKA_TOPIC_NAME:
-                topic.delete()
-    except:
-        print(f"Couldn't find kafka topic: {KAFKA_TOPIC_NAME}. Skipping...")
-
-    try:
-        schema = kafka_api.get_schema(SCHEMA_NAME, 1)
-        if schema is not None:
-            schema.delete()
-            print(f"Deleted kafka schema {SCHEMA_NAME}")
-    except:
-        print(f"Couldn't find kafka schema: {SCHEMA_NAME}. Skipping...")
+        delete_feature_group(feature_group, project.name)
 
 
 elif files_to_clean == "aq":
@@ -159,12 +142,12 @@ elif files_to_clean == "aq":
         "air_quality_fv_1_logging_untransformed",
         "aq_predictions"
     ]:
-        delete_feature_group(feature_group)
+        delete_feature_group(feature_group, project.name)
 
 elif files_to_clean == "titanic":
     delete_model("titanic")
     delete_feature_view("titanic")
-    delete_feature_group("titanic")
+    delete_feature_group("titanic", project.name)
 
 else:
     print(f"Couldn't find target to clean files for: {files_to_clean}. Valid options include 'cc', 'aq', and 'titanic'")
