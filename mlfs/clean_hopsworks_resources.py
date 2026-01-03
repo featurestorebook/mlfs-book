@@ -63,7 +63,7 @@ def delete_feature_view(feature_view):
         except Exception:
             print(f"Failed to delete feature view {fv.name}.")
 
-def delete_feature_group(feature_group, project):
+def delete_feature_group(feature_group, project_name):
     # Get all feature groups
     try:
         feature_groups = fs.get_feature_groups(name=feature_group)
@@ -74,7 +74,8 @@ def delete_feature_group(feature_group, project):
     # Delete each feature group
     for fg in feature_groups:
         print(f"Deleting feature group: {fg.name} (version: {fg.version})")
-        topic = fg.topic_name
+        topic_name = project_name + "_" + fg.topic_name
+        print(f"Trying to delete topic {topic_name}")
         try:
             fg.delete()
         except:
@@ -83,14 +84,16 @@ def delete_feature_group(feature_group, project):
         try:
             kafka_topics = kafka_api.get_topics()
             for topic in kafka_topics:
-                if topic.name == feature_group and topic.name != f"{project}_onlinefs":
+                print(f"topic: {topic.name}")
+                if topic_name == topic.name and topic.name != f"{project_name}_onlinefs":
                     name, version = topic.schema()
                     topic.delete()
-                    print(f"Deleting kafka topic {feature_group}")
+                    print(f"Deleted kafka topic {feature_group}")
                     try:
                         schema = kafka_api.get_schema(name, version)
                         if schema is not None:
                             schema.delete()
+                            print(f"Deleted topic schema {feature_group}")
                     except:
                         print(f"Couldn't find kafka schema: {feature_group}. Skipping...")
         except:

@@ -1,6 +1,7 @@
 from invoke import task, Collection, Program, exceptions
 import os
 import sys
+import signal
 from pathlib import Path
 
 # Monkey-patch ParseError to provide better error messages
@@ -48,7 +49,7 @@ def check_venv():
     if not VENV_DIR.exists():
         print("🔧 There is no virtual environment. Did you run the setup step yet?")
         print("👉 ./setup-env.sh")
-        sys.exit(2) 
+        sys.exit(2)
 
     virtual_env = os.environ.get("VIRTUAL_ENV")
     venv_path = str(VENV_DIR.resolve())
@@ -58,11 +59,26 @@ def check_venv():
         print()
         print("👉 Activate it with:")
         print(f"   source {VENV_DIR}/bin/activate")
-        sys.exit(1) 
+        sys.exit(1)
 
-    
+
+def run_interruptible(c, command, pty=True):
+    """Run a command with proper Ctrl-C handling.
+
+    Args:
+        c: Invoke context
+        command: Command string to execute
+        pty: Whether to use a pseudo-terminal (default: True)
+    """
+    try:
+        c.run(command, pty=pty)
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Task interrupted by user (Ctrl-C)")
+        sys.exit(130)  # Standard exit code for SIGINT
+
+
 ##########################################
-# Credit Card Fraud ML System 
+# Credit Card Fraud ML System
 ##########################################
 
 @task
@@ -72,7 +88,7 @@ def cc_gen_kafka(c):
     print("#################################################")
     print("########## Incremental Data Generation ##########")
     print("#################################################")
-    c.run("uv run ipython notebooks/transactions_synthetic_kafka_generator.ipynb", pty=True)
+    run_interruptible(c, "uv run ipython notebooks/transactions_synthetic_kafka_generator.ipynb")
 
 
 @task
@@ -83,7 +99,7 @@ def clean(c):
         print("#################################################")
         print("################## Cleanup ######################")
         print("#################################################")
-        c.run("uv run python mlfs/clean_hopsworks_resources.py cc")
+        run_interruptible(c, "uv run python mlfs/clean_hopsworks_resources.py cc", pty=False)
 
 #@task
 #def backfill(c):
@@ -129,7 +145,7 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         cmd += f" --fraud-rate {fraud_rate}"
 
     print(f"\nRunning: {cmd}\n")
-    c.run(cmd, pty=True)
+    run_interruptible(c, cmd)
 
 @task
 def features(c):
@@ -138,7 +154,7 @@ def features(c):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
-    c.run("uv run ipython notebooks/3-batch-feature-pipeline.ipynb", pty=True)
+    run_interruptible(c, "uv run ipython notebooks/3-batch-feature-pipeline.ipynb")
 
 @task
 def train(c):
@@ -147,7 +163,7 @@ def train(c):
     print("#################################################")
     print("############# Training Pipeline #################")
     print("#################################################")
-    c.run("uv run ipython notebooks/3-training-pipeline.ipynb", pty=True)
+    run_interruptible(c, "uv run ipython notebooks/3-training-pipeline.ipynb")
 
 @task
 def inference(c):
@@ -156,7 +172,7 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run("uv run ipython notebooks/4-deployment-pipeline.ipynb")
+    run_interruptible(c, "uv run ipython notebooks/4-deployment-pipeline.ipynb", pty=False)
 
 @task
 def feldera_start(c):
@@ -165,7 +181,7 @@ def feldera_start(c):
     print("#################################################")
     print("#######  Starting Feldera Container  ############")
     print("#################################################")
-    c.run("bash scripts/1a-run-feldera.sh start", pty=True)
+    run_interruptible(c, "bash scripts/1a-run-feldera.sh start")
 
 @task
 def feldera_stop(c):
@@ -174,7 +190,7 @@ def feldera_stop(c):
     print("#################################################")
     print("#######  Stopping Feldera Container  ############")
     print("#################################################")
-    c.run("bash scripts/1a-run-feldera.sh stop", pty=True)
+    run_interruptible(c, "bash scripts/1a-run-feldera.sh stop")
 
 @task
 def feldera(c):
@@ -183,7 +199,7 @@ def feldera(c):
     print("#################################################")
     print("#######  Feldera Streeaming Pipeline ############")
     print("#################################################")
-    c.run("uv run ipython notebooks/2-feldera-streaming-feature-pipeline.ipynb", pty=True)
+    run_interruptible(c, "uv run ipython notebooks/2-feldera-streaming-feature-pipeline.ipynb")
 
 @task(pre=[backfill, features, train, inference])
 def all(c):

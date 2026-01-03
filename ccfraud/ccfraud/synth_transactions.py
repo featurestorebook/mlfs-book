@@ -514,7 +514,7 @@ def generate_merchant_details(rows: int, start_date: datetime, end_date: datetim
     ]
     
     merchant_data = {
-        "merchant_id": list(range(rows)),
+        "merchant_id": [f"MERCH_{i:08d}" for i in range(rows)],
         "category": [random.choice(categories) for _ in range(rows)],
         "country": [random.choice(countries) for _ in range(rows)],
         "cnt_chrgeback_prev_day": cnt_chrgeback_prev_day,
@@ -553,7 +553,7 @@ def generate_bank_details(rows: int, start_date: datetime, end_date: datetime) -
     days_since_cr_changed = np.clip(days_since_cr_changed, 0, 1095)  # Cap at 3 years
     
     bank_data = {
-        "bank_id": list(range(rows)),
+        "bank_id": [f"BANK_{i:08d}" for i in range(rows)],
         "country": [random.choice(countries) for _ in range(rows)],
         "credit_rating": credit_ratings.tolist(),
         "last_modified": [end_date - timedelta(days=random.randint(0, delta_days)) for _ in range(rows)],
@@ -577,7 +577,7 @@ def generate_account_details(
     rows = int(rows)
     delta_days_lm = max((current_date - account_last_modified_start_date).days, 0)
     account_data = {
-        "account_id": list(range(rows)),
+        "account_id": [f"ACC_{i:08d}" for i in range(rows)],
         "name": [fake.name() for _ in range(rows)],
         "address": [fake.address().replace('\n', ', ') for _ in range(rows)],
         "debt_end_prev_month": [round(np.random.normal(2500, 1500), 2) for _ in range(rows)],
@@ -672,7 +672,7 @@ def generate_card_details(
     if current_date is None or issue_date is None or expiry_date is None:
         raise ValueError("Provide current_date, issue_date and expiry_date")
 
-    account_ids = list(range(num_accounts))
+    account_ids = [f"ACC_{i:08d}" for i in range(num_accounts)]
     bank_ids = list(range(num_banks))
 
     rows = int(rows)
