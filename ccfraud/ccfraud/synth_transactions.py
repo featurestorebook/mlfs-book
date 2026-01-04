@@ -673,11 +673,11 @@ def generate_card_details(
         raise ValueError("Provide current_date, issue_date and expiry_date")
 
     account_ids = [f"ACC_{i:08d}" for i in range(num_accounts)]
-    bank_ids = list(range(num_banks))
+    bank_ids = [f"BANK_{i:08d}" for i in range(num_banks)]
 
     rows = int(rows)
     card_data = {
-        "card_id": list(range(rows)),
+        "card_id": [f"CARD_{i:08d}" for i in range(rows)],
         "cc_num": [
             f"{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
             for _ in range(rows)
