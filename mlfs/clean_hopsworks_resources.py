@@ -74,31 +74,42 @@ def delete_feature_group(feature_group, project_name):
     # Delete each feature group
     for fg in feature_groups:
         print(f"Deleting feature group: {fg.name} (version: {fg.version})")
-        topic_name = project_name + "_" + fg.topic_name
+        if fg.topic_name is None:
+            topic_name = project_name + "_onlinefs"
+        else:
+            topic_name = project_name + "_" + fg.topic_name
         print(f"Trying to delete topic {topic_name}")
         try:
             fg.delete()
         except:
             print(f"Failed to delete feature group {fv.name}.")
 
-        try:
-            kafka_topics = kafka_api.get_topics()
-            for topic in kafka_topics:
-                print(f"topic: {topic.name}")
-                if topic_name == topic.name and topic.name != f"{project_name}_onlinefs":
-                    name, version = topic.schema()
-                    topic.delete()
-                    print(f"Deleted kafka topic {feature_group}")
+
+def delete_topic(topic_name, project_name):
+    if topic_name == f"{project_name}_onlinefs":
+        return
+    try:
+        kafka_topics = kafka_api.get_topics()
+        for topic in kafka_topics:
+            if topic_name == topic.name:
+                schema_info = None
+                try:
+                    schema_info = topic.schema()
+                except:
+                    print("No schema found")
+                topic.delete()
+                print(f"Deleted kafka topic {topic_name}")
+                if schema_info:
+                    name, version = schema_info
                     try:
                         schema = kafka_api.get_schema(name, version)
                         if schema is not None:
                             schema.delete()
-                            print(f"Deleted topic schema {feature_group}")
-                    except:
-                        print(f"Couldn't find kafka schema: {feature_group}. Skipping...")
-        except:
-            print(f"Couldn't find any kafka topics. Skipping...")
-
+                            print(f"Deleted topic schema {name}/{version}")
+                    except Exception as e:
+                        print(f"Inference Schema Kafka error: {e}")
+    except Exception as e:
+        print(f"Kafka error: {e}")
 
 if files_to_clean == "cc":
 
@@ -134,6 +145,12 @@ if files_to_clean == "cc":
     ]:
         delete_feature_group(feature_group, project.name)
 
+    for topic_name in [
+        f"{project.name}_card_details_onlinefs",
+        f"{project.name}_credit_card_transactions_onlinefs",
+    ]:
+        delete_topic(topic_name, project.name)
+    
 
 elif files_to_clean == "aq":
     delete_model("air_quality_xgboost_model")    
