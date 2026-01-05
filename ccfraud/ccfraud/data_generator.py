@@ -112,15 +112,15 @@ Examples:
     parser.add_argument(
         '--num-transactions',
         type=int,
-        default=50000,
+        default=500000,
         help='Number of transactions to generate (default: 5000000)'
     )
 
     parser.add_argument(
         '--fraud-rate',
         type=float,
-        default=0.001,
-        help='Fraud rate as decimal (default: 0.0001 = 0.01%%)'
+        default=0.005,
+        help='Fraud rate as decimal (default: 0.005 = 0.5%%)'
     )
 
     parser.add_argument(
@@ -191,7 +191,7 @@ class DataGenerator:
         if args.current_date:
             self.current_date = datetime.strptime(args.current_date, '%Y-%m-%d')
         else:
-            self.current_date = datetime(2025, 10, 5)
+            self.current_date = datetime(2025, 12, 25)
 
         self.transactions_start_date = self.current_date - timedelta(days=args.transaction_days)
         self.issue_date = self.current_date - timedelta(days=365 * 3)
