@@ -101,14 +101,6 @@ def clean(c):
         print("#################################################")
         run_interruptible(c, "uv run python mlfs/clean_hopsworks_resources.py cc", pty=False)
 
-#@task
-#def backfill(c):
-#    """Creates synthetic data for credit card transactions in Polars."""
-#    check_venv()
-#    print("#################################################")
-#    print("########## Backfill Data Generation #############")
-#    print("#################################################")
-#    c.run("uv run ipython notebooks/0-data-generation-with-polars.ipynb", pty=True)
 
 @task
 def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001):
@@ -163,7 +155,7 @@ def train(c):
     print("#################################################")
     print("############# Training Pipeline #################")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/3-training-pipeline.ipynb")
+    run_interruptible(c, "uv run ipython notebooks/4-training-cc-fraud-pipeline.ipynb")
 
 @task
 def inference(c):
