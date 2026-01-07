@@ -1,0 +1,13 @@
+hopsworks[python,great-expectations]
+pydantic-settings>=2.6.1
+geopy==2.4.1
+openmeteo-requests
+requests-cache==1.2.0
+retry-requests==2.0.0
+xgboost>=2.1.0
+scikit-learn==1.4.0
+matplotlib
+seaborn
+nbformat
+Faker==38.2.0
+geoip2==5.2.0
