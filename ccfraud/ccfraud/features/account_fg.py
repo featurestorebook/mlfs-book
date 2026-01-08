@@ -3,9 +3,6 @@ import pandas as pd
 import common
 import email-validator
 
-def zipcode(address: pd.Series) -> pd.Series :
-    # convert address to zipcode
-
 def email(email):
     try:
         validation = validate_email(email, check_deliverability=True)
@@ -26,3 +23,4 @@ def email(email):
         return min(max(score, 0), 100)
     except EmailNotValidError:
         return 0
+

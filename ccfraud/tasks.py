@@ -146,7 +146,7 @@ def features(c):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/3-batch-feature-pipeline.ipynb")
+    run_interruptible(c, "uv run python ccfraud/3-batch-feature-pipeline.py")
 
 @task
 def train(c):
@@ -192,6 +192,15 @@ def feldera(c):
     print("#######  Feldera Streeaming Pipeline ############")
     print("#################################################")
     run_interruptible(c, "uv run ipython notebooks/2-feldera-streaming-feature-pipeline.ipynb")
+
+@task
+def test(c):
+    """Run all unit tests using pytest."""
+    check_venv()
+    print("#################################################")
+    print("############### Running Tests ###################")
+    print("#################################################")
+    run_interruptible(c, "uv run pytest tests/ -v")
 
 @task(pre=[backfill, features, train, inference])
 def all(c):

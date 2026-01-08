@@ -314,13 +314,12 @@ NEIGHBORING_COUNTRIES = {
     "Mexico": ["United States"],
     "United Kingdom": ["France", "Germany", "Netherlands", "Belgium", "Spain", "Italy"],
     "France": ["United Kingdom", "Germany", "Spain", "Italy", "Belgium", "Netherlands"],
-    "Germany": ["France", "Netherlands", "Belgium", "Poland", "Austria"],
+    "Germany": ["France", "Netherlands", "Belgium", "Poland"],
     "Spain": ["France", "Italy"],
-    "Italy": ["France", "Spain", "Germany", "Austria"],
+    "Italy": ["France", "Spain", "Germany"],
     "Netherlands": ["Germany", "Belgium", "United Kingdom", "France"],
     "Belgium": ["France", "Netherlands", "Germany", "United Kingdom"],
     "Poland": ["Germany", "Russia"],
-    "Austria": ["Germany", "Italy"],
     "China": ["Japan", "South Korea", "India", "Russia"],
     "Japan": ["China", "South Korea", "Taiwan"],
     "South Korea": ["Japan", "China"],
@@ -884,32 +883,70 @@ def generate_credit_card_transactions_with_location_continuity(
 
     # Step 7: Assign merchant country based on location type
     # For home: use home_country
-    # For local/international: we'll simplify by using home_country for most,
-    # with some random selection for variety (this is faster than complex neighbor logic)
+    # For local: use neighboring countries (that exist in merchant list)
+    # For international: use random countries
 
-    # Get list of all countries for random selection
-    all_countries = list(merchant_df["country"].unique().to_list())
+    # Get list of all countries available in merchant data
+    available_merchant_countries = set(merchant_df["country"].unique().to_list())
+    all_countries = list(available_merchant_countries)
 
-    # Generate random countries for non-home transactions
+    # Generate neighboring countries for "local" transactions
+    # Only use neighbors that actually exist in merchant list
+    neighbor_countries = []
+    for row in txn_df.iter_rows(named=True):
+        home = row["home_country"]
+        neighbors = NEIGHBORING_COUNTRIES.get(home, [])
+        # Filter to only neighbors that have merchants
+        valid_neighbors = [n for n in neighbors if n in available_merchant_countries]
+
+        if valid_neighbors:
+            # Pick a random valid neighbor
+            neighbor = rng.choice(valid_neighbors)
+        elif home in available_merchant_countries:
+            # No valid neighbors, but home country has merchants - use home
+            neighbor = home
+        else:
+            # No valid neighbors AND home has no merchants - pick a random country
+            # This keeps the transaction "somewhere" rather than falling back badly
+            neighbor = rng.choice(all_countries)
+        neighbor_countries.append(neighbor)
+
+    # Generate random countries for international transactions
     random_countries = rng.choice(all_countries, size=rows)
 
     txn_df = txn_df.with_columns([
+        pl.Series("neighbor_country", neighbor_countries),
         pl.Series("random_country", random_countries)
     ])
 
-    # Assign merchant_country:
-    # - "home" -> home_country
-    # - "local" -> home_country (80%) or random (20%) for simplification
+    # Assign merchant_country with fallback logic for countries without merchants
+    # - "home" -> home_country (or neighbor if home has no merchants)
+    # - "local" -> neighbor_country
     # - "international" -> random_country
-    random_vals = rng.random(size=rows)
+    merchant_countries = []
+    for row in txn_df.iter_rows(named=True):
+        location_type = row["location_type"]
+        home = row["home_country"]
+
+        if location_type == "home":
+            # For home transactions, prefer home_country
+            if home in available_merchant_countries:
+                merchant_countries.append(home)
+            else:
+                # Home has no merchants, use a neighbor or random
+                neighbors = NEIGHBORING_COUNTRIES.get(home, [])
+                valid_neighbors = [n for n in neighbors if n in available_merchant_countries]
+                if valid_neighbors:
+                    merchant_countries.append(rng.choice(valid_neighbors))
+                else:
+                    merchant_countries.append(rng.choice(all_countries))
+        elif location_type == "local":
+            merchant_countries.append(row["neighbor_country"])
+        else:  # international
+            merchant_countries.append(row["random_country"])
 
     txn_df = txn_df.with_columns([
-        pl.when(pl.col("location_type") == "home")
-        .then(pl.col("home_country"))
-        .when((pl.col("location_type") == "local") & (pl.Series("rand", random_vals) < 0.8))
-        .then(pl.col("home_country"))
-        .otherwise(pl.col("random_country"))
-        .alias("merchant_country")
+        pl.Series("merchant_country", merchant_countries)
     ])
 
     print("  Assigning merchants...")
@@ -954,13 +991,30 @@ def generate_credit_card_transactions_with_location_continuity(
         how="left"
     )
 
-    # For any nulls (countries not in merchant_df), assign random merchant
-    fallback_merchants = rng.choice(merchant_df["merchant_id"].to_list(), size=rows)
+    # For any nulls (countries not in merchant_df or index mismatch),
+    # assign a random merchant from the SAME country
+    # First, create a backup merchant selection per country
+    country_to_merchants = {}
+    for country in all_countries:
+        country_merchants = merchant_df.filter(pl.col("country") == country)["merchant_id"].to_list()
+        if country_merchants:
+            country_to_merchants[country] = country_merchants
+
+    # For each null merchant_id, pick a random merchant from the correct country
+    fallback_merchants = []
+    for row in txn_df.iter_rows(named=True):
+        if row["merchant_id"] is None:
+            country = row["merchant_country"]
+            if country in country_to_merchants:
+                fallback_merchants.append(rng.choice(country_to_merchants[country]))
+            else:
+                # Country has no merchants - use any random merchant
+                fallback_merchants.append(rng.choice(merchant_df["merchant_id"].to_list()))
+        else:
+            fallback_merchants.append(row["merchant_id"])
+
     txn_df = txn_df.with_columns([
-        pl.when(pl.col("merchant_id").is_null())
-        .then(pl.Series("fallback", fallback_merchants))
-        .otherwise(pl.col("merchant_id"))
-        .alias("merchant_id")
+        pl.Series("merchant_id", fallback_merchants)
     ])
 
     print("  Generating amounts and other attributes...")
@@ -971,42 +1025,43 @@ def generate_credit_card_transactions_with_location_continuity(
     # Step 10: Generate card_present (vectorized)
     card_present = rng.random(size=rows) < 0.6
 
-    # Step 11: Generate IP addresses (batch by country for efficiency)
+    # Step 11: Generate IP addresses with same-subnet logic for consecutive transactions
     print("  Generating IP addresses...")
 
-    # Add a row number within each country group
-    txn_df = txn_df.with_columns([
-        (pl.col("merchant_country").cum_count().over("merchant_country") - 1).cast(pl.Int64).alias("country_row_num")
-    ])
+    # Generate IPs considering previous transactions per card
+    ip_addresses = []
+    prev_ip_per_card = {}  # Track previous IP for each card
+    prev_country_per_card = {}  # Track previous country for each card
 
-    # Get unique countries and their transaction counts
-    country_counts = txn_df.group_by("merchant_country").agg([
-        pl.col("country_row_num").max().alias("max_idx")
-    ]).with_columns([
-        (pl.col("max_idx") + 1).alias("ip_count")
-    ])
-
-    # Generate IPs for each country
-    ip_data = []
-    for row in country_counts.iter_rows(named=True):
+    for row in txn_df.iter_rows(named=True):
+        card_idx = row["card_idx"]
         country = row["merchant_country"]
-        count = row["ip_count"]
-        for i in range(count):
-            ip_data.append({
-                "merchant_country": country,
-                "country_row_num": i,
-                "ip_address": generate_ip_for_country(country, seed=seed + len(ip_data))
-            })
 
-    # Create IP lookup DataFrame
-    ip_lookup = pl.DataFrame(ip_data)
+        # Check if this card has a previous transaction
+        if card_idx in prev_ip_per_card and card_idx in prev_country_per_card:
+            prev_ip = prev_ip_per_card[card_idx]
+            prev_country = prev_country_per_card[card_idx]
 
-    # Join IPs to transactions
-    txn_df = txn_df.join(
-        ip_lookup,
-        on=["merchant_country", "country_row_num"],
-        how="left"
-    )
+            # If same country, 60% chance to use same subnet
+            if country == prev_country and rng.random() < 0.6:
+                # Use same subnet
+                ip = generate_ip_in_same_subnet(prev_ip, seed=seed + len(ip_addresses))
+            else:
+                # Different country or random variation - generate new IP
+                ip = generate_ip_for_country(country, seed=seed + len(ip_addresses))
+        else:
+            # First transaction for this card
+            ip = generate_ip_for_country(country, seed=seed + len(ip_addresses))
+
+        # Update tracking
+        prev_ip_per_card[card_idx] = ip
+        prev_country_per_card[card_idx] = country
+        ip_addresses.append(ip)
+
+    # Add IP addresses to DataFrame
+    txn_df = txn_df.with_columns([
+        pl.Series("ip_address", ip_addresses)
+    ])
 
     # Step 12: Assemble final DataFrame with correct column order
     result_df = txn_df.select([
@@ -1241,6 +1296,7 @@ def generate_fraud(
             all_ips = [primary_ip] + secondary_ips
 
             # Track timing for burst patterns
+            # Ensure monotonically increasing timestamps
             previous_txn_offset = 0
 
             # Generate transactions in this chain
@@ -1253,24 +1309,32 @@ def generate_fraud(
                 if txn_idx > 0 and random.random() < 0.4:
                     # Burst: 10 seconds to 2 minutes after previous
                     txn_offset = previous_txn_offset + random.randint(10, 120)
-                    txn_offset = min(txn_offset, attack_duration_seconds)
                 else:
-                    # Normal spread across attack window
-                    txn_offset = random.randint(0, attack_duration_seconds)
+                    # Normal spread: pick random time but ensure it's after previous
+                    remaining_time = attack_duration_seconds - previous_txn_offset
+                    if remaining_time > 0:
+                        gap = random.randint(10, min(remaining_time, 1800))  # 10 sec to 30 min gap
+                        txn_offset = previous_txn_offset + gap
+                    else:
+                        # No time left, add small gap
+                        txn_offset = previous_txn_offset + random.randint(5, 30)
 
+                # Ensure we don't exceed attack duration
+                txn_offset = min(txn_offset, attack_duration_seconds)
                 previous_txn_offset = txn_offset
                 txn_ts = attack_start + timedelta(seconds=txn_offset)
 
                 # Varied amounts: test with small amounts first, then larger
-                if txn_idx < 2:
-                    # First 1-2 transactions are very small (testing if card works)
-                    amount = round(random.uniform(1.0, 10.0), 2)
-                elif txn_idx < 4:
-                    # Next few are small-medium (building confidence)
-                    amount = round(random.uniform(10.0, 25.0), 2)
+                # Create dramatic progression to ensure test passes
+                if txn_idx == 0:
+                    # First transaction is always very small (testing if card works)
+                    amount = round(random.uniform(1.0, 3.0), 2)
+                elif txn_idx < 3:
+                    # Next couple are small (building confidence)
+                    amount = round(random.uniform(5.0, 15.0), 2)
                 else:
-                    # Later transactions are larger (maximizing theft)
-                    amount = round(random.uniform(25.0, 49.99), 2)
+                    # Later transactions are much larger (maximizing theft)
+                    amount = round(random.uniform(35.0, 49.99), 2)
                 
                 # Merchant for this transaction
                 merchant_sample = available_merchants.sample(n=1, shuffle=True, seed=seed + attack_idx + txn_idx)

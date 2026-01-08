@@ -5,94 +5,30 @@ import requests
 import geoip2.database
 from collections import Counter
 import hopsworks
+from hsfs.transformation_statistics import TransformationStatistics
 
 root_dir=""
 
-# from math import radians
-# import numpy as np
-# from datetime import datetime
-# import requests
-# import os
-# import hopsworks
-# from hsfs.transformation_statistics import TransformationStatistics
 
-# @hopsworks.udf(int, drop=['prev_transaction_time'])
-# def days_to_card_expiry(expiry_date: pd.Series) -> pd.Series:
-#     """
-#     """
-#     bins = [0, 1, 10, 30, 90, 180, float('inf')]
-#     labels = ['0-1', '2-10', '11-30', '31-90', '91-180', '181-']
-#     binned_days_to_expiry = pd.cut(expiry_date, bins=bins, labels=labels)
-#     return binned_days_to_expiry
+@hopsworks.udf(int, drop=['prev_transaction_time'], mode="pandas")
+def days_to_card_expiry(expiry_date: pd.Series) -> pd.Series:
+    """
+       the number of days until the credit card expires
+    """
+    bins = [0, 1, 10, 30, 90, 180, float('inf')]
+    labels = ['0-1', '2-10', '11-30', '31-90', '91-180', '181-']
+    binned_days_to_expiry = pd.cut(expiry_date, bins=bins, labels=labels)
     # return expiry_date.dt.date() - datetime.now.date()
 
-# @hopsworks.udf(int, TransformationStatistics)
-# def amount_deviation_from_avg(amount, statistics=statistics):
-#     """
-#     """
-#     return np.abs(amount - statistics.amount.mean)
-
-def is_fraud(transactions_df: pd.DataFrame, cc_fraud_df: pd.DataFrame) -> pd.DataFrame:
+@hopsworks.udf(int, TransformationStatistics)
+def amount_deviation_from_avg(amount, statistics=statistics, mode="pandas"):
     """
-        if there is a label, set the value to be '1', otherwise '0'
+       calculates how much a given transaction deviates from avg transaction amounts for a given card
     """
-    labels_df = transactions_df.join(cc_fraud_df, on="transaction_id", how="left")
- 
-    # Make 'is_fraud' a label for identifying if a transaction is fraudulent or not
-    labels_df = labels_df.withColumn("is_fraud", F.when(F.col("fraud_type").isNotNull(), 1).otherwise(0))
-
-    # Drop cols that are not needed
-    labels_df = labels_df.drop("fraud_report_id", "report_time", "fraud_type")
-
-    return labels_df
+    return np.abs(amount - statistics.amount.mean)
 
 
-# def haversine_distance_transactions(ip_addr1: pd.Series, ip_addr2: pd.Series)-> pd.Series:
-#     """
-#     Calculate the haversine distance between two series of IP addresses.
-
-#     Args:
-#         ip_addr1 (pd.Series): IP addresses of first transactions
-#         ip_addr2 (pd.Series): IP addresses of second transactions
-
-#     Returns:
-#         pd.Series: Haversine distances in kilometers
-#     """
-#     # Ensure database is downloaded and get path
-#     mmdb_path = _ensure_geoip_database(root_dir)
-
-#     # Open the GeoIP reader ONCE for all lookups
-#     reader = geoip2.database.Reader(mmdb_path)
-
-#     try:
-#         # Get coordinates for both IP series using the shared reader
-#         coords1 = ip_addr1.apply(lambda ip: _lookup_coordinates(reader, ip))
-#         coords2 = ip_addr2.apply(lambda ip: _lookup_coordinates(reader, ip))
-#     finally:
-#         reader.close()  # Always close the reader
-
-#     # Extract lat/lon into separate arrays - handle None values
-#     lat1 = np.array([float(c[0]) if c is not None else 0.0 for c in coords1], dtype=np.float64)
-#     lon1 = np.array([float(c[1]) if c is not None else 0.0 for c in coords1], dtype=np.float64)
-#     lat2 = np.array([float(c[0]) if c is not None else 0.0 for c in coords2], dtype=np.float64)
-#     lon2 = np.array([float(c[1]) if c is not None else 0.0 for c in coords2], dtype=np.float64)
-
-#     # Convert to radians (vectorized)
-#     lat1_rad = np.radians(lat1)
-#     lon1_rad = np.radians(lon1)
-#     lat2_rad = np.radians(lat2)
-#     lon2_rad = np.radians(lon2)
-
-#     # Haversine formula (vectorized)
-#     dlon = lon2_rad - lon1_rad
-#     dlat = lat2_rad - lat1_rad
-#     a = np.sin(dlat/2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon/2)**2
-#     c = 2 * np.arcsin(np.sqrt(a))
-#     r = 6371  # Radius of Earth in kilometers
-
-#     return pd.Series(c * r, index=ip_addr1.index)
-
-# @hopsworks.udf(int, drop=['prev_ts'])
+#@hopsworks.udf(int, drop=['prev_ts_transaction'], mode="pandas")
 def time_since_last_trans(ts: pd.Series, prev_ts_transaction: pd.Series) -> pd.Series:
     """
     Calculate time difference in seconds between current and previous transaction.
