@@ -589,7 +589,7 @@ EOF
 ensure_package invoke
 ensure_package uv
 
-if ! uv pip install -r requirements.txt; then
+if ! uv pip install -U -r requirements.txt; then
   echo "❌ Failed to install requirements"
   exit_script 1
 fi
