@@ -1,5 +1,4 @@
-#hopsworks[python]==4.4.3
-#hopsworks[python]
+hopsworks[python]
 ipython
 feldera
 pydantic-settings>=2.6.1
@@ -13,5 +12,3 @@ xgboost>=2.1.0
 scikit-learn==1.4.0
 seaborn
 Faker==38.2.0
-#numpy==1.26.4
-#great-expectations==1.10.0

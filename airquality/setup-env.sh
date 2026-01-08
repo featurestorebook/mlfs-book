@@ -59,6 +59,121 @@ fi
 
 echo "✅ Python version is supported"
 
+# Check and install system dependencies required for hopsworks (twofish)
+echo ""
+echo "🔧 Checking system dependencies..."
+
+OS_TYPE="$(uname -s)"
+
+install_system_deps() {
+  if [ "$OS_TYPE" = "Linux" ]; then
+    # Detect Linux distribution
+    if [ -f /etc/os-release ]; then
+      . /etc/os-release
+      DISTRO_ID="$ID"
+
+      case "$DISTRO_ID" in
+        ubuntu|debian)
+          echo "📦 Checking Ubuntu/Debian dependencies..."
+          MISSING_DEPS=""
+
+          # Check for build-essential
+          if ! dpkg -s build-essential >/dev/null 2>&1; then
+            MISSING_DEPS="build-essential"
+          fi
+
+          # Check for python3-dev
+          if ! dpkg -s python3-dev >/dev/null 2>&1; then
+            MISSING_DEPS="$MISSING_DEPS python3-dev"
+          fi
+
+          if [ -n "$MISSING_DEPS" ]; then
+            echo "📥 Installing missing dependencies:$MISSING_DEPS"
+            if sudo apt-get update && sudo apt-get install -y $MISSING_DEPS; then
+              echo "✅ Successfully installed system dependencies"
+            else
+              echo "❌ Failed to install system dependencies"
+              echo "   Please manually run: sudo apt install build-essential python3-dev"
+              exit_script 1
+            fi
+          else
+            echo "✅ All system dependencies already installed"
+          fi
+          ;;
+
+        rhel|centos|fedora|rocky|almalinux)
+          echo "📦 Checking Red Hat/CentOS/Fedora dependencies..."
+          MISSING_DEPS=""
+
+          # Check for Development Tools group (equivalent to build-essential)
+          if ! dnf group list installed 2>/dev/null | grep -q "Development Tools"; then
+            MISSING_DEPS="@development-tools"
+          fi
+
+          # Check for python3-devel
+          if ! rpm -q python3-devel >/dev/null 2>&1; then
+            MISSING_DEPS="$MISSING_DEPS python3-devel"
+          fi
+
+          if [ -n "$MISSING_DEPS" ]; then
+            echo "📥 Installing missing dependencies:$MISSING_DEPS"
+            if sudo dnf install -y $MISSING_DEPS; then
+              echo "✅ Successfully installed system dependencies"
+            else
+              echo "❌ Failed to install system dependencies"
+              echo "   Please manually run: sudo dnf install -y @development-tools python3-devel"
+              exit_script 1
+            fi
+          else
+            echo "✅ All system dependencies already installed"
+          fi
+          ;;
+
+        *)
+          echo "⚠️  Unknown Linux distribution: $DISTRO_ID"
+          echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+          echo "   These are required for the hopsworks Python client (twofish dependency)"
+          ;;
+      esac
+    else
+      echo "⚠️  Cannot detect Linux distribution"
+      echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+    fi
+
+  elif [ "$OS_TYPE" = "Darwin" ]; then
+    echo "📦 Checking macOS dependencies..."
+
+    # Check for Xcode Command Line Tools
+    if ! xcode-select -p >/dev/null 2>&1; then
+      echo "📥 Installing Xcode Command Line Tools..."
+      echo "   This provides the necessary build tools for Python packages"
+
+      # Trigger the Xcode Command Line Tools installer
+      xcode-select --install
+
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "⚠️  ACTION REQUIRED"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+      echo "Please complete the Xcode Command Line Tools installation in the"
+      echo "popup dialog, then re-run this script."
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+      exit_script 1
+    else
+      echo "✅ Xcode Command Line Tools already installed"
+    fi
+  else
+    echo "⚠️  Unknown operating system: $OS_TYPE"
+    echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+  fi
+}
+
+# Run the system dependency installation
+install_system_deps
+
 # Check and setup .env file
 ENV_FILE="../.env"
 ENV_EXAMPLE="../.env.example"
@@ -92,10 +207,6 @@ if [ -f "$ENV_FILE" ]; then
     echo "  4. Copy the API key"
     echo "  5. Edit $ENV_FILE and set:"
     echo "     HOPSWORKS_API_KEY=<your-api-key-here>"
-    echo ""
-    echo "You'll also need an AQICN API key for air quality data:"
-    echo "  - Register at: https://aqicn.org/api/"
-    echo "  - Add it to $ENV_FILE as AQICN_API_KEY=<your-key>"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
@@ -136,6 +247,280 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
   else
     CURRENT_PROJECT=$(grep "^HOPSWORKS_PROJECT=" "$ENV_FILE" | cut -d'=' -f2)
     echo "✅ HOPSWORKS_PROJECT set to: $CURRENT_PROJECT"
+  fi
+
+  # Check for HOPSWORKS_HOST
+  if ! grep -q "^HOPSWORKS_HOST=.\+" "$ENV_FILE" 2>/dev/null; then
+    echo ""
+    echo "⚠️  Warning: HOPSWORKS_HOST not set in $ENV_FILE"
+    echo "   This is required for Feldera integration."
+    echo "   Please set it to your Hopsworks cluster host (e.g., c.app.hopsworks.ai)"
+    echo ""
+  else
+    CURRENT_HOST=$(grep "^HOPSWORKS_HOST=" "$ENV_FILE" | cut -d'=' -f2)
+    echo "✅ HOPSWORKS_HOST set to: $CURRENT_HOST"
+  fi
+
+  # Check for FELDERA_DIR
+  if ! grep -q "^FELDERA_DIR=.\+" "$ENV_FILE" 2>/dev/null; then
+    echo ""
+    echo "🔧 Feldera Configuration"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Feldera is required for running streaming feature pipelines."
+    echo ""
+
+    # Check if feldera exists in parent directory of mlfs-book
+    PARENT_DIR="$(cd ../.. && pwd)"
+    SUGGESTED_FELDERA_DIR="$PARENT_DIR/feldera"
+
+    if [ -d "$SUGGESTED_FELDERA_DIR" ]; then
+      echo "✅ Found Feldera installation at: $SUGGESTED_FELDERA_DIR"
+      echo ""
+      read -p "Would you like to use this installation? (Y/n): " USE_EXISTING
+      USE_EXISTING=${USE_EXISTING:-Y}
+
+      if [[ "$USE_EXISTING" =~ ^[Yy]$ ]]; then
+        FELDERA_PATH="$SUGGESTED_FELDERA_DIR"
+      else
+        echo ""
+        read -p "Enter custom Feldera directory path (or leave empty to set later): " CUSTOM_PATH
+        FELDERA_PATH="$CUSTOM_PATH"
+      fi
+    else
+      echo "Feldera not found at suggested location: $SUGGESTED_FELDERA_DIR"
+      echo ""
+      echo "Options:"
+      echo "  1. Clone Feldera to $SUGGESTED_FELDERA_DIR (recommended)"
+      echo "  2. Specify a custom directory path"
+      echo "  3. Skip for now (you can set it later in $ENV_FILE)"
+      echo ""
+      read -p "Enter your choice (1/2/3): " CHOICE
+
+      case "$CHOICE" in
+        1)
+          echo ""
+          echo "📥 Cloning Feldera v0.209.0 to $SUGGESTED_FELDERA_DIR..."
+          if git clone --branch v0.211.0 --depth 1 https://github.com/feldera/feldera.git "$SUGGESTED_FELDERA_DIR"; then
+            echo "✅ Successfully cloned Feldera"
+            FELDERA_PATH="$SUGGESTED_FELDERA_DIR"
+          else
+            echo "❌ Failed to clone Feldera"
+            echo "   You can manually clone it later with:"
+            echo "   git clone --branch v0.209.0 https://github.com/feldera/feldera.git $SUGGESTED_FELDERA_DIR"
+            FELDERA_PATH=""
+          fi
+          ;;
+        2)
+          echo ""
+          read -p "Enter custom Feldera directory path: " CUSTOM_PATH
+          if [ -n "$CUSTOM_PATH" ]; then
+            # Expand ~ to home directory
+            CUSTOM_PATH="${CUSTOM_PATH/#\~/$HOME}"
+            if [ ! -d "$CUSTOM_PATH" ]; then
+              echo ""
+              read -p "Directory doesn't exist. Clone Feldera there? (y/N): " CLONE_CUSTOM
+              if [[ "$CLONE_CUSTOM" =~ ^[Yy]$ ]]; then
+                mkdir -p "$(dirname "$CUSTOM_PATH")"
+                echo "📥 Cloning Feldera v0.209.0 to $CUSTOM_PATH..."
+                if git clone --branch v0.209.0 --depth 1 https://github.com/feldera/feldera.git "$CUSTOM_PATH"; then
+                  echo "✅ Successfully cloned Feldera"
+                  FELDERA_PATH="$CUSTOM_PATH"
+                else
+                  echo "❌ Failed to clone Feldera"
+                  FELDERA_PATH=""
+                fi
+              else
+                FELDERA_PATH=""
+              fi
+            else
+              FELDERA_PATH="$CUSTOM_PATH"
+            fi
+          else
+            FELDERA_PATH=""
+          fi
+          ;;
+        3)
+          echo "⚠️  Skipping Feldera setup. Set FELDERA_DIR in $ENV_FILE later."
+          FELDERA_PATH=""
+          ;;
+        *)
+          echo "⚠️  Invalid choice. Skipping Feldera setup."
+          FELDERA_PATH=""
+          ;;
+      esac
+    fi
+
+    # Update .env file if path was set
+    if [ -n "$FELDERA_PATH" ]; then
+      if grep -q "^#FELDERA_DIR=" "$ENV_FILE" 2>/dev/null; then
+        # Uncomment and set the value
+        sed -i.bak "s|^#FELDERA_DIR=.*|FELDERA_DIR=$FELDERA_PATH|" "$ENV_FILE"
+      elif grep -q "^FELDERA_DIR=" "$ENV_FILE" 2>/dev/null; then
+        # Update existing uncommented line
+        sed -i.bak "s|^FELDERA_DIR=.*|FELDERA_DIR=$FELDERA_PATH|" "$ENV_FILE"
+      else
+        # Add new line
+        echo "FELDERA_DIR=$FELDERA_PATH" >> "$ENV_FILE"
+      fi
+      rm -f "${ENV_FILE}.bak"
+      echo "✅ Set FELDERA_DIR=$FELDERA_PATH in $ENV_FILE"
+    fi
+    echo ""
+  else
+    CURRENT_FELDERA=$(grep "^FELDERA_DIR=" "$ENV_FILE" | cut -d'=' -f2)
+    echo "✅ FELDERA_DIR set to: $CURRENT_FELDERA"
+  fi
+
+  # Check for Docker installation
+  echo ""
+  echo "🐳 Checking Docker installation..."
+
+  if command -v docker >/dev/null 2>&1; then
+    DOCKER_VERSION=$(docker --version 2>/dev/null || echo "unknown")
+    echo "✅ Docker is installed: $DOCKER_VERSION"
+
+    # Check if Docker daemon is running
+    if docker info >/dev/null 2>&1; then
+      echo "✅ Docker daemon is running"
+    else
+      echo "⚠️  Docker is installed but the daemon is not running"
+      echo "   Please start Docker and try again"
+    fi
+  else
+    echo "❌ Docker is not installed"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📦 Docker Installation Instructions"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Docker is required for running Feldera streaming pipelines."
+    echo ""
+
+    # Detect operating system
+    OS_TYPE="$(uname -s)"
+
+    # Check if running on WSL
+    if grep -qi microsoft /proc/version 2>/dev/null || grep -qi wsl /proc/version 2>/dev/null; then
+      echo "Detected: Windows Subsystem for Linux (WSL)"
+      echo ""
+      echo "Installation steps:"
+      echo ""
+      echo "1. Install Docker Desktop for Windows from:"
+      echo "   https://docs.docker.com/desktop/install/windows-install/"
+      echo ""
+      echo "2. After installation, enable WSL 2 integration:"
+      echo "   - Open Docker Desktop"
+      echo "   - Go to Settings → Resources → WSL Integration"
+      echo "   - Enable integration with your WSL distribution"
+      echo ""
+      echo "3. Restart your WSL terminal and verify with: docker --version"
+      echo ""
+    elif [ "$OS_TYPE" = "Darwin" ]; then
+      echo "Detected: macOS"
+      echo ""
+      echo "Installation options:"
+      echo ""
+      echo "Option 1 - Docker Desktop (recommended):"
+      echo "  1. Download Docker Desktop from:"
+      echo "     https://docs.docker.com/desktop/install/mac-install/"
+      echo "  2. Install the .dmg file"
+      echo "  3. Launch Docker Desktop from Applications"
+      echo ""
+      echo "Option 2 - Homebrew:"
+      echo "  brew install --cask docker"
+      echo ""
+    elif [ "$OS_TYPE" = "Linux" ]; then
+      # Detect Linux distribution
+      if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID="$ID"
+
+        case "$DISTRO_ID" in
+          ubuntu|debian)
+            echo "Detected: Ubuntu/Debian Linux"
+            echo ""
+            echo "Installation steps:"
+            echo ""
+            echo "1. Update package index and install prerequisites:"
+            echo "   sudo apt-get update"
+            echo "   sudo apt-get install -y ca-certificates curl gnupg lsb-release"
+            echo ""
+            echo "2. Add Docker's official GPG key:"
+            echo "   sudo mkdir -p /etc/apt/keyrings"
+            echo "   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
+            echo ""
+            echo "3. Set up the repository:"
+            echo "   echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
+            echo ""
+            echo "4. Install Docker Engine:"
+            echo "   sudo apt-get update"
+            echo "   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+            echo ""
+            echo "5. Add your user to the docker group (optional, avoids using sudo):"
+            echo "   sudo usermod -aG docker \$USER"
+            echo "   newgrp docker"
+            echo ""
+            echo "Full documentation: https://docs.docker.com/engine/install/ubuntu/"
+            echo ""
+            ;;
+          rhel|centos|fedora|rocky|almalinux)
+            echo "Detected: Red Hat/CentOS/Fedora Linux"
+            echo ""
+            echo "Installation steps:"
+            echo ""
+            echo "1. Remove old versions (if any):"
+            echo "   sudo dnf remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine"
+            echo ""
+            echo "2. Install dnf-plugins-core:"
+            echo "   sudo dnf -y install dnf-plugins-core"
+            echo ""
+            echo "3. Add Docker repository:"
+            if [ "$DISTRO_ID" = "fedora" ]; then
+              echo "   sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo"
+            else
+              echo "   sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo"
+            fi
+            echo ""
+            echo "4. Install Docker Engine:"
+            echo "   sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+            echo ""
+            echo "5. Start Docker:"
+            echo "   sudo systemctl start docker"
+            echo "   sudo systemctl enable docker"
+            echo ""
+            echo "6. Add your user to the docker group (optional, avoids using sudo):"
+            echo "   sudo usermod -aG docker \$USER"
+            echo "   newgrp docker"
+            echo ""
+            echo "Full documentation: https://docs.docker.com/engine/install/rhel/"
+            echo ""
+            ;;
+          *)
+            echo "Detected: Linux (distribution: $DISTRO_ID)"
+            echo ""
+            echo "Please install Docker following the instructions for your distribution:"
+            echo "https://docs.docker.com/engine/install/"
+            echo ""
+            ;;
+        esac
+      else
+        echo "Detected: Linux (unknown distribution)"
+        echo ""
+        echo "Please install Docker following the instructions at:"
+        echo "https://docs.docker.com/engine/install/"
+        echo ""
+      fi
+    else
+      echo "Detected: Unknown operating system ($OS_TYPE)"
+      echo ""
+      echo "Please install Docker following the instructions at:"
+      echo "https://docs.docker.com/get-docker/"
+      echo ""
+    fi
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
   fi
 else
   echo "⚠️  Warning: $ENV_FILE not found"
@@ -227,4 +612,8 @@ echo "   inv all"
 # Restore shell options when sourced to avoid affecting the parent shell
 if [ "$SOURCED" -eq 1 ]; then
   set +uo pipefail
+  return 0
+else
+  # Explicitly exit when executed (not sourced) to prevent hanging
+  exit 0
 fi

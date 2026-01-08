@@ -59,6 +59,121 @@ fi
 
 echo "✅ Python version is supported"
 
+# Check and install system dependencies required for hopsworks (twofish)
+echo ""
+echo "🔧 Checking system dependencies..."
+
+OS_TYPE="$(uname -s)"
+
+install_system_deps() {
+  if [ "$OS_TYPE" = "Linux" ]; then
+    # Detect Linux distribution
+    if [ -f /etc/os-release ]; then
+      . /etc/os-release
+      DISTRO_ID="$ID"
+
+      case "$DISTRO_ID" in
+        ubuntu|debian)
+          echo "📦 Checking Ubuntu/Debian dependencies..."
+          MISSING_DEPS=""
+
+          # Check for build-essential
+          if ! dpkg -s build-essential >/dev/null 2>&1; then
+            MISSING_DEPS="build-essential"
+          fi
+
+          # Check for python3-dev
+          if ! dpkg -s python3-dev >/dev/null 2>&1; then
+            MISSING_DEPS="$MISSING_DEPS python3-dev"
+          fi
+
+          if [ -n "$MISSING_DEPS" ]; then
+            echo "📥 Installing missing dependencies:$MISSING_DEPS"
+            if sudo apt-get update && sudo apt-get install -y $MISSING_DEPS; then
+              echo "✅ Successfully installed system dependencies"
+            else
+              echo "❌ Failed to install system dependencies"
+              echo "   Please manually run: sudo apt install build-essential python3-dev"
+              exit_script 1
+            fi
+          else
+            echo "✅ All system dependencies already installed"
+          fi
+          ;;
+
+        rhel|centos|fedora|rocky|almalinux)
+          echo "📦 Checking Red Hat/CentOS/Fedora dependencies..."
+          MISSING_DEPS=""
+
+          # Check for Development Tools group (equivalent to build-essential)
+          if ! dnf group list installed 2>/dev/null | grep -q "Development Tools"; then
+            MISSING_DEPS="@development-tools"
+          fi
+
+          # Check for python3-devel
+          if ! rpm -q python3-devel >/dev/null 2>&1; then
+            MISSING_DEPS="$MISSING_DEPS python3-devel"
+          fi
+
+          if [ -n "$MISSING_DEPS" ]; then
+            echo "📥 Installing missing dependencies:$MISSING_DEPS"
+            if sudo dnf install -y $MISSING_DEPS; then
+              echo "✅ Successfully installed system dependencies"
+            else
+              echo "❌ Failed to install system dependencies"
+              echo "   Please manually run: sudo dnf install -y @development-tools python3-devel"
+              exit_script 1
+            fi
+          else
+            echo "✅ All system dependencies already installed"
+          fi
+          ;;
+
+        *)
+          echo "⚠️  Unknown Linux distribution: $DISTRO_ID"
+          echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+          echo "   These are required for the hopsworks Python client (twofish dependency)"
+          ;;
+      esac
+    else
+      echo "⚠️  Cannot detect Linux distribution"
+      echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+    fi
+
+  elif [ "$OS_TYPE" = "Darwin" ]; then
+    echo "📦 Checking macOS dependencies..."
+
+    # Check for Xcode Command Line Tools
+    if ! xcode-select -p >/dev/null 2>&1; then
+      echo "📥 Installing Xcode Command Line Tools..."
+      echo "   This provides the necessary build tools for Python packages"
+
+      # Trigger the Xcode Command Line Tools installer
+      xcode-select --install
+
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "⚠️  ACTION REQUIRED"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+      echo "Please complete the Xcode Command Line Tools installation in the"
+      echo "popup dialog, then re-run this script."
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+      exit_script 1
+    else
+      echo "✅ Xcode Command Line Tools already installed"
+    fi
+  else
+    echo "⚠️  Unknown operating system: $OS_TYPE"
+    echo "   Please ensure you have C/C++ build tools and Python development headers installed"
+  fi
+}
+
+# Run the system dependency installation
+install_system_deps
+
 # Check and setup .env file
 ENV_FILE="../.env"
 ENV_EXAMPLE="../.env.example"
