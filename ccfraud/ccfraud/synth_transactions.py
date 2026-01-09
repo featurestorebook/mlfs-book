@@ -1312,7 +1312,7 @@ def generate_fraud(
                 else:
                     # Normal spread: pick random time but ensure it's after previous
                     remaining_time = attack_duration_seconds - previous_txn_offset
-                    if remaining_time > 0:
+                    if remaining_time > 10:
                         gap = random.randint(10, min(remaining_time, 1800))  # 10 sec to 30 min gap
                         txn_offset = previous_txn_offset + gap
                     else:

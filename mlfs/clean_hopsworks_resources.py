@@ -36,24 +36,17 @@ def delete_deployment(deployment_name):
         print("No deployments to delete.")
 
 def delete_model(model_name):
-    try:
-        models = mr.get_models(name=model_name)
-        for model in models:
-            print(f"Deleting model: {model.name} (version: {model.version})")
-            try:
-                model.delete()
-            except Exception:
-                print(f"Failed to delete model {model_name}.")
-    except Exception:
-        print("No  models to delete.")
+    models = mr.get_models(name=model_name)
+    for model in models:
+        print(f"Deleting model: {model.name} (version: {model.version})")
+        try:
+            model.delete()
+        except Exception:
+            print(f"Failed to delete model {model_name}.")
 
 def delete_feature_view(feature_view):
     # Get all feature views
-    try:
-        feature_views = fs.get_feature_views(name=feature_view)
-    except:
-        print(f"Couldn't find feature view: {feature_view}. Skipping...")
-        feature_views = []
+    feature_views = fs.get_feature_views(name=feature_view)
 
     # Delete each feature view
     for fv in feature_views:
@@ -65,11 +58,7 @@ def delete_feature_view(feature_view):
 
 def delete_feature_group(feature_group, project_name):
     # Get all feature groups
-    try:
-        feature_groups = fs.get_feature_groups(name=feature_group)
-    except:
-        print(f"Couldn't find feature group: {feature_group}. Skipping...")
-        feature_groups = []
+    feature_groups = fs.get_feature_groups(name=feature_group)
 
     # Delete each feature group
     for fg in feature_groups:
