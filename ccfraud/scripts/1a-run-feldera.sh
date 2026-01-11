@@ -18,6 +18,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Handle stop action
 if [ "$ACTION" == "stop" ]; then
   echo "Stopping Feldera container..."
+
+  # Try to stop by name first
+  if docker stop feldera-pipeline-manager 2>/dev/null; then
+    echo "Feldera container stopped successfully."
+    exit 0
+  fi
+
+  # Fallback: try to find by image name (for older containers without the name)
   CONTAINER_ID=$(docker ps -q --filter ancestor=ghcr.io/feldera/pipeline-manager:latest)
 
   if [ -z "$CONTAINER_ID" ]; then
@@ -32,10 +40,10 @@ fi
 
 # Start action - load environment and start container
 # Check if Feldera is already running
-RUNNING_CONTAINER=$(docker ps -q --filter ancestor=ghcr.io/feldera/pipeline-manager:latest)
+RUNNING_CONTAINER=$(docker ps -q --filter name=feldera-pipeline-manager)
 if [ -n "$RUNNING_CONTAINER" ]; then
-  echo "Feldera container is already running (ID: $RUNNING_CONTAINER)"
-  echo "Use '$0 stop' to stop it first, or connect to the running instance."
+  echo "✓ Feldera container is already running (ID: $RUNNING_CONTAINER)"
+  echo "✓ Container is accessible at http://localhost:8080"
   exit 0
 fi
 
@@ -104,7 +112,12 @@ fi
 
 # Docker doesn't like mounting to /tmp, so mount to /mnt/certs and symlink to /tmp/c.app.hopsworks.ai
 #docker run -p 8080:8080 -v ${HOME}/${HOPSWORKS_HOST}:/tmp/${HOPSWORKS_HOST} \
-docker run -p 8080:8080 -v /tmp:/opt/${HOPSWORKS_HOST} \
-	--tty --rm -it ghcr.io/feldera/pipeline-manager:latest
+docker run -d -p 8080:8080 -v /tmp:/opt/${HOPSWORKS_HOST} \
+	--name feldera-pipeline-manager \
+	--rm ghcr.io/feldera/pipeline-manager:latest
 #docker run -p 8080:8080 -v /tmp:/home/ubuntu/certs \
 #  --tty --rm -it pipeline-manager-with-symlink
+
+echo "Feldera container started successfully in the background."
+echo "Container is accessible at http://localhost:8080"
+echo "Use 'inv feldera-stop' to stop the container."

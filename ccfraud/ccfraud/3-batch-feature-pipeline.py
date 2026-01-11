@@ -9,29 +9,55 @@ feature store.
 import sys
 from pathlib import Path
 import warnings
-warnings.filterwarnings("ignore", module="IPython")
-
-# Setup root directory
-root_dir = Path(__file__).parent.parent.absolute()
-sys.path.append(str(root_dir.parent))
-print(f"Root dir: {root_dir.parent}")
-
-# Set the environment variables from the .env file
-from mlfs import config
-settings = config.HopsworksSettings(_env_file=f"{root_dir.parent}/.env")
-
-from ccfraud.features import cc_trans_fg
-cc_trans_fg.root_dir = str(root_dir.parent)
-
+import argparse
 import hopsworks
 from datetime import datetime
 from hsfs.feature import Feature
 
-# Configuration
-last_processed_date = datetime(2025, 1, 1)
-current_date = datetime(2025, 10, 5)
+current_file = Path(__file__).absolute()
+ccfraud_pkg_dir = current_file.parent  # ccfraud/ccfraud/
+ccfraud_project_dir = ccfraud_pkg_dir.parent  # ccfraud/
+root_dir = ccfraud_project_dir.parent  # mlfs-book/
+root_dir = str(root_dir) 
 
-def main():
+sys.path.insert(0, str(root_dir))
+sys.path.insert(0, str(ccfraud_project_dir))
+
+# Set the environment variables from the .env file
+from mlfs import config
+settings = config.HopsworksSettings(_env_file=f"{root_dir}/.env")
+
+from ccfraud.features import cc_trans_fg
+cc_trans_fg.root_dir = str(root_dir)
+
+
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Batch feature pipeline for credit card transactions"
+    )
+    parser.add_argument(
+        "--last-processed-date",
+        type=str,
+        default="2025-01-01",
+        help="Last processed date in YYYY-MM-DD format (default: 2025-01-01)"
+    )
+    parser.add_argument(
+        "--current-date",
+        type=str,
+        default="2025-10-05",
+        help="Current date in YYYY-MM-DD format (default: 2025-10-05)"
+    )
+    parser.add_argument(
+        "--env-file",
+        type=str,
+        default=None,
+        help="Path to .env file (default: <root_dir>/.env)"
+    )
+    return parser.parse_args()
+
+
+def main(last_processed_date, current_date):
     """Main execution function for the batch feature pipeline."""
 
     # Connect to Hopsworks
@@ -123,4 +149,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+
+    # Parse dates from string arguments
+    last_processed_date = datetime.strptime(args.last_processed_date, "%Y-%m-%d")
+    current_date = datetime.strptime(args.current_date, "%Y-%m-%d")
+
+    print(f"Processing transactions from {last_processed_date} to {current_date}")
+
+    main(last_processed_date, current_date)

@@ -93,13 +93,30 @@ def features(c):
     c.run("uv run ipython notebooks/2_air_quality_feature_pipeline.ipynb")
 
 @task
-def train(c):
-    """Creates feature view, reads training data with feature view, trains and saves XGBoost model to predict air quality."""
+def train(c, test_days=30, min_train_days=180):
+    """Creates feature view, reads training data with feature view, trains and saves XGBoost model to predict air quality.
+
+    Args:
+        test_days: Number of days to use for test set (default: 30)
+        min_train_days: Minimum number of days required for training set (default: 180)
+
+    Examples:
+        inv train                           # Default: 30 test days
+        inv train --test-days=60            # 60 test days
+        inv train --test-days=14            # 14 test days
+    """
     check_venv()
     print("#################################################")
     print("############# Training Pipeline #################")
     print("#################################################")
-    c.run("uv run ipython notebooks/3_air_quality_training_pipeline.ipynb")
+    print(f"Configuration: test_days={test_days}, min_train_days={min_train_days}")
+
+    # Set environment variables for the notebook to read
+    env = os.environ.copy()
+    env['TEST_DAYS'] = str(test_days)
+    env['MIN_TRAIN_DAYS'] = str(min_train_days)
+
+    c.run("uv run ipython notebooks/3_air_quality_training_pipeline.ipynb", env=env)
 
 @task
 def inference(c):
@@ -118,7 +135,7 @@ def llm(c):
     check_venv()
     c.run("uv run ipython notebooks/5_function_calling.ipynb")
 
-@task(pre=[backfill, features, train, inference])
+@task(pre=[backfill, train, features, inference])
 def all(c):
     """Runs all FTI pipelines in order, outputs air quality predictions."""
     pass

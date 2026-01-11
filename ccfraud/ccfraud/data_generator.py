@@ -8,11 +8,14 @@ and fraudulent transactions. It supports two modes:
 - Incremental: Use existing feature groups and generate only specified entities
 
 Usage:
-    # Backfill mode - generate all entities
+    # Backfill mode - generate all entities for previous 30 days
     python data_generator.py --mode backfill
 
     # Incremental mode - generate only transactions
     python data_generator.py --mode incremental --entities transactions
+
+    # Custom date range
+    python data_generator.py --mode backfill --start-date 2025-11-01 --end-date 2025-12-01
 
     # Custom parameters
     python data_generator.py --mode backfill --num-transactions 100000 --fraud-rate 0.001
@@ -25,6 +28,7 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Optional
 import hopsworks
+import polars as pl
 
 warnings.filterwarnings("ignore", module="IPython")
 
@@ -52,13 +56,16 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate all entities (backfill mode)
+  # Generate all entities for previous 30 days (backfill mode)
   %(prog)s --mode backfill
 
-  # Generate only new transactions using existing entities
-  %(prog)s --mode incremental --entities transactions
+  # Generate all entities for a specific date range
+  %(prog)s --mode backfill --start-date 2025-11-01 --end-date 2025-12-01
 
-  # Generate specific entities with custom parameters
+  # Generate only new transactions using existing entities (previous 24 hours)
+  %(prog)s --mode incremental --entities transactions --start-date 2025-12-24 --end-date 2025-12-25
+
+  # Generate transactions with custom count
   %(prog)s --mode incremental --entities transactions --num-transactions 10000
         """
     )
@@ -132,17 +139,32 @@ Examples:
 
     # Date parameters
     parser.add_argument(
+        '--start-date',
+        type=str,
+        default=None,
+        help='Start date for transactions in YYYY-MM-DD format (default: 30 days ago from end-date)'
+    )
+
+    parser.add_argument(
+        '--end-date',
+        type=str,
+        default=None,
+        help='End date for transactions in YYYY-MM-DD format (default: today)'
+    )
+
+    # Legacy parameters for backward compatibility
+    parser.add_argument(
         '--current-date',
         type=str,
         default=None,
-        help='Current date in YYYY-MM-DD format (default: 2025-12-25)'
+        help='(Legacy) Current date in YYYY-MM-DD format - use --end-date instead'
     )
 
     parser.add_argument(
         '--transaction-days',
         type=int,
-        default=30,
-        help='Number of days of transaction history to generate (default: 30)'
+        default=None,
+        help='(Legacy) Number of days of transaction history - use --start-date instead'
     )
 
     parser.add_argument(
@@ -187,13 +209,24 @@ class DataGenerator:
             if 'transactions' in self.entities and 'fraud' not in self.entities:
                 self.entities.append('fraud')
 
-        # Setup dates
-        if args.current_date:
+        # Setup dates - prioritize new parameters, fall back to legacy, then defaults
+        # End date: --end-date > --current-date > today
+        if args.end_date:
+            self.current_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+        elif args.current_date:
             self.current_date = datetime.strptime(args.current_date, '%Y-%m-%d')
+            print(f"  Warning: --current-date is deprecated, use --end-date instead")
         else:
-            self.current_date = datetime(2025, 12, 25)
+            self.current_date = datetime.now().replace(hour=23, minute=59, second=59)
 
-        self.transactions_start_date = self.current_date - timedelta(days=args.transaction_days)
+        # Start date: --start-date > calculated from --transaction-days > 30 days ago
+        if args.start_date:
+            self.transactions_start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+        elif args.transaction_days is not None:
+            self.transactions_start_date = self.current_date - timedelta(days=args.transaction_days)
+            print(f"  Warning: --transaction-days is deprecated, use --start-date instead")
+        else:
+            self.transactions_start_date = self.current_date - timedelta(days=30)
         self.issue_date = self.current_date - timedelta(days=365 * 3)
         self.expiry_date = self.current_date + timedelta(days=365 * 3)
         self.account_creation_start_date = self.current_date - timedelta(days=365 * 5)
@@ -217,6 +250,9 @@ class DataGenerator:
         self.transactions_fg = None
         self.fraud_fg = None
 
+        # Track what was actually inserted (not just loaded)
+        self.inserted_counts = {}
+
         # Initialize Hopsworks connection
         env_file = args.env_file or str(root_dir / '.env')
         print(f"Loading environment from: {env_file}")
@@ -237,7 +273,7 @@ class DataGenerator:
             print("\nLoading existing merchant data...")
             try:
                 self.merchant_fg = self.fs.get_feature_group("merchant_details", version=1)
-                self.merchant_df = self.merchant_fg.read()
+                self.merchant_df = pl.from_pandas(self.merchant_fg.read())
                 print(f"  Loaded {len(self.merchant_df)} merchants")
                 return
             except Exception as e:
@@ -252,7 +288,7 @@ class DataGenerator:
 
         if self.mode == 'backfill' or self.should_generate('merchants'):
             print("  Creating feature group: merchant_details")
-            self.merchant_fg = st.create_feature_group_with_descriptions(
+            self.merchant_fg = st.get_or_create_feature_group_with_descriptions(
                 self.fs,
                 self.merchant_df,
                 "merchant_details",
@@ -261,8 +297,10 @@ class DataGenerator:
                 "last_modified",
                 online_enabled=True
             )
-
-        print(f"  Generated {len(self.merchant_df)} merchants")
+            self.inserted_counts['merchants'] = len(self.merchant_df)
+            print(f"  Inserted {len(self.merchant_df)} merchants")
+        else:
+            print(f"  Loaded {len(self.merchant_df)} merchants (not inserted)")
 
     def get_or_create_banks(self):
         """Generate or load bank data."""
@@ -270,7 +308,7 @@ class DataGenerator:
             print("\nLoading existing bank data...")
             try:
                 self.bank_fg = self.fs.get_feature_group("bank_details", version=1)
-                self.bank_df = self.bank_fg.read()
+                self.bank_df = pl.from_pandas(self.bank_fg.read())
                 print(f"  Loaded {len(self.bank_df)} banks")
                 return
             except Exception as e:
@@ -285,7 +323,7 @@ class DataGenerator:
 
         if self.mode == 'backfill' or self.should_generate('banks'):
             print("  Creating feature group: bank_details")
-            self.bank_fg = st.create_feature_group_with_descriptions(
+            self.bank_fg = st.get_or_create_feature_group_with_descriptions(
                 self.fs,
                 self.bank_df,
                 "bank_details",
@@ -294,8 +332,10 @@ class DataGenerator:
                 "last_modified",
                 online_enabled=True
             )
-
-        print(f"  Generated {len(self.bank_df)} banks")
+            self.inserted_counts['banks'] = len(self.bank_df)
+            print(f"  Inserted {len(self.bank_df)} banks")
+        else:
+            print(f"  Loaded {len(self.bank_df)} banks (not inserted)")
 
     def get_or_create_accounts(self):
         """Generate or load account data."""
@@ -303,7 +343,7 @@ class DataGenerator:
             print("\nLoading existing account data...")
             try:
                 self.account_fg = self.fs.get_feature_group("account_details", version=1)
-                self.account_df = self.account_fg.read()
+                self.account_df = pl.from_pandas(self.account_fg.read())
                 print(f"  Loaded {len(self.account_df)} accounts")
 
                 # Ensure home_country exists for transaction generation
@@ -334,7 +374,7 @@ class DataGenerator:
 
         if self.mode == 'backfill' or self.should_generate('accounts'):
             print("  Creating feature group: account_details")
-            self.account_fg = st.create_feature_group_with_descriptions(
+            self.account_fg = st.get_or_create_feature_group_with_descriptions(
                 self.fs,
                 self.account_df,
                 "account_details",
@@ -343,8 +383,10 @@ class DataGenerator:
                 "last_modified",
                 online_enabled=True
             )
-
-        print(f"  Generated {len(self.account_df)} accounts")
+            self.inserted_counts['accounts'] = len(self.account_df)
+            print(f"  Inserted {len(self.account_df)} accounts")
+        else:
+            print(f"  Loaded {len(self.account_df)} accounts (not inserted)")
 
     def get_or_create_cards(self):
         """Generate or load card data."""
@@ -352,7 +394,7 @@ class DataGenerator:
             print("\nLoading existing card data...")
             try:
                 self.card_fg = self.fs.get_feature_group("card_details", version=1)
-                self.card_df = self.card_fg.read()
+                self.card_df = pl.from_pandas(self.card_fg.read())
                 print(f"  Loaded {len(self.card_df)} cards")
                 return
             except Exception as e:
@@ -370,7 +412,7 @@ class DataGenerator:
 
         if self.mode == 'backfill' or self.should_generate('cards'):
             print("  Creating feature group: card_details")
-            self.card_fg = st.create_feature_group_with_descriptions(
+            self.card_fg = st.get_or_create_feature_group_with_descriptions(
                 self.fs,
                 self.card_df,
                 "card_details",
@@ -380,8 +422,10 @@ class DataGenerator:
                 topic_name=f"{self.project.name}_card_details_onlinefs",
                 online_enabled=True
             )
-
-        print(f"  Generated {len(self.card_df)} cards")
+            self.inserted_counts['cards'] = len(self.card_df)
+            print(f"  Inserted {len(self.card_df)} cards")
+        else:
+            print(f"  Loaded {len(self.card_df)} cards (not inserted)")
 
     def generate_transactions(self):
         """Generate transaction data with realistic location continuity."""
@@ -457,7 +501,7 @@ class DataGenerator:
 
         print("\nSaving transaction data...")
         print("  Creating feature group: credit_card_transactions")
-        self.transactions_fg = st.create_feature_group_with_descriptions(
+        self.transactions_fg = st.get_or_create_feature_group_with_descriptions(
             self.fs,
             self.transaction_df,
             "credit_card_transactions",
@@ -467,10 +511,12 @@ class DataGenerator:
             topic_name=f"{self.project.name}_credit_card_transactions_onlinefs",
             online_enabled=True
         )
+        self.inserted_counts['transactions'] = len(self.transaction_df)
+        print(f"  Inserted {len(self.transaction_df)} transactions")
 
         if self.fraud_df is not None and len(self.fraud_df) > 0:
             print("  Creating feature group: cc_fraud")
-            self.fraud_fg = st.create_feature_group_with_descriptions(
+            self.fraud_fg = st.get_or_create_feature_group_with_descriptions(
                 self.fs,
                 self.fraud_df,
                 "cc_fraud",
@@ -479,6 +525,10 @@ class DataGenerator:
                 "ts",
                 online_enabled=False
             )
+            self.inserted_counts['fraud'] = len(self.fraud_df)
+            print(f"  Inserted {len(self.fraud_df)} fraud records")
+        else:
+            print("  No fraud data to insert")
 
     def print_summary(self):
         """Print summary statistics."""
@@ -486,23 +536,26 @@ class DataGenerator:
         print("Data Generation Summary")
         print("=" * 60)
         print(f"Mode: {self.mode}")
-        print(f"Entities: {', '.join(self.entities)}")
-        print("\nGenerated Data:")
+        print(f"Entities requested: {', '.join(self.entities)}")
 
-        if self.merchant_df is not None:
-            print(f"  Merchants: {len(self.merchant_df):,} rows")
-        if self.bank_df is not None:
-            print(f"  Banks: {len(self.bank_df):,} rows")
-        if self.account_df is not None:
-            print(f"  Accounts: {len(self.account_df):,} rows")
-        if self.card_df is not None:
-            print(f"  Cards: {len(self.card_df):,} rows")
-        if self.transaction_df is not None:
-            print(f"  Transactions: {len(self.transaction_df):,} rows")
-        if self.fraud_df is not None:
-            print(f"  Fraudulent Transactions: {len(self.fraud_df):,} rows")
-            fraud_rate_actual = len(self.fraud_df) / len(self.transaction_df) * 100
-            print(f"  Actual Fraud Rate: {fraud_rate_actual:.4f}%")
+        if self.inserted_counts:
+            print("\nInserted Data:")
+            if 'merchants' in self.inserted_counts:
+                print(f"  Merchants: {self.inserted_counts['merchants']:,} rows")
+            if 'banks' in self.inserted_counts:
+                print(f"  Banks: {self.inserted_counts['banks']:,} rows")
+            if 'accounts' in self.inserted_counts:
+                print(f"  Accounts: {self.inserted_counts['accounts']:,} rows")
+            if 'cards' in self.inserted_counts:
+                print(f"  Cards: {self.inserted_counts['cards']:,} rows")
+            if 'transactions' in self.inserted_counts:
+                print(f"  Transactions: {self.inserted_counts['transactions']:,} rows")
+            if 'fraud' in self.inserted_counts:
+                print(f"  Fraudulent Transactions: {self.inserted_counts['fraud']:,} rows")
+                fraud_rate_actual = self.inserted_counts['fraud'] / self.inserted_counts['transactions'] * 100
+                print(f"  Actual Fraud Rate: {fraud_rate_actual:.4f}%")
+        else:
+            print("\nNo data was inserted (all entities were loaded from existing feature groups)")
 
         print("=" * 60)
 

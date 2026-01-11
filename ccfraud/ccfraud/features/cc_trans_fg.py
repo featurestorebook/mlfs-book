@@ -10,7 +10,7 @@ from hsfs.transformation_statistics import TransformationStatistics
 root_dir=""
 
 
-@hopsworks.udf(int, drop=['prev_transaction_time'], mode="pandas")
+@hopsworks.udf(int, mode="pandas")
 def days_to_card_expiry(expiry_date: pd.Series) -> pd.Series:
     """
        the number of days until the credit card expires
@@ -18,10 +18,10 @@ def days_to_card_expiry(expiry_date: pd.Series) -> pd.Series:
     bins = [0, 1, 10, 30, 90, 180, float('inf')]
     labels = ['0-1', '2-10', '11-30', '31-90', '91-180', '181-']
     binned_days_to_expiry = pd.cut(expiry_date, bins=bins, labels=labels)
-    # return expiry_date.dt.date() - datetime.now.date()
+    return binned_days_to_expiry
 
-@hopsworks.udf(int, TransformationStatistics)
-def amount_deviation_from_avg(amount, statistics=statistics, mode="pandas"):
+@hopsworks.udf(int, mode="pandas")
+def amount_deviation_from_avg(amount, statistics: TransformationStatistics = None):
     """
        calculates how much a given transaction deviates from avg transaction amounts for a given card
     """

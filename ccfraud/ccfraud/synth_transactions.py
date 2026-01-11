@@ -1084,7 +1084,7 @@ def generate_credit_card_transactions_with_location_continuity(
 # Feature group helper - add account_id description
 # ---------------------------
 
-def create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, 
+def get_or_create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True,
                                            features=None, time_travel_format="DELTA"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
@@ -1094,95 +1094,101 @@ def create_feature_group_with_descriptions(fs, df, name, description, primary_ke
         except Exception:
             topic_name = None
 
-    if features == None:
-        fg = fs.create_feature_group(
-            name=name,
-            version=1,
-            description=description,
-            primary_key=primary_key,
-            event_time=event_time_col,
-            topic_name=topic_name,
-            online_enabled=online_enabled,
-            time_travel_format=time_travel_format
-        )
+    # Check if feature group already exists
+    fg = fs.get_feature_group(name=name, version=1)
+    fg_already_exists = fg is not None
+
+    if fg_already_exists:
+        print(f"  Feature group '{name}' already exists - skipping description updates")
+        fg.insert(df)
     else:
-        fg = fs.create_feature_group(
-            name=name,
-            version=1,
-            description=description,
-            primary_key=primary_key,
-            event_time=event_time_col,
-            topic_name=topic_name,
-            online_enabled=online_enabled,
-            time_travel_format=time_travel_format,
-            features=features
-        )
-
-    fg.insert(df)
-
-    feature_descriptions = {
-        "merchant_details": {
-            "merchant_id": "Unique sequential integer identifier for each merchant",
-            "category": "Merchant category codes for goods or service purchased",
-            "country": "Country where merchant resides",
-            "cnt_chrgeback_prev_day": "Number of chargebacks for this merchant during the previous day",
-            "cnt_chrgeback_prev_week": "Number of chargebacks for this merchant during the previous week",
-            "cnt_chrgeback_prev_month": "Number of chargebacks for this merchant during the previous month",
-            "last_modified": "Timestamp when the merchant details was last updated"
-        },
-        "bank_details": {
-            "bank_id": "Unique sequential integer identifier for each bank",
-            "country": "Country where bank resides",
-            "credit_rating": "Bank credit rating on a scale of 1 to 10",
-            "last_modified": "Timestamp when the bank details was last updated"
-        },
-        "account_details": {
-            "account_id": "Unique sequential integer identifier for the card owner",
-            "name": "Full name of the account owner",
-            "address": "Address where account owner resides",
-            "debt_end_prev_month": "Amount of debt/credit at end of previous month",
-            "last_modified": "Timestamp when the account_details was last updated",
-            "creation_date": "Timestamp when the account was created",
-            "end_date": "Timestamp when the account was closed (null if still active)"
-        },
-        "card_details": {
-            "card_id": "Unique sequential integer identifier for each card",
-            "cc_num": "Credit card number in format XXXX-XXXX-XXXX-XXXX",
-            "cc_expiry_date": "Card's expiration date (year and month only)",
-            "account_id": "Foreign key reference to account_details table (bigint)",
-            "bank_id": "Foreign key reference to bank_details table (bigint)",
-            "issue_date": "Card's issue date (0 to 3 years before current date)",
-            "card_type": "Type of card (Credit, Debit, Prepaid)",
-            "status": "Current status of the card (Active, Blocked, Lost/Stolen)",
-            "last_modified": "Timestamp when the card details was last updated"
-        },
-        "credit_card_transactions": {
-            "t_id": "Unique identifier for this credit card transaction",
-            "cc_num": "Foreign key reference to credit card (card_details.cc_num)",
-            "account_id": "Foreign key reference to account_details (via card_details.account_id)",
-            "merchant_id": "Foreign key reference to merchant table",
-            "amount": "Credit card transaction amount in decimal format",
-            "ip_address": "IP address of the physical or online merchant (format: XXX.XXX.XXX.XXX)",
-            "card_present": "Whether credit card was used in a physical terminal (true) or online payment (false)",
-            "ts": "Timestamp for this credit card transaction"
-        },
-        "cc_fraud": {
-            "t_id": "Unique identifier for this credit card transaction",
-            "cc_num": "Foreign key reference to credit card (card_details.cc_num)",
-            "explanation": "Reasoning for why the Credit card transaction was marked as fraudulent (e.g., geographic ",
-            "ts": "Timestamp for this credit card transaction"
+        # Feature group doesn't exist, create it
+        if features == None:
+            fg = fs.create_feature_group(
+                name=name,
+                version=1,
+                description=description,
+                primary_key=primary_key,
+                event_time=event_time_col,
+                topic_name=topic_name,
+                online_enabled=online_enabled,
+                time_travel_format=time_travel_format
+            )
+        else:
+            fg = fs.create_feature_group(
+                name=name,
+                version=1,
+                description=description,
+                primary_key=primary_key,
+                event_time=event_time_col,
+                topic_name=topic_name,
+                online_enabled=online_enabled,
+                time_travel_format=time_travel_format,
+                features=features
+            )
+        fg.insert(df)
+        feature_descriptions = {
+            "merchant_details": {
+                "merchant_id": "Unique sequential integer identifier for each merchant",
+                "category": "Merchant category codes for goods or service purchased",
+                "country": "Country where merchant resides",
+                "cnt_chrgeback_prev_day": "Number of chargebacks for this merchant during the previous day",
+                "cnt_chrgeback_prev_week": "Number of chargebacks for this merchant during the previous week",
+                "cnt_chrgeback_prev_month": "Number of chargebacks for this merchant during the previous month",
+                "last_modified": "Timestamp when the merchant details was last updated"
+            },
+            "bank_details": {
+                "bank_id": "Unique sequential integer identifier for each bank",
+                "country": "Country where bank resides",
+                "credit_rating": "Bank credit rating on a scale of 1 to 10",
+                "last_modified": "Timestamp when the bank details was last updated"
+            },
+            "account_details": {
+                "account_id": "Unique sequential integer identifier for the card owner",
+                "name": "Full name of the account owner",
+                "address": "Address where account owner resides",
+                "debt_end_prev_month": "Amount of debt/credit at end of previous month",
+                "last_modified": "Timestamp when the account_details was last updated",
+                "creation_date": "Timestamp when the account was created",
+                "end_date": "Timestamp when the account was closed (null if still active)"
+            },
+            "card_details": {
+                "card_id": "Unique sequential integer identifier for each card",
+                "cc_num": "Credit card number in format XXXX-XXXX-XXXX-XXXX",
+                "cc_expiry_date": "Card's expiration date (year and month only)",
+                "account_id": "Foreign key reference to account_details table (bigint)",
+                "bank_id": "Foreign key reference to bank_details table (bigint)",
+                "issue_date": "Card's issue date (0 to 3 years before current date)",
+                "card_type": "Type of card (Credit, Debit, Prepaid)",
+                "status": "Current status of the card (Active, Blocked, Lost/Stolen)",
+                "last_modified": "Timestamp when the card details was last updated"
+            },
+            "credit_card_transactions": {
+                "t_id": "Unique identifier for this credit card transaction",
+                "cc_num": "Foreign key reference to credit card (card_details.cc_num)",
+                "account_id": "Foreign key reference to account_details (via card_details.account_id)",
+                "merchant_id": "Foreign key reference to merchant table",
+                "amount": "Credit card transaction amount in decimal format",
+                "ip_address": "IP address of the physical or online merchant (format: XXX.XXX.XXX.XXX)",
+                "card_present": "Whether credit card was used in a physical terminal (true) or online payment (false)",
+                "ts": "Timestamp for this credit card transaction"
+            },
+            "cc_fraud": {
+                "t_id": "Unique identifier for this credit card transaction",
+                "cc_num": "Foreign key reference to credit card (card_details.cc_num)",
+                "explanation": "Reasoning for why the Credit card transaction was marked as fraudulent (e.g., geographic ",
+                "ts": "Timestamp for this credit card transaction"
+            }
         }
-    }
-
-    if name in feature_descriptions:
-        for feature_name, feature_desc in feature_descriptions[name].items():
-            if feature_name in df.columns:
-                try:
-                    fg.update_feature_description(feature_name=feature_name, description=feature_desc)
-                    print(f"  Added description for: {feature_name}")
-                except Exception as e:
-                    print(f"  Warning: Could not add description for {feature_name}: {e}")
-
+        if name in feature_descriptions:
+            for feature_name, feature_desc in feature_descriptions[name].items():
+                if feature_name in df.columns:
+                    try:
+                        fg.update_feature_description(feature_name=feature_name, description=feature_desc)
+                        print(f"  Added description for: {feature_name}")
+                    except Exception as e:
+                        print(f"  Warning: Could not add description for {feature_name}: {e}")
+    
     return fg
 
 

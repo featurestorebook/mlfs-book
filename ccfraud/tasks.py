@@ -82,16 +82,6 @@ def run_interruptible(c, command, pty=True):
 ##########################################
 
 @task
-def cc_gen_kafka(c):
-    """Run Kafka transactions generator notebook."""
-    check_venv()
-    print("#################################################")
-    print("########## Incremental Data Generation ##########")
-    print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/transactions_synthetic_kafka_generator.ipynb")
-
-
-@task
 def clean(c):
     """Removes all feature groups, feature views, models, deployments for this example."""
     check_venv()
@@ -103,7 +93,7 @@ def clean(c):
 
 
 @task
-def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001):
+def backfill_1(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
     """Generate synthetic data using parameterized Python script.
 
     Args:
@@ -111,19 +101,35 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         entities: Comma-separated list of entities to generate (default: 'all')
         num_transactions: Number of transactions to generate (default: 500000)
         fraud_rate: Fraud rate as decimal (default: 0.0001)
+        start_date: Start date for transactions in YYYY-MM-DD format (default: 30 days ago)
+        end_date: End date for transactions in YYYY-MM-DD format (default: today)
 
     Examples:
-        inv gen                                    # Full backfill
-        inv gen --mode=incremental --entities=transactions --num-transactions=10000
-        inv gen --fraud-rate=0.001                # Higher fraud rate
+        inv backfill-1                                    # Full backfill (previous 30 days)
+        inv backfill-1 --start-date=2025-11-01 --end-date=2025-12-01
+        inv backfill-1 --mode=incremental --entities=transactions --num-transactions=10000
+        inv backfill-1 --fraud-rate=0.001                # Higher fraud rate
     """
+    from datetime import datetime, timedelta
+
     check_venv()
     print("#################################################")
     print("########## Parameterized Data Generation ########")
     print("#################################################")
 
+    # Calculate default date range (previous 30 days)
+    if end_date is None:
+        end_dt = datetime.now()
+        end_date = end_dt.strftime('%Y-%m-%d')
+    else:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+
+    if start_date is None:
+        start_dt = end_dt - timedelta(days=30)
+        start_date = start_dt.strftime('%Y-%m-%d')
+
     # Build command
-    cmd = f"uv run python ccfraud/data_generator.py --mode {mode}"
+    cmd = f"uv run python ccfraud/data_generator.py --mode {mode} --start-date {start_date} --end-date {end_date}"
 
     if entities != "all":
         # Convert comma-separated to space-separated for argparse
@@ -136,11 +142,54 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
     if fraud_rate != 0.0001:
         cmd += f" --fraud-rate {fraud_rate}"
 
+    print(f"Transaction date range: {start_date} to {end_date}")
     print(f"\nRunning: {cmd}\n")
     run_interruptible(c, cmd)
 
 @task
-def features(c):
+def transactions(c, start_date=None, end_date=None, num_transactions=20000):
+    """Generate credit card transactions within a time range (uses existing entities).
+
+    Args:
+        start_date: Start date for transactions in YYYY-MM-DD format (default: 24 hours ago)
+        end_date: End date for transactions in YYYY-MM-DD format (default: now)
+        num_transactions: Number of transactions to generate (default: 20000)
+
+    Examples:
+        inv transactions                                    # Previous 24 hours
+        inv transactions --start-date=2025-12-01 --end-date=2025-12-25
+        inv transactions --num-transactions=50000
+    """
+    from datetime import datetime, timedelta
+
+    check_venv()
+    print("#################################################")
+    print("######### Generate CC Transactions ##############")
+    print("#################################################")
+
+    # Calculate default time range (previous 24 hours)
+    if end_date is None:
+        end_dt = datetime.now()
+        end_date = end_dt.strftime('%Y-%m-%d')
+    else:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+
+    if start_date is None:
+        start_dt = end_dt - timedelta(days=1)
+        start_date = start_dt.strftime('%Y-%m-%d')
+    else:
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+
+    cmd = (f"uv run python ccfraud/data_generator.py --mode incremental "
+           f"--entities transactions --num-transactions {num_transactions} "
+           f"--start-date {start_date} --end-date {end_date}")
+
+    print(f"Time range: {start_date} to {end_date}")
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
+
+@task
+def features_3(c):
     """Runs a daily scheduled batch feature pipeline for for credit card transaction data."""
     check_venv()
     print("#################################################")
@@ -149,7 +198,7 @@ def features(c):
     run_interruptible(c, "uv run python ccfraud/3-batch-feature-pipeline.py")
 
 @task
-def train(c):
+def train_4(c):
     """Training pipeline for credit card fraud prediction model."""
     check_venv()
     print("#################################################")
@@ -158,7 +207,7 @@ def train(c):
     run_interruptible(c, "uv run ipython notebooks/4-training-cc-fraud-pipeline.ipynb")
 
 @task
-def inference(c):
+def inference_5(c):
     """Deploys an online inference pipeline for credit card fraud prediction."""
     check_venv()
     print("#################################################")
@@ -184,8 +233,8 @@ def feldera_stop(c):
     print("#################################################")
     run_interruptible(c, "bash scripts/1a-run-feldera.sh stop")
 
-@task
-def feldera(c):
+@task(pre=[feldera_start])
+def feldera_2(c):
     """Streaming feature pipeline started locally with Feldera."""
     check_venv()
     print("#################################################")
@@ -202,7 +251,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill, features, train, inference])
+@task(pre=[backfill_1, feldera_2, features_3, train_4, inference_5])
 def all(c):
     """Runs feature/training pipelines, deploys credit card model."""
     pass
