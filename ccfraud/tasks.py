@@ -94,7 +94,7 @@ def clean(c):
 
 @task
 def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
-    """Generate synthetic data using parameterized Python script.
+    """Generate and insert synthetic data.
 
     Args:
         mode: Generation mode ('backfill' or 'incremental')
@@ -147,8 +147,8 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
     run_interruptible(c, cmd)
 
 @task
-def transactions(c, start_date=None, end_date=None, num_transactions=20000):
-    """Generate credit card transactions within a time range (uses existing entities).
+def batch_transactions(c, start_date=None, end_date=None, num_transactions=20000):
+    """Inserts a batch of synthetic credit card transactions.
 
     Args:
         start_date: Start date for transactions in YYYY-MM-DD format (default: 24 hours ago)
@@ -156,9 +156,9 @@ def transactions(c, start_date=None, end_date=None, num_transactions=20000):
         num_transactions: Number of transactions to generate (default: 20000)
 
     Examples:
-        inv transactions                                    # Previous 24 hours
-        inv transactions --start-date=2025-12-01 --end-date=2025-12-25
-        inv transactions --num-transactions=50000
+        inv batch-transactions                                    # Previous 24 hours
+        inv batch-transactions --start-date=2025-12-01 --end-date=2025-12-25
+        inv batch-transactions --num-transactions=50000
     """
     from datetime import datetime, timedelta
 
@@ -189,8 +189,8 @@ def transactions(c, start_date=None, end_date=None, num_transactions=20000):
     run_interruptible(c, cmd)
 
 @task
-def produce_streaming_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
-    """Generate continuous stream of credit card transactions until Ctrl-C.
+def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
+    """Insert stream of cc transactions until Ctrl-C.
 
     Publishes to credit_card_transactions feature group, which automatically
     syncs to Kafka for Feldera real-time pipeline.
@@ -200,9 +200,9 @@ def produce_streaming_transactions(c, transactions_per_sec=10, fraud_rate=0.005)
         fraud_rate: Fraud rate as decimal (default: 0.005 = 0.5%)
 
     Examples:
-        inv produce-streaming-transactions                           # 10 TPS
-        inv produce-streaming-transactions --transactions-per-sec=50 # 50 TPS
-        inv produce-streaming-transactions --transactions-per-sec=1  # 1 TPS
+        inv stream-transactions                           # 10 TPS
+        inv stream-transactions --transactions-per-sec=50 # 50 TPS
+        inv stream-transactions --transactions-per-sec=1  # 1 TPS
 
     Press Ctrl-C to stop gracefully.
     """
@@ -228,7 +228,7 @@ def produce_streaming_transactions(c, transactions_per_sec=10, fraud_rate=0.005)
 
 @task
 def features(c):
-    """Runs a daily scheduled batch feature pipeline for for credit card transaction data."""
+    """A batch feature pipeline to create features."""
     check_venv()
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
@@ -237,7 +237,7 @@ def features(c):
 
 @task
 def train(c):
-    """Training pipeline for credit card fraud prediction model."""
+    """Training pipeline for credit card fraud prediction."""
     check_venv()
     print("#################################################")
     print("############# Training Pipeline #################")
@@ -246,7 +246,7 @@ def train(c):
 
 @task
 def inference(c):
-    """Deploys an online inference pipeline for credit card fraud prediction."""
+    """Inference pipeline for credit card fraud prediction."""
     check_venv()
     print("#################################################")
     print("#############  Inference Pipeline ###############")
@@ -255,7 +255,7 @@ def inference(c):
 
 @task
 def feldera_start(c):
-    """Start Feldera Docker container locally."""
+    """Start Feldera Docker container as a background process."""
     check_venv()
     print("#################################################")
     print("#######  Starting Feldera Container  ############")
@@ -273,7 +273,7 @@ def feldera_stop(c):
 
 @task(pre=[feldera_start])
 def feldera(c):
-    """Streaming feature pipeline started locally with Feldera."""
+    """Create/deploy streaming feature pipeline with Feldera."""
     check_venv()
     print("#################################################")
     print("#######  Feldera Streeaming Pipeline ############")
@@ -294,5 +294,5 @@ def test(c):
 
 @task(pre=[backfill, feldera, features]) #, train, inference])
 def all(c):
-    """Runs, in order: backfill, feldera, features, train, inference."""
+    """backfill, feldera, features, train, inference."""
     pass

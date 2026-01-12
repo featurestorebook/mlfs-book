@@ -135,9 +135,18 @@ def llm(c):
     check_venv()
     c.run("uv run ipython notebooks/5_function_calling.ipynb")
 
+@task
+def test(c):
+    """Run all unit tests using pytest."""
+    check_venv()
+    print("#################################################")
+    print("############### Running Tests ###################")
+    print("#################################################")
+    c.run("uv run pytest tests/ -v")
+
 @task(pre=[backfill, train, features, inference])
 def all(c):
-    """Runs all FTI pipelines in order, outputs air quality predictions."""
+    """Run all feature/training/inference pipelines."""
     pass
 
 
