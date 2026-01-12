@@ -27,8 +27,11 @@ import warnings
 import argparse
 from datetime import datetime, timedelta
 from typing import List, Optional
+import time
+import signal
 import hopsworks
 import polars as pl
+import numpy as np
 
 warnings.filterwarnings("ignore", module="IPython")
 
@@ -73,9 +76,9 @@ Examples:
     # Mode selection
     parser.add_argument(
         '--mode',
-        choices=['backfill', 'incremental'],
+        choices=['backfill', 'incremental', 'streaming'],
         default='backfill',
-        help='Generation mode: backfill (create all) or incremental (use existing)'
+        help='Generation mode: backfill (create all), incremental (use existing), streaming (continuous)'
     )
 
     # Entity selection
@@ -135,6 +138,13 @@ Examples:
         type=float,
         default=0.9,
         help='Ratio of chain attacks vs geographic fraud (default: 0.9 = 90%%)'
+    )
+
+    parser.add_argument(
+        '--transactions-per-sec',
+        type=int,
+        default=10,
+        help='Transactions per second for streaming mode (range: 1-100, default: 10)'
     )
 
     # Date parameters
@@ -613,10 +623,366 @@ class DataGenerator:
         print("\n✓ Data generation completed successfully!")
 
 
+class StreamingGenerator:
+    """Manages continuous streaming transaction generation."""
+
+    def __init__(self, args):
+        """Initialize the streaming generator with parsed arguments."""
+        self.args = args
+        self.tps = args.transactions_per_sec
+
+        # Validate TPS range
+        if not (1 <= self.tps <= 100):
+            print(f"ERROR: --transactions-per-sec must be between 1-100 (got {self.tps})")
+            sys.exit(1)
+
+        # Initialize Hopsworks connection
+        env_file = args.env_file or str(root_dir / '.env')
+        print(f"Loading environment from: {env_file}")
+        self.settings = config.HopsworksSettings(_env_file=env_file)
+
+        print("\nConnecting to Hopsworks...")
+        self.project = hopsworks.login()
+        self.fs = self.project.get_feature_store()
+        print(f"Connected to project: {self.project.name}")
+
+        # State tracking
+        self.shutdown_requested = False
+        self.current_t_id = 0
+        self.last_ip_per_card = {}  # Track IP continuity: {cc_num: (ip, timestamp, country)}
+        self.total_transactions = 0
+        self.total_fraud = 0
+
+        # Random number generator
+        self.rng = np.random.default_rng(args.seed)
+
+        # Setup signal handler for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+
+        # Load entities and setup feature groups
+        print("\nLoading existing entities...")
+        self._load_entities()
+        self._get_feature_groups()
+
+        # Get max transaction ID to continue numbering
+        self.current_t_id = self._get_max_transaction_id() + 1
+        print(f"  Starting from transaction ID: {self.current_t_id}")
+
+    def _signal_handler(self, sig, frame):
+        """Handle Ctrl-C gracefully."""
+        print("\n\n⚠️  Shutdown requested... completing current batch...")
+        self.shutdown_requested = True
+
+    def _load_entities(self):
+        """Load existing merchants, banks, accounts, and cards from feature groups."""
+        try:
+            # Load merchants
+            merchant_fg = self.fs.get_feature_group("merchant_details", version=1)
+            self.merchant_df = pl.from_pandas(merchant_fg.read())
+            print(f"  Loaded {len(self.merchant_df)} merchants")
+
+            # Load banks
+            bank_fg = self.fs.get_feature_group("bank_details", version=1)
+            self.bank_df = pl.from_pandas(bank_fg.read())
+            print(f"  Loaded {len(self.bank_df)} banks")
+
+            # Load accounts with home_country
+            account_fg = self.fs.get_feature_group("account_details", version=1)
+            self.account_df = pl.from_pandas(account_fg.read())
+
+            # Ensure home_country exists
+            if "home_country" not in self.account_df.columns:
+                print("  Assigning home locations to accounts...")
+                self.account_df = st.assign_cardholder_home_locations(
+                    self.account_df,
+                    seed=self.args.seed
+                )
+            print(f"  Loaded {len(self.account_df)} accounts")
+
+            # Load cards
+            card_fg = self.fs.get_feature_group("card_details", version=1)
+            self.card_df = pl.from_pandas(card_fg.read())
+            print(f"  Loaded {len(self.card_df)} cards")
+
+            # Join cards with accounts to get home_country
+            self.cards_with_home = self.card_df.join(
+                self.account_df.select(["account_id", "home_country"]),
+                on="account_id",
+                how="left"
+            ).with_columns(
+                pl.col("home_country").fill_null("United States")
+            )
+
+        except Exception as e:
+            print(f"\nERROR: Could not load existing entities: {e}")
+            print("Please run backfill mode first:")
+            print("  inv backfill-1")
+            sys.exit(1)
+
+    def _get_feature_groups(self):
+        """Get references to feature groups for insertion."""
+        try:
+            self.transactions_fg = self.fs.get_feature_group("credit_card_transactions", version=1)
+            self.fraud_fg = self.fs.get_feature_group("cc_fraud", version=1)
+            print(f"  Feature groups ready for streaming")
+        except Exception as e:
+            print(f"\nERROR: Could not get feature groups: {e}")
+            print("Please run backfill mode first:")
+            print("  inv backfill-1")
+            sys.exit(1)
+
+    def _get_max_transaction_id(self) -> int:
+        """Query feature group for max t_id to continue numbering."""
+        try:
+            df = pl.from_pandas(self.transactions_fg.read())
+            if df.height == 0:
+                return 0
+            max_id = df.select(pl.col("t_id").max()).item()
+            return max_id if max_id is not None else 0
+        except Exception as e:
+            print(f"  Warning: Could not query max t_id, starting from 0: {e}")
+            return 0
+
+    def _calculate_batch_params(self):
+        """Calculate optimal batch size and sleep interval."""
+        if self.tps >= 10:
+            batch_size = 10
+            interval = 10.0 / self.tps  # seconds between batches
+        else:
+            batch_size = max(1, self.tps)
+            interval = 1.0
+        return batch_size, interval
+
+    def _generate_batch(self, batch_size: int):
+        """Generate a micro-batch of transactions with real-time timestamps."""
+        # Create timestamps for this batch (spread across microseconds for ordering)
+        now = datetime.now()
+        timestamps = [now + timedelta(microseconds=i * 1000) for i in range(batch_size)]
+
+        # Sample cards, merchants, accounts randomly
+        card_indices = self.rng.choice(len(self.cards_with_home), size=batch_size, replace=True)
+        merchant_indices = self.rng.choice(len(self.merchant_df), size=batch_size, replace=True)
+
+        # Build transaction dataframe
+        txn_list = []
+        for i in range(batch_size):
+            card_row = self.cards_with_home.row(card_indices[i], named=True)
+            merchant_row = self.merchant_df.row(merchant_indices[i], named=True)
+
+            cc_num = card_row['cc_num']
+            account_id = card_row['account_id']
+            home_country = card_row['home_country']
+            merchant_id = merchant_row['merchant_id']
+
+            # Generate amount (log-normal distribution)
+            amount = float(self.rng.lognormal(mean=3.5, sigma=1.2))
+
+            # Generate IP address with continuity
+            ip_address, country = self._generate_ip_with_continuity(cc_num, home_country)
+
+            # Card present (random)
+            card_present = bool(self.rng.choice([0, 1], p=[0.7, 0.3]))
+
+            txn_list.append({
+                't_id': self.current_t_id + i,
+                'cc_num': cc_num,
+                'account_id': account_id,
+                'merchant_id': merchant_id,
+                'amount': amount,
+                'ip_address': ip_address,
+                'card_present': card_present,
+                'ts': timestamps[i]
+            })
+
+            # Update IP state
+            self.last_ip_per_card[cc_num] = (ip_address, timestamps[i], country)
+
+        # Create DataFrame
+        txn_df = pl.DataFrame(txn_list)
+
+        # Increment transaction ID counter
+        self.current_t_id += batch_size
+
+        return txn_df
+
+    def _generate_ip_with_continuity(self, cc_num: str, home_country: str):
+        """Generate IP address with location continuity."""
+        # Check if card has recent IP state
+        if cc_num in self.last_ip_per_card:
+            last_ip, last_ts, last_country = self.last_ip_per_card[cc_num]
+
+            # 60% chance to stay in same location (same subnet)
+            if self.rng.random() < 0.6:
+                # Keep same IP or generate from same subnet
+                return last_ip, last_country
+
+        # Generate new IP based on location distribution
+        location_choice = self.rng.choice(
+            ["home", "local", "international"],
+            p=[0.85, 0.10, 0.05]
+        )
+
+        if location_choice == "home":
+            country = home_country
+        elif location_choice == "local":
+            # Neighboring country (simplified - just pick a random country)
+            country = self.rng.choice(list(st.COUNTRY_IP_RANGES.keys()))
+        else:
+            # International travel
+            country = self.rng.choice(list(st.COUNTRY_IP_RANGES.keys()))
+
+        # Generate IP for this country
+        ip_address = st.generate_ip_for_country(country, self.rng)
+
+        return ip_address, country
+
+    def _generate_fraud_for_batch(self, txn_df: pl.DataFrame):
+        """Generate fraud records for a batch of transactions."""
+        if len(txn_df) == 0:
+            return pl.DataFrame(schema={"t_id": pl.Int64, "cc_num": pl.Utf8, "explanation": pl.Utf8, "ts": pl.Datetime})
+
+        # Use existing fraud generation logic
+        try:
+            _, fraud_df = st.generate_fraud(
+                transaction_df=txn_df,
+                card_df=self.card_df,
+                merchant_df=self.merchant_df,
+                fraud_rate=self.args.fraud_rate,
+                chain_attack_ratio=self.args.chain_attack_ratio,
+                seed=self.args.seed + self.total_transactions  # Vary seed
+            )
+            return fraud_df
+        except Exception as e:
+            print(f"  Warning: Could not generate fraud for batch: {e}")
+            return pl.DataFrame(schema={"t_id": pl.Int64, "cc_num": pl.Utf8, "explanation": pl.Utf8, "ts": pl.Datetime})
+
+    def _insert_batch(self, txn_df: pl.DataFrame, fraud_df: pl.DataFrame):
+        """Insert batch to feature groups (publishes to Kafka automatically)."""
+        try:
+            # Insert transactions (automatically publishes to Kafka)
+            self.transactions_fg.multi_part_insert(txn_df.to_pandas())
+
+            # Insert fraud if any
+            if fraud_df is not None and len(fraud_df) > 0:
+                self.fraud_fg.multi_part_insert(fraud_df.to_pandas())
+
+        except Exception as e:
+            print(f"\n  WARNING: Failed to insert batch: {e}")
+            print("  Retrying in 5 seconds...")
+            time.sleep(5)
+            # Retry once
+            try:
+                self.transactions_fg.multi_part_insert(txn_df.to_pandas())
+                if fraud_df is not None and len(fraud_df) > 0:
+                    self.fraud_fg.multi_part_insert(fraud_df.to_pandas())
+            except Exception as e2:
+                print(f"  ERROR: Retry failed: {e2}")
+                print("  Skipping this batch...")
+
+    def _cleanup_ip_state(self):
+        """Limit IP state tracking to prevent memory growth."""
+        MAX_TRACKED_CARDS = 10000
+        if len(self.last_ip_per_card) > MAX_TRACKED_CARDS:
+            # Keep only the most recent 50%
+            sorted_by_time = sorted(
+                self.last_ip_per_card.items(),
+                key=lambda x: x[1][1],  # Sort by timestamp
+                reverse=True
+            )
+            self.last_ip_per_card = dict(sorted_by_time[:MAX_TRACKED_CARDS // 2])
+
+    def print_summary(self):
+        """Print final summary statistics."""
+        print("\n" + "=" * 60)
+        print("Streaming Transaction Generator - Summary")
+        print("=" * 60)
+        print(f"Total Transactions Generated: {self.total_transactions:,}")
+        print(f"Total Fraud Records: {self.total_fraud:,}")
+        if self.total_transactions > 0:
+            fraud_rate_actual = self.total_fraud / self.total_transactions * 100
+            print(f"Actual Fraud Rate: {fraud_rate_actual:.4f}%")
+        print(f"Final Transaction ID: {self.current_t_id - 1}")
+        print("=" * 60)
+
+    def run(self):
+        """Main streaming loop with drift-correcting rate limiter."""
+        batch_size, target_interval = self._calculate_batch_params()
+
+        print("\n" + "=" * 60)
+        print("Credit Card Fraud Detection - Streaming Generator")
+        print("=" * 60)
+        print(f"Rate: {self.tps} transactions/second")
+        print(f"Batch size: {batch_size} transactions")
+        print(f"Batch interval: {target_interval:.3f} seconds")
+        print(f"Fraud rate: {self.args.fraud_rate * 100:.2f}%")
+        print(f"Publishing to: credit_card_transactions FG → Kafka")
+        print("\nPress Ctrl-C to stop gracefully...")
+        print("=" * 60 + "\n")
+
+        start_time = time.time()
+        batch_count = 0
+        last_report_time = start_time
+
+        try:
+            while not self.shutdown_requested:
+                batch_start = time.time()
+
+                # Generate batch
+                txn_df = self._generate_batch(batch_size)
+
+                # Generate fraud for batch
+                fraud_df = self._generate_fraud_for_batch(txn_df)
+
+                # Insert batch (publishes to Kafka automatically)
+                self._insert_batch(txn_df, fraud_df)
+
+                # Update counters
+                self.total_transactions += len(txn_df)
+                self.total_fraud += len(fraud_df) if fraud_df is not None else 0
+                batch_count += 1
+
+                # Cleanup IP state periodically
+                if batch_count % 100 == 0:
+                    self._cleanup_ip_state()
+
+                # Progress reporting
+                elapsed = time.time() - start_time
+                if batch_count % 10 == 0 or (elapsed - (last_report_time - start_time)) > 30:
+                    actual_tps = self.total_transactions / elapsed if elapsed > 0 else 0
+                    print(f"  [{elapsed:.0f}s] Generated {self.total_transactions:,} txns "
+                          f"| Rate: {actual_tps:.1f} TPS "
+                          f"| Target: {self.tps} TPS "
+                          f"| Fraud: {self.total_fraud:,}")
+                    last_report_time = time.time()
+
+                # Drift-correcting sleep
+                expected_time = start_time + (batch_count * target_interval)
+                sleep_time = max(0, expected_time - time.time())
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
+        except Exception as e:
+            print(f"\n\nERROR: Streaming failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+        finally:
+            self.transactions_fg.finalize_multi_part_insert()
+            self.fraud_fg.finalize_multi_part_insert()            
+            # Print summary on exit
+            self.print_summary()
+            print("\n✓ Streaming stopped gracefully!")
+
+
 def main():
     """Main entry point."""
     args = parse_args()
-    generator = DataGenerator(args)
+
+    if args.mode == 'streaming':
+        generator = StreamingGenerator(args)
+    else:
+        generator = DataGenerator(args)
+
     generator.run()
 
 

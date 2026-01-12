@@ -92,7 +92,6 @@ def main(last_processed_date, current_date):
             Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance]
-        #transformation_functions=[cc_trans_fg.time_since_last_trans, cc_trans_fg.haversine_distance]
     )
 
     # Save the feature group if it doesn't exist
@@ -100,7 +99,7 @@ def main(last_processed_date, current_date):
         cc_trans_fg_group.save()
         print("Feature Group created successfully")
     except Exception as e:
-        print(f"Feature Group already exists or error: {e}")
+        print("Feature Group already exists")
 
     # Read transaction data filtered by last processed date
     print(f"Reading transactions after {last_processed_date}...")

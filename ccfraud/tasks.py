@@ -93,7 +93,7 @@ def clean(c):
 
 
 @task
-def backfill_1(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
+def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
     """Generate synthetic data using parameterized Python script.
 
     Args:
@@ -105,10 +105,10 @@ def backfill_1(c, mode="backfill", entities="all", num_transactions=500000, frau
         end_date: End date for transactions in YYYY-MM-DD format (default: today)
 
     Examples:
-        inv backfill-1                                    # Full backfill (previous 30 days)
-        inv backfill-1 --start-date=2025-11-01 --end-date=2025-12-01
-        inv backfill-1 --mode=incremental --entities=transactions --num-transactions=10000
-        inv backfill-1 --fraud-rate=0.001                # Higher fraud rate
+        inv backfill                                    # Full backfill (previous 30 days)
+        inv backfill --start-date=2025-11-01 --end-date=2025-12-01
+        inv backfill --mode=incremental --entities=transactions --num-transactions=10000
+        inv backfill --fraud-rate=0.001                # Higher fraud rate
     """
     from datetime import datetime, timedelta
 
@@ -189,7 +189,45 @@ def transactions(c, start_date=None, end_date=None, num_transactions=20000):
     run_interruptible(c, cmd)
 
 @task
-def features_3(c):
+def produce_streaming_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
+    """Generate continuous stream of credit card transactions until Ctrl-C.
+
+    Publishes to credit_card_transactions feature group, which automatically
+    syncs to Kafka for Feldera real-time pipeline.
+
+    Args:
+        transactions_per_sec: Transactions per second (range: 1-100, default: 10)
+        fraud_rate: Fraud rate as decimal (default: 0.005 = 0.5%)
+
+    Examples:
+        inv produce-streaming-transactions                           # 10 TPS
+        inv produce-streaming-transactions --transactions-per-sec=50 # 50 TPS
+        inv produce-streaming-transactions --transactions-per-sec=1  # 1 TPS
+
+    Press Ctrl-C to stop gracefully.
+    """
+    check_venv()
+
+    # Validate parameters
+    if transactions_per_sec < 1 or transactions_per_sec > 100:
+        print(f"ERROR: transactions-per-sec must be between 1-100 (got {transactions_per_sec})")
+        sys.exit(1)
+
+    print("#################################################")
+    print("######### Streaming Transaction Producer ########")
+    print("#################################################")
+    print(f"Rate: {transactions_per_sec} transactions/second")
+    print(f"Fraud rate: {fraud_rate*100:.2f}%")
+    print(f"Publishing to: credit_card_transactions FG → Kafka\n")
+
+    cmd = (f"uv run python ccfraud/data_generator.py --mode streaming "
+           f"--transactions-per-sec {transactions_per_sec} "
+           f"--fraud-rate {fraud_rate}")
+
+    run_interruptible(c, cmd)
+
+@task
+def features(c):
     """Runs a daily scheduled batch feature pipeline for for credit card transaction data."""
     check_venv()
     print("#################################################")
@@ -198,7 +236,7 @@ def features_3(c):
     run_interruptible(c, "uv run python ccfraud/3-batch-feature-pipeline.py")
 
 @task
-def train_4(c):
+def train(c):
     """Training pipeline for credit card fraud prediction model."""
     check_venv()
     print("#################################################")
@@ -207,7 +245,7 @@ def train_4(c):
     run_interruptible(c, "uv run ipython notebooks/4-training-cc-fraud-pipeline.ipynb")
 
 @task
-def inference_5(c):
+def inference(c):
     """Deploys an online inference pipeline for credit card fraud prediction."""
     check_venv()
     print("#################################################")
@@ -234,13 +272,16 @@ def feldera_stop(c):
     run_interruptible(c, "bash scripts/1a-run-feldera.sh stop")
 
 @task(pre=[feldera_start])
-def feldera_2(c):
+def feldera(c):
     """Streaming feature pipeline started locally with Feldera."""
     check_venv()
     print("#################################################")
     print("#######  Feldera Streeaming Pipeline ############")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/2-feldera-streaming-feature-pipeline.ipynb")
+    print("Upgrading feldera to latest version...")
+    run_interruptible(c, "uv pip install -U feldera", pty=False)
+    print("\nRunning streaming feature pipeline...")
+    run_interruptible(c, "uv run python ccfraud/2-feldera-streaming-feature-pipeline.py")
 
 @task
 def test(c):
@@ -251,7 +292,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill_1, feldera_2, features_3, train_4, inference_5])
+@task(pre=[backfill, feldera, features]) #, train, inference])
 def all(c):
-    """Runs feature/training pipelines, deploys credit card model."""
+    """Runs, in order: backfill, feldera, features, train, inference."""
     pass
