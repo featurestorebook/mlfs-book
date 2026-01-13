@@ -292,7 +292,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill, feldera, features]) #, train, inference])
+@task(pre=[backfill, feldera, features, train]) 
 def all(c):
     """backfill, feldera, features, train, inference."""
     pass

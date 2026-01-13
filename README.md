@@ -1,34 +1,64 @@
-## Predict Air Quality
+# Machine Learning Feature Store Book - Example Projects
 
-This project builds an Air Quality Forecasting Service for an Air Quality sensor available at https://waqi.info/.
+This repository contains three complete machine learning systems demonstrating different architectural patterns and use cases. Each project showcases best practices for building production ML systems with feature stores.
 
+## Projects
 
-The output is a forecast for air quality, like this one:
+### 1. Batch Air Quality Predictions
+
+A batch ML system that forecasts air quality (PM 2.5) for the next 7 days using real-time weather data and historical air quality measurements from public sensors (https://waqi.info/). The system uses XGBoost to generate predictions and displays them on an interactive dashboard.
+
+**Type:** Batch Predictions
+**Model:** XGBoost Regression
+**Features:** Weather forecasts, historical air quality data
+**Output:** 7-day air quality forecast dashboard
 
 ![Air quality Prediction](https://featurestorebook.github.io/mlfs-book/air-quality/assets/img/pm25_forecast.png)
 
+**Optional LLM Enhancement:** The air quality service can be augmented with LLM capabilities for natural language queries about air quality forecasts and historical trends.
 
-## Personalized Air Quality Predictions with a LLM
+[View Project →](./airquality)
 
-This air quality forecasting service has been augmented with LLM capabilities. You can ask it both future (forecasting) and historical questions about air quality at your location via a microphone or text input dialog.
+### 2. Real-Time Credit Card Fraud Detection
 
-We augment the prompt with:
- * your location,
- * today’s date,
- * predicted air quality (from a ML model),
- * historical air quality (from the feature store),
- * are you in a sensitive group (coming soon).
+A real-time ML system that detects fraudulent credit card transactions using streaming data and real-time feature engineering. This project demonstrates how to build low-latency prediction services that process transactions as they occur, using Feldera for stream processing.
 
+**Type:** Real-Time Predictions
+**Model:** Binary Classification (XGBoost)
+**Features:** Real-time transaction aggregates, velocity features
+**Output:** Fraud probability for each transaction
+**Data:** Synthetic credit card transactions
 
-![Personalized Air Quality with LLMs Architecture](personalized-air-quality-with-llms.png)
+[View Project →](./ccfraud)
 
+### 3. Starter Titanic Batch Predictions
 
-## Application Architecture
+A starter ML system for predicting Titanic passenger survival. This project provides a simple, well-structured example of a batch ML pipeline using the classic Titanic dataset for training and synthetic data for generating daily predictions. Includes both a batch dashboard and an interactive UI.
 
-![Application Architecture Air Quality with LLMs Architecture](app-air-quality-with-llms.png)
+**Type:** Batch Predictions
+**Model:** Binary Classification (XGBoost)
+**Features:** Passenger demographics, ticket class, family size
+**Output:** Dashboard and interactive Gradio UI
+**Data:** Historical Titanic dataset + synthetic passengers
 
+[View Project →](./titanic)
 
-## Tutorial Instructions
+## Architecture
 
-You can find [instructions for running this tutorial in this Google Doc](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing).
+Each project follows a similar architectural pattern:
+- **Feature Store:** Central repository for feature storage and retrieval
+- **Feature Pipeline:** ETL jobs that compute and store features
+- **Training Pipeline:** Model training with versioning and experiment tracking
+- **Inference Pipeline:** Batch or real-time predictions
+- **UI/Dashboard:** Visualization of predictions and monitoring
+
+![Application Architecture](app-air-quality-with-llms.png)
+
+## Getting Started
+
+Each project can be run independently. Navigate to the project directory and follow the instructions in its README.md file.
+
+## Additional Resources
+
+You can find [additional tutorial instructions in this Google Doc](https://docs.google.com/document/d/1YXfM1_rpo1-jM-lYyb1HpbV9EJPN6i1u6h2rhdPduNE/edit?usp=sharing).
 
