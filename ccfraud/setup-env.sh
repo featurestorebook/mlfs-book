@@ -476,7 +476,7 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
     echo ""
     echo "⚠️  Warning: HOPSWORKS_HOST not set in $ENV_FILE"
     echo "   This is required for Feldera integration."
-    echo "   Please set it to your Hopsworks cluster host (e.g., c.app.hopsworks.ai)"
+    echo "   Please set it to your Hopsworks cluster host (e.g., eu-west.cloud.hopsworks.ai)"
     echo ""
   else
     CURRENT_HOST=$(grep "^HOPSWORKS_HOST=" "$ENV_FILE" | cut -d'=' -f2)
