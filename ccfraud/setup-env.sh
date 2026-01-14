@@ -22,7 +22,7 @@ exit_script() {
 }
 
 VENV_DIR=".venv"
-REQUIRED_MIN="3.8"
+REQUIRED_MIN="3.10"
 REQUIRED_MAX="3.13"
 PREFERRED_PYTHON="3.12"
 
@@ -33,7 +33,7 @@ check_python_version() {
   local python_bin="$1"
   $python_bin - <<EOF 2>/dev/null
 import sys
-min_v = (3, 8)
+min_v = (3, 10)
 max_v = (3, 13)
 cur_v = sys.version_info[:2]
 sys.exit(0 if min_v <= cur_v < max_v else 1)
@@ -53,8 +53,6 @@ find_valid_python() {
     "python3.12"
     "python3.11"
     "python3.10"
-    "python3.9"
-    "python3.8"
     "python3"
     "python"
   )
@@ -65,13 +63,9 @@ find_valid_python() {
       "/opt/homebrew/bin/python3.12"
       "/opt/homebrew/bin/python3.11"
       "/opt/homebrew/bin/python3.10"
-      "/opt/homebrew/bin/python3.9"
-      "/opt/homebrew/bin/python3.8"
       "/usr/local/bin/python3.12"
       "/usr/local/bin/python3.11"
       "/usr/local/bin/python3.10"
-      "/usr/local/bin/python3.9"
-      "/usr/local/bin/python3.8"
       "${candidates[@]}"
     )
   fi
