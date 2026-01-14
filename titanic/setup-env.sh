@@ -557,10 +557,16 @@ EOF
 ensure_package invoke
 ensure_package uv
 
+# Refresh shell's command hash table so uv command is found
+hash -r
+
 if ! uv pip install -U -r requirements.txt; then
   echo "❌ Failed to install requirements"
   exit_script 1
 fi
+
+# Refresh shell's command hash table so newly installed commands are found
+hash -r
 
 echo "🎉 Environment ready!"
 echo "   Python: $(python --version)"
@@ -584,6 +590,8 @@ echo "   inv all"
 # Restore shell options when sourced to avoid affecting the parent shell
 if [ "$SOURCED" -eq 1 ]; then
   set +uo pipefail
+  # Ensure venv is activated in the current shell
+  source "$VENV_DIR/bin/activate"
   return 0
 else
   # Explicitly exit when executed (not sourced) to prevent hanging
