@@ -380,6 +380,20 @@ install_system_deps() {
     else
       echo "✅ librdkafka already installed"
     fi
+
+    # Check for libomp (required for LightGBM and other ML libraries)
+    if ! brew list libomp >/dev/null 2>&1; then
+      echo "📥 Installing libomp (required for LightGBM)..."
+      if brew install libomp; then
+        echo "✅ Successfully installed libomp"
+      else
+        echo "❌ Failed to install libomp"
+        echo "   Please manually run: brew install libomp"
+        exit_script 1
+      fi
+    else
+      echo "✅ libomp already installed"
+    fi
   else
     echo "⚠️  Unknown operating system: $OS_TYPE"
     echo "   Please ensure you have C/C++ build tools and Python development headers installed"
