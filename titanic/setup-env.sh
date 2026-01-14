@@ -223,7 +223,8 @@ if [ -f "$ENV_FILE" ]; then
     echo "Please enter your Hopsworks project name."
     echo "This is the project you created (or will create) at https://run.hopsworks.ai"
     echo ""
-    read -p "Enter your Hopsworks project name: " PROJECT_NAME
+    printf "Enter your Hopsworks project name: "
+    read PROJECT_NAME
 
     if [ -n "$PROJECT_NAME" ]; then
       # Update or add HOPSWORKS_PROJECT in .env file
@@ -277,14 +278,16 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
     if [ -d "$SUGGESTED_FELDERA_DIR" ]; then
       echo "✅ Found Feldera installation at: $SUGGESTED_FELDERA_DIR"
       echo ""
-      read -p "Would you like to use this installation? (Y/n): " USE_EXISTING
+      printf "Would you like to use this installation? (Y/n): "
+      read USE_EXISTING
       USE_EXISTING=${USE_EXISTING:-Y}
 
       if [[ "$USE_EXISTING" =~ ^[Yy]$ ]]; then
         FELDERA_PATH="$SUGGESTED_FELDERA_DIR"
       else
         echo ""
-        read -p "Enter custom Feldera directory path (or leave empty to set later): " CUSTOM_PATH
+        printf "Enter custom Feldera directory path (or leave empty to set later): "
+        read CUSTOM_PATH
         FELDERA_PATH="$CUSTOM_PATH"
       fi
     else
@@ -295,7 +298,8 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
       echo "  2. Specify a custom directory path"
       echo "  3. Skip for now (you can set it later in $ENV_FILE)"
       echo ""
-      read -p "Enter your choice (1/2/3): " CHOICE
+      printf "Enter your choice (1/2/3): "
+      read CHOICE
 
       case "$CHOICE" in
         1)
@@ -313,13 +317,15 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
           ;;
         2)
           echo ""
-          read -p "Enter custom Feldera directory path: " CUSTOM_PATH
+          printf "Enter custom Feldera directory path: "
+          read CUSTOM_PATH
           if [ -n "$CUSTOM_PATH" ]; then
             # Expand ~ to home directory
             CUSTOM_PATH="${CUSTOM_PATH/#\~/$HOME}"
             if [ ! -d "$CUSTOM_PATH" ]; then
               echo ""
-              read -p "Directory doesn't exist. Clone Feldera there? (y/N): " CLONE_CUSTOM
+              printf "Directory doesn't exist. Clone Feldera there? (y/N): "
+              read CLONE_CUSTOM
               if [[ "$CLONE_CUSTOM" =~ ^[Yy]$ ]]; then
                 mkdir -p "$(dirname "$CUSTOM_PATH")"
                 echo "📥 Cloning Feldera v0.209.0 to $CUSTOM_PATH..."
