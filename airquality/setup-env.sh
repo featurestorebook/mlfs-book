@@ -24,40 +24,235 @@ exit_script() {
 VENV_DIR=".venv"
 REQUIRED_MIN="3.8"
 REQUIRED_MAX="3.13"
+PREFERRED_PYTHON="3.12"
 
 echo "🔍 Locating Python..."
 
-# Prefer python3, fall back to python
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="$(command -v python3)"
-elif command -v python >/dev/null 2>&1; then
-  PYTHON_BIN="$(command -v python)"
-else
-  echo "❌ Python not found. Please install Python >= 3.8."
-  exit_script 1
-fi
-
-PY_VERSION="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
-
-echo "🐍 Found Python $PY_VERSION at $PYTHON_BIN"
-
-# Version check: > 3.7 and < 3.13
-if ! $PYTHON_BIN - <<EOF
+# Function to check if a Python version is valid
+check_python_version() {
+  local python_bin="$1"
+  $python_bin - <<EOF 2>/dev/null
 import sys
 min_v = (3, 8)
 max_v = (3, 13)
 cur_v = sys.version_info[:2]
-
-if not (min_v <= cur_v < max_v):
-    print(f"❌ Python {cur_v[0]}.{cur_v[1]} not supported. "
-          f"Require >= {min_v[0]}.{min_v[1]} and < {max_v[0]}.0")
-    sys.exit(1)
+sys.exit(0 if min_v <= cur_v < max_v else 1)
 EOF
-then
-  exit_script 1
+}
+
+# Function to get Python version string
+get_python_version() {
+  local python_bin="$1"
+  $python_bin -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null
+}
+
+# Function to find a valid Python installation
+find_valid_python() {
+  # Check common Python installations in order of preference
+  local candidates=(
+    "python3.12"
+    "python3.11"
+    "python3.10"
+    "python3.9"
+    "python3.8"
+    "python3"
+    "python"
+  )
+
+  # On macOS, also check Homebrew paths
+  if [ "$(uname -s)" = "Darwin" ]; then
+    candidates=(
+      "/opt/homebrew/bin/python3.12"
+      "/opt/homebrew/bin/python3.11"
+      "/opt/homebrew/bin/python3.10"
+      "/opt/homebrew/bin/python3.9"
+      "/opt/homebrew/bin/python3.8"
+      "/usr/local/bin/python3.12"
+      "/usr/local/bin/python3.11"
+      "/usr/local/bin/python3.10"
+      "/usr/local/bin/python3.9"
+      "/usr/local/bin/python3.8"
+      "${candidates[@]}"
+    )
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      if check_python_version "$candidate"; then
+        command -v "$candidate"
+        return 0
+      fi
+    elif [ -x "$candidate" ]; then
+      if check_python_version "$candidate"; then
+        echo "$candidate"
+        return 0
+      fi
+    fi
+  done
+
+  return 1
+}
+
+# Function to install a valid Python version
+install_valid_python() {
+  local os_type="$(uname -s)"
+
+  echo "🔧 Attempting to install Python $PREFERRED_PYTHON..."
+
+  if [ "$os_type" = "Darwin" ]; then
+    # macOS: Use Homebrew
+    if ! command -v brew >/dev/null 2>&1; then
+      echo "❌ Homebrew is not installed. Cannot auto-install Python."
+      echo "   Install Homebrew first: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      return 1
+    fi
+
+    echo "📥 Installing Python $PREFERRED_PYTHON via Homebrew..."
+    if brew install "python@$PREFERRED_PYTHON"; then
+      # Return the path to the newly installed Python
+      if [ -x "/opt/homebrew/bin/python$PREFERRED_PYTHON" ]; then
+        echo "/opt/homebrew/bin/python$PREFERRED_PYTHON"
+      elif [ -x "/usr/local/bin/python$PREFERRED_PYTHON" ]; then
+        echo "/usr/local/bin/python$PREFERRED_PYTHON"
+      else
+        command -v "python$PREFERRED_PYTHON"
+      fi
+      return 0
+    else
+      echo "❌ Failed to install Python via Homebrew"
+      return 1
+    fi
+
+  elif [ "$os_type" = "Linux" ]; then
+    # Linux: Detect distribution
+    if [ -f /etc/os-release ]; then
+      . /etc/os-release
+      local distro_id="$ID"
+
+      case "$distro_id" in
+        ubuntu|debian)
+          echo "📥 Installing Python $PREFERRED_PYTHON via deadsnakes PPA..."
+
+          # Add deadsnakes PPA for newer Python versions
+          if ! sudo add-apt-repository -y ppa:deadsnakes/ppa; then
+            echo "❌ Failed to add deadsnakes PPA"
+            return 1
+          fi
+
+          if sudo apt-get update && sudo apt-get install -y "python$PREFERRED_PYTHON" "python$PREFERRED_PYTHON-venv" "python$PREFERRED_PYTHON-dev"; then
+            command -v "python$PREFERRED_PYTHON"
+            return 0
+          else
+            echo "❌ Failed to install Python $PREFERRED_PYTHON"
+            return 1
+          fi
+          ;;
+
+        rhel|centos|fedora|rocky|almalinux)
+          echo "📥 Installing Python $PREFERRED_PYTHON via dnf..."
+
+          # Format version without dot for package name (e.g., python312)
+          local pkg_version="${PREFERRED_PYTHON//./}"
+
+          if sudo dnf install -y "python$pkg_version" "python$pkg_version-devel"; then
+            command -v "python$PREFERRED_PYTHON"
+            return 0
+          else
+            echo "❌ Failed to install Python $PREFERRED_PYTHON"
+            return 1
+          fi
+          ;;
+
+        *)
+          echo "❌ Unsupported Linux distribution: $distro_id"
+          echo "   Please manually install Python >= $REQUIRED_MIN and < $REQUIRED_MAX"
+          return 1
+          ;;
+      esac
+    else
+      echo "❌ Cannot detect Linux distribution"
+      return 1
+    fi
+  else
+    echo "❌ Unsupported operating system: $os_type"
+    return 1
+  fi
+}
+
+# Try to find a valid Python first
+PYTHON_BIN=""
+
+# Check if python3 or python exists and is valid
+if command -v python3 >/dev/null 2>&1; then
+  INITIAL_PYTHON="$(command -v python3)"
+elif command -v python >/dev/null 2>&1; then
+  INITIAL_PYTHON="$(command -v python)"
+else
+  INITIAL_PYTHON=""
 fi
 
-echo "✅ Python version is supported"
+if [ -n "$INITIAL_PYTHON" ]; then
+  PY_VERSION="$(get_python_version "$INITIAL_PYTHON")"
+  echo "🐍 Found Python $PY_VERSION at $INITIAL_PYTHON"
+
+  if check_python_version "$INITIAL_PYTHON"; then
+    PYTHON_BIN="$INITIAL_PYTHON"
+    echo "✅ Python version is supported"
+  else
+    echo "⚠️  Python $PY_VERSION is not supported (requires >= $REQUIRED_MIN and < $REQUIRED_MAX)"
+    echo ""
+    echo "🔍 Searching for a valid Python installation..."
+
+    # Try to find another valid Python
+    if VALID_PYTHON="$(find_valid_python)"; then
+      PYTHON_BIN="$VALID_PYTHON"
+      PY_VERSION="$(get_python_version "$PYTHON_BIN")"
+      echo "✅ Found valid Python $PY_VERSION at $PYTHON_BIN"
+    else
+      echo "⚠️  No valid Python found. Attempting to install one..."
+      echo ""
+
+      # Try to install a valid Python
+      if INSTALLED_PYTHON="$(install_valid_python)"; then
+        PYTHON_BIN="$INSTALLED_PYTHON"
+        PY_VERSION="$(get_python_version "$PYTHON_BIN")"
+        echo "✅ Successfully installed Python $PY_VERSION at $PYTHON_BIN"
+      else
+        echo ""
+        echo "❌ Could not find or install a valid Python version."
+        echo "   Please manually install Python >= $REQUIRED_MIN and < $REQUIRED_MAX"
+        exit_script 1
+      fi
+    fi
+  fi
+else
+  echo "⚠️  No Python found. Searching for valid installations..."
+
+  # Try to find a valid Python
+  if VALID_PYTHON="$(find_valid_python)"; then
+    PYTHON_BIN="$VALID_PYTHON"
+    PY_VERSION="$(get_python_version "$PYTHON_BIN")"
+    echo "✅ Found valid Python $PY_VERSION at $PYTHON_BIN"
+  else
+    echo "⚠️  No valid Python found. Attempting to install one..."
+    echo ""
+
+    # Try to install a valid Python
+    if INSTALLED_PYTHON="$(install_valid_python)"; then
+      PYTHON_BIN="$INSTALLED_PYTHON"
+      PY_VERSION="$(get_python_version "$PYTHON_BIN")"
+      echo "✅ Successfully installed Python $PY_VERSION at $PYTHON_BIN"
+    else
+      echo ""
+      echo "❌ Could not find or install a valid Python version."
+      echo "   Please manually install Python >= $REQUIRED_MIN and < $REQUIRED_MAX"
+      exit_script 1
+    fi
+  fi
+fi
+
+echo ""
+echo "🐍 Using Python $PY_VERSION at $PYTHON_BIN"
 
 # Check and install system dependencies required for hopsworks (twofish)
 echo ""
