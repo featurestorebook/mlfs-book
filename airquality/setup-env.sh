@@ -4,21 +4,24 @@
 # When sourced, use 'return' instead of 'exit' to avoid closing the shell
 (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
 
-# Only use strict mode when executed (not sourced)
-# set -e would exit the terminal when sourced
+# Require sourcing so that venv activation persists in user's shell
 if [ "$SOURCED" -eq 0 ]; then
-  set -euo pipefail
-else
-  set -uo pipefail
+  echo ""
+  echo "❌ This script must be sourced, not executed."
+  echo ""
+  echo "   Run it like this:"
+  echo "      source setup-env.sh"
+  echo "   Or:"
+  echo "      . setup-env.sh"
+  echo ""
+  exit 1
 fi
 
-# Helper function to exit or return based on how script was invoked
+set -uo pipefail
+
+# Helper function to return from sourced script
 exit_script() {
-  if [ "$SOURCED" -eq 1 ]; then
-    return "$1"
-  else
-    exit "$1"
-  fi
+  return "$1"
 }
 
 VENV_DIR=".venv"
@@ -573,13 +576,8 @@ echo "   Python: $(python --version)"
 echo "   invoke: $(invoke --version 2>/dev/null || echo installed)"
 echo "   uv: $(uv --version)"
 echo ""
-if [ "$SOURCED" -eq 1 ]; then
-  echo "✅ Virtual environment is active"
-else
-  echo "Activate your virtual environment with:"
-  echo "   source $VENV_DIR/bin/activate"
-fi
-
+echo "✅ Virtual environment is active"
+echo ""
 echo "Check which tasks you can run with:"
 echo "   inv --list"
 echo "Run a task with:"
@@ -587,13 +585,11 @@ echo "   inv <task_name>"
 echo "Run the end-to-end example with:"
 echo "   inv all"
 
-# Restore shell options when sourced to avoid affecting the parent shell
-if [ "$SOURCED" -eq 1 ]; then
-  set +uo pipefail
-  # Ensure venv is activated in the current shell
-  source "$VENV_DIR/bin/activate"
-  return 0
-else
-  # Explicitly exit when executed (not sourced) to prevent hanging
-  exit 0
-fi
+# Restore shell options to avoid affecting the parent shell
+set +uo pipefail
+
+# Ensure venv is activated in the current shell
+source "$VENV_DIR/bin/activate"
+
+# Refresh command hash so uv, pip, and other venv commands are found
+hash -r
