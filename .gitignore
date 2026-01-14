@@ -5,6 +5,7 @@ data/aqi-api-key.txt
 .env
 .venv
 .claude
+.python-version
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
