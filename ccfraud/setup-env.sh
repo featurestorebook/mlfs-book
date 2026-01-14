@@ -834,8 +834,12 @@ echo "   Python: $(python --version)"
 echo "   invoke: $(invoke --version 2>/dev/null || echo installed)"
 echo "   uv: $(uv --version)"
 echo ""
-echo "Activate your virtual environment with:"
-echo "   source $VENV_DIR/bin/activate"
+if [ "$SOURCED" -eq 1 ]; then
+  echo "✅ Virtual environment is active"
+else
+  echo "Activate your virtual environment with:"
+  echo "   source $VENV_DIR/bin/activate"
+fi
 
 echo "Check which tasks you can run with:"
 echo "   inv --list"
