@@ -251,6 +251,10 @@ fi
 echo ""
 echo "🐍 Using Python $PY_VERSION at $PYTHON_BIN"
 
+# Create .python-version file so uv uses the correct Python
+echo "$PY_VERSION" > .python-version
+echo "📝 Created .python-version file for uv"
+
 # Check and install system dependencies required for hopsworks (twofish)
 echo ""
 echo "🔧 Checking system dependencies..."
@@ -765,19 +769,38 @@ else
 fi
 
 echo ""
-# Create virtual environment if missing or incomplete
+# Create virtual environment if missing, incomplete, or using wrong Python version
+RECREATE_VENV=0
+
 if [ ! -f "$VENV_DIR/bin/activate" ]; then
   if [ -d "$VENV_DIR" ]; then
     echo "📦 Removing incomplete virtual environment"
     rm -rf "$VENV_DIR"
   fi
-  echo "📦 Creating virtual environment in $VENV_DIR"
+  RECREATE_VENV=1
+elif [ -f "$VENV_DIR/bin/python" ]; then
+  # Check if existing venv uses a valid Python version
+  VENV_PY_VERSION="$(get_python_version "$VENV_DIR/bin/python")"
+  if ! check_python_version "$VENV_DIR/bin/python"; then
+    echo "📦 Existing virtual environment uses Python $VENV_PY_VERSION (requires >= $REQUIRED_MIN and < $REQUIRED_MAX)"
+    echo "📦 Removing virtual environment to recreate with Python $PY_VERSION"
+    rm -rf "$VENV_DIR"
+    RECREATE_VENV=1
+  else
+    echo "📦 Virtual environment already exists with Python $VENV_PY_VERSION"
+  fi
+else
+  echo "📦 Virtual environment missing Python binary, recreating"
+  rm -rf "$VENV_DIR"
+  RECREATE_VENV=1
+fi
+
+if [ "$RECREATE_VENV" -eq 1 ]; then
+  echo "📦 Creating virtual environment in $VENV_DIR with Python $PY_VERSION"
   if ! "$PYTHON_BIN" -m venv "$VENV_DIR"; then
     echo "❌ Failed to create virtual environment"
     exit_script 1
   fi
-else
-  echo "📦 Virtual environment already exists"
 fi
 
 # Activate virtual environment
