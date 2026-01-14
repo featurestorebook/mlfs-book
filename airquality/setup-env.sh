@@ -165,6 +165,32 @@ install_system_deps() {
     else
       echo "✅ Xcode Command Line Tools already installed"
     fi
+
+    # Check for Homebrew
+    if ! command -v brew >/dev/null 2>&1; then
+      echo ""
+      echo "❌ Homebrew is not installed"
+      echo "   Homebrew is required to install librdkafka for confluent-kafka"
+      echo ""
+      echo "   Install Homebrew with:"
+      echo "   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      echo ""
+      exit_script 1
+    fi
+
+    # Check for librdkafka (required for confluent-kafka)
+    if ! brew list librdkafka >/dev/null 2>&1; then
+      echo "📥 Installing librdkafka (required for confluent-kafka)..."
+      if brew install librdkafka; then
+        echo "✅ Successfully installed librdkafka"
+      else
+        echo "❌ Failed to install librdkafka"
+        echo "   Please manually run: brew install librdkafka"
+        exit_script 1
+      fi
+    else
+      echo "✅ librdkafka already installed"
+    fi
   else
     echo "⚠️  Unknown operating system: $OS_TYPE"
     echo "   Please ensure you have C/C++ build tools and Python development headers installed"
