@@ -91,7 +91,8 @@ def main(last_processed_date, current_date):
             Feature("is_fraud", type="boolean"),
             Feature("ts", type="timestamp"),
         ],
-        transformation_functions=[cc_trans_fg.haversine_distance]
+        transformation_functions=[cc_trans_fg.haversine_distance],
+        parents=[trans_fg]
     )
 
     # Save the feature group if it doesn't exist
