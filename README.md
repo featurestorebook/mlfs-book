@@ -2,6 +2,40 @@
 
 This repository contains three complete machine learning systems demonstrating different architectural patterns and use cases. Each project showcases best practices for building production ML systems with feature stores.
 
+## Quick Start
+
+```bash
+git clone https://github.com/featurestorebook/mlfs-book.git
+cd mlfs-book
+cp .env-env .env
+```
+
+1. Create an account on https://run.hopsworks.ai
+2. (Create an API key on Hopsworks)[https://docs.hopsworks.ai/latest/user_guides/projects/api_key/create_api_key/] and set its value in the HOPSWORKS_API_KEY line in the `.env` file
+3. Update `HOPSWORKS_PROJECT` in the `.env` file to the name of your project
+
+To run the starter titanic batch ML system:
+```bash
+cd airquality
+source setup-env.sh
+inv all
+```
+
+To run the air quality batch ML system:
+```bash
+cd airquality
+source setup-env.sh
+inv all
+```
+
+To run the credit-card fraud real-time ML system:
+```bash
+cd airquality
+source setup-env.sh
+inv all
+```
+**Note:** This requires a command line on your laptop and has been tested on Linux, Mac, and Windows Subsystem for Linux (WSL).
+
 ## Projects
 
 ### 1. Batch Air Quality Predictions
