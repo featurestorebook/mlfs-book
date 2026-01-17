@@ -1,5 +1,7 @@
-hopsworks[python]
+hopsworks[python]==4.6.0
 ipython
+nbconvert
+papermill
 feldera
 pydantic-settings>=2.6.1
 polars==1.36.1
@@ -9,7 +11,9 @@ nbformat
 geoip2==5.2.0
 geopy==2.4.1
 xgboost>=2.1.0
+catboost>=1.2.0
 scikit-learn==1.4.0
 seaborn
 Faker==38.2.0
 pytest>=8.0.0
+torch

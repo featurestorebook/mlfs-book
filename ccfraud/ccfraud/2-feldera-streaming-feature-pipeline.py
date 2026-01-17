@@ -318,7 +318,7 @@ pipeline.start()
 
 # Schedule periodic materialization to the offline store
 # Wait until data has been written before materializing to the offline store
-sleep_secs = 180
+sleep_secs = 60
 print(f"Sleeping for {sleep_secs} secs for feldera to compute and write features before materializing to offline store")
 time.sleep(sleep_secs)
 

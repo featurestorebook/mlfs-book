@@ -104,7 +104,8 @@ def main(last_processed_date, current_date):
 
     # Read transaction data filtered by last processed date
     print(f"Reading transactions after {last_processed_date}...")
-    trans_df = trans_fg.filter(Feature("ts") > last_processed_date).read()
+    #trans_df = trans_fg.filter(Feature("ts") > last_processed_date).read()
+    trans_df = trans_fg.read()
     print(f"Read {len(trans_df)} transactions")
 
     # Read fraud data

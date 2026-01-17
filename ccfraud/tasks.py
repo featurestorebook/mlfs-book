@@ -227,22 +227,90 @@ def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
     run_interruptible(c, cmd)
 
 @task
-def features(c):
-    """A batch feature pipeline to create features."""
+def features(c, current_date=None):
+    """A batch feature pipeline to create features.
+
+    Args:
+        current_date: Current date in YYYY-MM-DD format (default: today's date)
+
+    Examples:
+        inv features                              # Uses today's date
+        inv features --current-date=2025-12-15   # Specific date
+    """
+    from datetime import datetime
+
     check_venv()
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
-    run_interruptible(c, "uv run python ccfraud/3-batch-feature-pipeline.py")
+
+    # Default to today's date if not provided
+    if current_date is None:
+        current_date = datetime.now().strftime('%Y-%m-%d')
+
+    cmd = f"uv run python ccfraud/3-batch-feature-pipeline.py --current-date {current_date}"
+    print(f"Current date: {current_date}")
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
 
 @task
-def train(c):
-    """Training pipeline for credit card fraud prediction."""
+def train(c, model="xgboost", test_start=None):
+    """Training pipeline for credit card fraud prediction.
+
+    Args:
+        model: Model type to train: 'xgboost', 'catboost', or 'neuralnet' (default: xgboost)
+        test_start: Start date for test split in YYYY-MM-DD format (default: 7 days ago)
+
+    Examples:
+        inv train                              # Train XGBoost (default)
+        inv train --model=catboost             # Train CatBoost
+        inv train --model=neuralnet            # Train Neural Network
+        inv train --test-start=2026-01-10      # Specific test split date
+        inv train --model=catboost --test-start=2026-01-10  # Combined
+    """
+    from datetime import datetime, timedelta
+
     check_venv()
+
+    # Map model types to notebook paths
+    notebook_map = {
+        'xgboost': 'notebooks/4-training-cc-fraud-pipeline.ipynb',
+        'catboost': 'notebooks/4b-training-catboost-fraud-model.ipynb',
+        'neuralnet': 'notebooks/4b-training-nn-fraud-model.ipynb',
+    }
+
+    # Validate model choice
+    model = model.lower()
+    if model not in notebook_map:
+        valid_models = ', '.join(notebook_map.keys())
+        print(f"ERROR: Invalid model '{model}'. Choose from: {valid_models}")
+        sys.exit(1)
+
+    notebook = notebook_map[model]
+    model_display = {'xgboost': 'XGBoost', 'catboost': 'CatBoost', 'neuralnet': 'Neural Network'}
+
     print("#################################################")
-    print("############# Training Pipeline #################")
+    print(f"######## Training Pipeline ({model_display[model]}) ########")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/4-training-cc-fraud-pipeline.ipynb")
+
+    # Default to 7 days ago if not provided
+    if test_start is None:
+        test_start_dt = datetime.now() - timedelta(days=7)
+        test_start = test_start_dt.strftime('%Y-%m-%d 00:00')
+    elif ' ' not in test_start:
+        test_start = f"{test_start} 00:00"
+
+    print(f"Model: {model_display[model]}")
+    print(f"Notebook: {notebook}")
+    print(f"Test split start date: {test_start}")
+
+    cmd = (
+        f'uv run papermill {notebook} '
+        f'{notebook} '
+        f'-p test_start "{test_start}"'
+    )
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
 
 @task
 def inference(c):
@@ -251,7 +319,7 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/4-deployment-pipeline.ipynb", pty=False)
+    run_interruptible(c, "uv run ipython notebooks/5-inference.ipynb", pty=False)
 
 @task
 def feldera_start(c):
