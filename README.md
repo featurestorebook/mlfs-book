@@ -16,7 +16,7 @@ cp .env-env .env
 
 To run the starter titanic batch ML system:
 ```bash
-cd airquality
+cd titanic 
 source setup-env.sh
 inv all
 ```
@@ -30,7 +30,7 @@ inv all
 
 To run the credit-card fraud real-time ML system:
 ```bash
-cd airquality
+cd ccfraud
 source setup-env.sh
 inv all
 ```

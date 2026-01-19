@@ -314,12 +314,24 @@ def train(c, model="xgboost", test_start=None):
 
 @task
 def inference(c):
-    """Inference pipeline for credit card fraud prediction."""
+    """Launch Streamlit UI for interactive fraud prediction.
+
+    Provides an interactive web interface to:
+    - Configure transaction generation parameters
+    - Generate synthetic transactions
+    - Write transactions to the feature group
+    - Get fraud predictions from deployed model
+    - View results with fraud status
+
+    Examples:
+        inv inference
+    """
     check_venv()
     print("#################################################")
-    print("#############  Inference Pipeline ###############")
+    print("#############  Fraud Prediction UI ###############")
     print("#################################################")
-    run_interruptible(c, "uv run ipython notebooks/5-inference.ipynb", pty=False)
+    print("Starting Streamlit app at http://localhost:8501")
+    run_interruptible(c, "uv run streamlit run ccfraud/streamlit_app.py")
 
 @task
 def feldera_start(c):
@@ -360,7 +372,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill, feldera, features, train]) 
+@task(pre=[backfill, feldera, features, train, inference]) 
 def all(c):
     """backfill, feldera, features, train, inference."""
     pass

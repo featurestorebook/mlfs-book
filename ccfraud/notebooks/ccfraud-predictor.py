@@ -28,13 +28,16 @@ class Predict(object):
         card_present = inputs[0][4]
 
         # Get raw feature vector from feature view
-        feature_vector = self.feature_view.get_feature_vector(entry={"cc_num": cc_num},
-                                                              parameters={"merchant_id": merchant_id,
-                                                                          "amount": amount,
-                                                                          "ip_address": ip_address,
-                                                                          "card_present": card_present
-                                                                         }
-                                                             )
+        # request_parameters provides values for on-demand transformation functions
+        feature_vector = self.feature_view.get_feature_vector(
+            entry={"cc_num": cc_num},
+            request_parameters={
+                "merchant_id": merchant_id,
+                "amount": amount,
+                "ip_address": ip_address,
+                "card_present": card_present
+            }
+        )
 
         # Get feature names from the feature view to create a DataFrame
         feature_names = [f.name for f in self.feature_view.features]

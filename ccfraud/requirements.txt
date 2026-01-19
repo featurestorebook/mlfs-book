@@ -1,7 +1,8 @@
-hopsworks[python]==4.6.0
+hopsworks[python]
 ipython
 nbconvert
 papermill
+streamlit>=1.30.0
 feldera
 pydantic-settings>=2.6.1
 polars==1.36.1

@@ -1,5 +1,6 @@
 import hopsworks
 import sys
+import time
 
 sys.path.append(".")
 from mlfs import config
@@ -27,9 +28,8 @@ def delete_deployment(deployment_name):
     try:
         deployment = ms.get_deployment(name=deployment_name)
         print(f"Deleting deployment: {deployment.name}")
-        deployment.stop()
         try:
-            deployment.delete()
+            deployment.delete(force=True)
         except Exception:
             print(f"Problem deleting deployment: {deployment_name}.")
     except Exception:
@@ -104,21 +104,22 @@ if files_to_clean == "cc":
 
     # Delete all deployments
     for deployment_name in [
-        "",
+        "ccfraud",
     ]:
         delete_deployment(deployment_name)
     # List all models
     for model_name in [
-        "",
+        "cc_fraud_xgboost_model",
     ]:
         delete_model(model_name)
     
-    
     for feature_view in [
         "cc_fraud_fv",
+        "cc_fraud_fv_nn",
     ]:
         delete_feature_view(feature_view)
-    
+    time.sleep(3)
+ 
     for feature_group in [
         "account_details",
         "bank_details",
