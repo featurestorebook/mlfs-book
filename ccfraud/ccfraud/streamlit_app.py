@@ -181,13 +181,14 @@ def predict_fraud(deployment, transactions_df, progress_callback=None):
     for idx, row in enumerate(transactions_df.iter_rows(named=True)):
         try:
             # Input format expected by ccfraud-predictor.py:
-            # [[cc_num, amount, merchant_id, ip_address, card_present]]
+            # [[cc_num, amount, merchant_id, ip_address, card_present, t_id]]
             inputs = [[
                 row['cc_num'],
                 row['amount'],
                 row['merchant_id'],
                 row['ip_address'],
-                row['card_present']
+                row['card_present'],
+                row['t_id']
             ]]
             result = deployment.predict(inputs=inputs)
             # result format: {"predictions": [0]} or {"predictions": [1]}

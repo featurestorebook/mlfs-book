@@ -519,7 +519,8 @@ class DataGenerator:
             ["t_id"],
             "ts",
             topic_name=f"{self.project.name}_credit_card_transactions_onlinefs",
-            online_enabled=True
+            online_enabled=True,
+            ttl_enabled=True
         )
         self.inserted_counts['transactions'] = len(self.transaction_df)
         print(f"  Inserted {len(self.transaction_df)} transactions")

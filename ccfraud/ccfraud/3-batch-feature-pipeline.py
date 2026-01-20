@@ -74,7 +74,7 @@ def main(last_processed_date, current_date):
     name = "cc_trans_fg"
     cc_trans_fg_group = fs.get_or_create_feature_group(
         name=name,
-        primary_key=["t_id"],
+        primary_key=["cc_num"],
         online_enabled=True,
         version=1,
         event_time="ts",
@@ -89,6 +89,7 @@ def main(last_processed_date, current_date):
             Feature("time_since_last_trans", type="bigint"),
             Feature("days_to_card_expiry", type="bigint"),
             Feature("is_fraud", type="boolean"),
+            #Feature("haversine_distance", type="boolean"),
             Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],
@@ -141,6 +142,12 @@ def main(last_processed_date, current_date):
 
     # Add days_to_card_expiry (placeholder for now)
     trans_df['days_to_card_expiry'] = 0
+
+    # Remove duplicates based on primary key (cc_num) and event_time (ts)
+    print("Removing duplicates...")
+    before_dedup = len(trans_df)
+    trans_df = trans_df.drop_duplicates(subset=['cc_num', 'ts'], keep='last')
+    print(f"Removed {before_dedup - len(trans_df)} duplicate records")
 
     # Insert into feature store (this will also apply on-demand transformations)
     print("Inserting data into feature store...")

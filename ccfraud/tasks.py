@@ -129,7 +129,7 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         start_date = start_dt.strftime('%Y-%m-%d')
 
     # Build command
-    cmd = f"uv run python ccfraud/data_generator.py --mode {mode} --start-date {start_date} --end-date {end_date}"
+    cmd = f"uv run python ccfraud/1_data_generator.py --mode {mode} --start-date {start_date} --end-date {end_date}"
 
     if entities != "all":
         # Convert comma-separated to space-separated for argparse
@@ -180,7 +180,7 @@ def batch_transactions(c, start_date=None, end_date=None, num_transactions=20000
     else:
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')
 
-    cmd = (f"uv run python ccfraud/data_generator.py --mode incremental "
+    cmd = (f"uv run python ccfraud/1_data_generator.py --mode incremental "
            f"--entities transactions --num-transactions {num_transactions} "
            f"--start-date {start_date} --end-date {end_date}")
 
@@ -220,7 +220,7 @@ def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
     print(f"Fraud rate: {fraud_rate*100:.2f}%")
     print(f"Publishing to: credit_card_transactions FG → Kafka\n")
 
-    cmd = (f"uv run python ccfraud/data_generator.py --mode streaming "
+    cmd = (f"uv run python ccfraud/1_data_generator.py --mode streaming "
            f"--transactions-per-sec {transactions_per_sec} "
            f"--fraud-rate {fraud_rate}")
 

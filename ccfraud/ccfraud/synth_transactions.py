@@ -1084,8 +1084,7 @@ def generate_credit_card_transactions_with_location_continuity(
 # Feature group helper - add account_id description
 # ---------------------------
 
-def get_or_create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True,
-                                           features=None, time_travel_format="DELTA"):
+def get_or_create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, features=None, time_travel_format="DELTA", ttl_enabled=False):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
     if topic_name is None:
@@ -1102,8 +1101,7 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
         print(f"  Feature group '{name}' already exists - skipping description updates")
         fg.insert(df)
     else:
-        # Feature group doesn't exist, create it
-        if features == None:
+        if features is None:
             fg = fs.create_feature_group(
                 name=name,
                 version=1,
@@ -1112,7 +1110,9 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 event_time=event_time_col,
                 topic_name=topic_name,
                 online_enabled=online_enabled,
-                time_travel_format=time_travel_format
+                time_travel_format=time_travel_format,
+                ttl_enabled=ttl_enabled,
+                ttl=1800
             )
         else:
             fg = fs.create_feature_group(
@@ -1124,7 +1124,9 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 topic_name=topic_name,
                 online_enabled=online_enabled,
                 time_travel_format=time_travel_format,
-                features=features
+                features=features,
+                ttl_enabled=ttl_enabled,
+                ttl=1800
             )
         fg.insert(df)
         feature_descriptions = {

@@ -26,13 +26,15 @@ class Predict(object):
         merchant_id = inputs[0][2]
         ip_address = inputs[0][3]
         card_present = inputs[0][4]
+        t_id = inputs[0][5]
 
         # Get raw feature vector from feature view
-        # request_parameters provides values for on-demand transformation functions
+        # entry contains serving keys to look up features from online store
+        # passed_features provides request-time feature values
         feature_vector = self.feature_view.get_feature_vector(
-            entry={"cc_num": cc_num},
-            request_parameters={
-                "merchant_id": merchant_id,
+            entry={"cc_num": cc_num, "merchant_id": merchant_id},  # , "aggs_cc_num": cc_num
+            passed_features={
+                "t_id": t_id,
                 "amount": amount,
                 "ip_address": ip_address,
                 "card_present": card_present
