@@ -1087,12 +1087,6 @@ def generate_credit_card_transactions_with_location_continuity(
 def get_or_create_feature_group_with_descriptions(fs, df, name, description, primary_key, event_time_col=None, topic_name=None, online_enabled=True, features=None, time_travel_format="DELTA", ttl_enabled=False):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
-    if topic_name is None:
-        try:
-            topic_name = fs.name.removesuffix("_featurestore")
-        except Exception:
-            topic_name = None
-
     # Check if feature group already exists
     fg = fs.get_feature_group(name=name, version=1)
     fg_already_exists = fg is not None
