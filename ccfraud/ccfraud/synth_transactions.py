@@ -1088,12 +1088,6 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                                            features=None, time_travel_format="DELTA"):
     """Create feature group and add feature descriptions"""
     print(f"Creating feature group: {name}")
-    if topic_name is None:
-        try:
-            topic_name = fs.name.removesuffix("_featurestore")
-        except Exception:
-            topic_name = None
-
     # Check if feature group already exists
     fg = fs.get_feature_group(name=name, version=1)
     fg_already_exists = fg is not None
