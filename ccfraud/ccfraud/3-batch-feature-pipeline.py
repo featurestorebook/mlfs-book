@@ -89,7 +89,7 @@ def main(last_processed_date, current_date):
             Feature("time_since_last_trans", type="bigint"),
             Feature("days_to_card_expiry", type="bigint"),
             Feature("is_fraud", type="boolean"),
-            #Feature("haversine_distance", type="boolean"),
+            Feature("haversine_distance", type="boolean"),
             Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],
@@ -122,7 +122,7 @@ def main(last_processed_date, current_date):
     print("Creating lag features...")
     trans_df["prev_ts"] = trans_df["ts"].shift(1)
     trans_df["prev_card_present"] = trans_df["card_present"].shift(1)
-    trans_df["prev_ip_address"] = trans_df["ip_address"].shift(1)
+    trans_df["prev_ip_transaction"] = trans_df["ip_address"].shift(1)
 
     # Mark fraudulent transactions
     print("Marking fraudulent transactions...")
@@ -151,7 +151,7 @@ def main(last_processed_date, current_date):
 
     # Insert into feature store (this will also apply on-demand transformations)
     print("Inserting data into feature store...")
-    cc_trans_fg_group.insert(trans_df)
+    cc_trans_fg_group.insert(trans_df, wait=True)
 
     print("Batch feature pipeline completed successfully!")
 
