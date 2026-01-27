@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 import hopsworks
 import joblib
+from datetime import datetime
 
 
 class Predict(object):
 
-    def __init__(self):
+    def __init__(self, async_logger):
         # Get feature store handle
         project = hopsworks.login()
         self.mr = project.get_model_registry()
@@ -15,6 +16,7 @@ class Predict(object):
         # Retrieve the feature view from the model
         retrieved_model = self.mr.get_best_model(name="cc_fraud_xgboost_model", metric="f1_score", direction="max")
         self.feature_view = retrieved_model.get_feature_view()
+        self.feature_view.init_feature_logger(async_logger)
 
         # Load the unified pipeline (preprocessor + XGBoost model)
         self.pipeline = joblib.load(os.environ["MODEL_FILES_PATH"] + "/cc_fraud_pipeline.pkl")
@@ -38,14 +40,20 @@ class Predict(object):
                 "amount": amount,
                 "ip_address": ip_address,
                 "card_present": card_present
-            }
+            },
+            return_type="pandas",
+            allow_missing=True,
         )
 
-        # Get feature names from the feature view to create a DataFrame
-        feature_names = [f.name for f in self.feature_view.features]
-
-        # Convert to DataFrame with proper column names (pipeline expects named features)
-        feature_df = pd.DataFrame([feature_vector], columns=feature_names)
-
         # Pipeline handles preprocessing (imputation + encoding) and prediction
-        return self.pipeline.predict(feature_df).tolist()
+        predictions = self.pipeline.predict(feature_vector)
+
+        predictions = [bool(prediction) for prediction in predictions]
+
+        # Log predictions with feature vector
+        self.feature_view.log(feature_vector, 
+                              predictions=predictions,
+                              serving_keys=[{"cc_num": cc_num, "merchant_id": merchant_id}],
+                              event_time=[datetime.now()])
+
+        return predictions
