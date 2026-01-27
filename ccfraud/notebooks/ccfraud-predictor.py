@@ -48,6 +48,7 @@ class Predict(object):
         # Pipeline handles preprocessing (imputation + encoding) and prediction
         predictions = self.pipeline.predict(feature_df)
 
+        predictions = [bool(prediction) for prediction in predictions]
 
         # Log predictions with feature vector
         self.feature_view.log(feature_df, 
@@ -55,4 +56,8 @@ class Predict(object):
                               serving_keys=[{"cc_num": cc_num, "merchant_id": merchant_id}],
                               event_time=[datetime.now()])
 
+<<<<<<< HEAD
         return predictions.tolist()
+=======
+        return predictions
+>>>>>>> 5c8ee0e (manually casting predictions to bool)
