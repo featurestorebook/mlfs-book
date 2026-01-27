@@ -22,9 +22,9 @@ def time_since_last_trans(ts: pd.Series, prev_ts: pd.Series) -> pd.Series:
     return delta.fillna(0).astype(int)
 
     
-@hopsworks.udf(bool, drop=['card_present', 'prev_card_present', 'ip_address', 'prev_ip_address'])
+@hopsworks.udf(bool, mode="pandas", drop=['card_present', 'prev_card_present', 'ip_address', 'prev_ip_transaction'])
 def haversine_distance(card_present: pd.Series, prev_card_present: pd.Series, 
-                       ip_address: pd.Series, prev_ip_address: pd.Series, time_since_last_trans: pd.Series) -> pd.Series:
+                       ip_address: pd.Series, prev_ip_transaction: pd.Series, time_since_last_trans: pd.Series) -> pd.Series:
     """
     Determine if travel between transactions is feasible.
     Returns True if travel is feasible, False if not feasible.
@@ -96,12 +96,13 @@ def haversine_distance(card_present: pd.Series, prev_card_present: pd.Series,
     # Only check travel for rows where a card was present
     if check_travel.any():
         # Filter to only check relevant rows
-        filtered_prev_ip = prev_ip_address[check_travel]
+        filtered_prev_ip = prev_ip_transaction[check_travel]
         filtered_ip = ip_address[check_travel]
         filtered_time = time_since_last_trans[check_travel]
         
 
         # Ensure database is downloaded and get path
+        root_dir = "~"
         mmdb_path = f"{root_dir}/data/GeoLite2-City.mmdb"
         download_url = "https://repo.hops.works/dev/jdowling/GeoLite2-City.mmdb"
     
