@@ -25,15 +25,14 @@ mr = project.get_model_registry()
 kafka_api = project.get_kafka_api()
 
 def delete_deployment(deployment_name):
-    try:
-        deployment = ms.get_deployment(name=deployment_name)
+
+    deployment = ms.get_deployment(name=deployment_name)
+    if deployment is not None:
         print(f"Deleting deployment: {deployment.name}")
         try:
             deployment.delete(force=True)
         except Exception:
             print(f"Problem deleting deployment: {deployment_name}.")
-    except Exception:
-        print("No deployments to delete.")
 
 def delete_model(model_name):
     models = mr.get_models(name=model_name)
@@ -71,7 +70,7 @@ def delete_feature_group(feature_group, project_name):
         try:
             fg.delete()
         except:
-            print(f"Failed to delete feature group {fv.name}.")
+            print(f"Failed to delete feature group {fg.name}.")
 
 
 def delete_topic(topic_name, project_name):
@@ -118,7 +117,7 @@ if files_to_clean == "cc":
         "cc_fraud_fv_nn",
     ]:
         delete_feature_view(feature_view)
-    time.sleep(3)
+    time.sleep(5)
  
     for feature_group in [
         "account_details",

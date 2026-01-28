@@ -31,21 +31,27 @@ class Predict(object):
         # Get raw feature vector from feature view
         # entry contains serving keys to look up features from online store
         # passed_features provides request-time feature values
-        feature_vector = self.feature_view.get_feature_vector(
+        feature_df = self.feature_view.get_feature_vector(
             entry={"cc_num": cc_num, "merchant_id": merchant_id},  # , "aggs_cc_num": cc_num
-            passed_features={
+            request_params={
                 "t_id": t_id,
                 "amount": amount,
                 "ip_address": ip_address,
                 "card_present": card_present
-            }
+            },
+            return_type = "pandas"
         )
 
-        # Get feature names from the feature view to create a DataFrame
-        feature_names = [f.name for f in self.feature_view.features]
+        # untransformed_vector = fv.get_feature_vector({"id": 1}, transform=False)
+        # transformed_vector = fv.transform(untransformed_vector)
+        # feature_view.log(untransformed_vector)
+        # feature_view.log(transformed_features=transformed_vector)untransformed_vector = fv.get_feature_vector({"id": 1}, transform=False)
+        # transformed_vector = fv.transform(untransformed_vector)
+        # feature_view.log(untransformed_vector)
+        # feature_view.log(transformed_features=transformed_vector)        
 
-        # Convert to DataFrame with proper column names (pipeline expects named features)
-        feature_df = pd.DataFrame([feature_vector], columns=feature_names)
+        # feature_names = [f.name for f in self.feature_view.features]
+        # feature_df = pd.DataFrame([feature_vector], columns=feature_names)
 
         # Pipeline handles preprocessing (imputation + encoding) and prediction
         return self.pipeline.predict(feature_df).tolist()

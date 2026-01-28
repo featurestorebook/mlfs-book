@@ -1123,6 +1123,9 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 ttl=1800
             )
         fg.insert(df)
+        if fg.online_enabled == True:
+            oi = fg.get_latest_online_ingestion()
+            oi.wait_for_completion()
         feature_descriptions = {
             "merchant_details": {
                 "merchant_id": "Unique sequential integer identifier for each merchant",

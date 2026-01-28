@@ -54,10 +54,16 @@ def parse_args():
         default=None,
         help="Path to .env file (default: <root_dir>/.env)"
     )
+    parser.add_argument(
+        "--wait",
+        action="store_true",
+        default=False,
+        help="Wait for data to be synced to backend (default: False)"
+    )
     return parser.parse_args()
 
 
-def main(last_processed_date, current_date):
+def main(last_processed_date, current_date, wait=False):
     """Main execution function for the batch feature pipeline."""
 
     # Connect to Hopsworks
@@ -151,7 +157,7 @@ def main(last_processed_date, current_date):
 
     # Insert into feature store (this will also apply on-demand transformations)
     print("Inserting data into feature store...")
-    cc_trans_fg_group.insert(trans_df)
+    cc_trans_fg_group.insert(trans_df, wait=wait)
 
     print("Batch feature pipeline completed successfully!")
 
@@ -165,4 +171,4 @@ if __name__ == "__main__":
 
     print(f"Processing transactions from {last_processed_date} to {current_date}")
 
-    main(last_processed_date, current_date)
+    main(last_processed_date, current_date, wait=args.wait)

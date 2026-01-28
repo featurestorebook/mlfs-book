@@ -1,4 +1,4 @@
-from invoke import task, Collection, Program, exceptions
+from invoke import task, call, Collection, Program, exceptions
 import os
 import sys
 import signal
@@ -227,15 +227,17 @@ def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
     run_interruptible(c, cmd)
 
 @task
-def features(c, current_date=None):
+def features(c, current_date=None, wait=False):
     """A batch feature pipeline to create features.
 
     Args:
         current_date: Current date in YYYY-MM-DD format (default: today's date)
+        wait: Wait for data to be synced to backend (default: False)
 
     Examples:
         inv features                              # Uses today's date
         inv features --current-date=2025-12-15   # Specific date
+        inv features --wait                       # Wait for sync to complete
     """
     from datetime import datetime
 
@@ -249,7 +251,10 @@ def features(c, current_date=None):
         current_date = datetime.now().strftime('%Y-%m-%d')
 
     cmd = f"uv run python ccfraud/3-batch-feature-pipeline.py --current-date {current_date}"
+    if wait:
+        cmd += " --wait"
     print(f"Current date: {current_date}")
+    print(f"Wait for sync: {wait}")
     print(f"\nRunning: {cmd}\n")
     run_interruptible(c, cmd)
 
@@ -372,7 +377,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill, feldera, features, train, inference]) 
+@task(pre=[backfill, feldera, call(features, wait=True), train, inference])
 def all(c):
-    """backfill, feldera, features, train, inference."""
+    """backfill, feldera, features (with wait), train, inference."""
     pass

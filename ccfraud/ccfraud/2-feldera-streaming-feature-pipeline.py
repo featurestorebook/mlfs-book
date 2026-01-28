@@ -77,8 +77,8 @@ windowed_fg = fs.get_or_create_feature_group(
         Feature("num_trans_last_week", type="bigint"),
         Feature("sum_trans_last_week", type="double"),
         Feature("prev_card_present", type="boolean"),
-        Feature("prev_ip_transaction", type="string"),
-        Feature("prev_ts_transaction", type="timestamp"),
+        Feature("prev_ip_address", type="string"),
+        Feature("prev_ts", type="timestamp"),
         Feature("event_time", type="timestamp"),
     ],
 )
@@ -199,9 +199,9 @@ def build_sql(
     SELECT
         ctc.*,
         LAG(event_time) OVER
-          (PARTITION BY cc_num ORDER BY event_time ASC) AS prev_ts_transaction,
+          (PARTITION BY cc_num ORDER BY event_time ASC) AS prev_ts,
         LAG(ip_address) OVER
-          (PARTITION BY cc_num ORDER BY ip_address ASC) AS prev_ip_transaction,
+          (PARTITION BY cc_num ORDER BY ip_address ASC) AS prev_ip_address,
         LAG(card_present) OVER
           (PARTITION BY cc_num ORDER BY card_present ASC) AS prev_card_present
     FROM cc_trans_card AS ctc;
@@ -225,8 +225,8 @@ def build_sql(
             num_trans_last_day,
             sum_trans_last_week,
             num_trans_last_week,
-            prev_ts_transaction,
-            prev_ip_transaction,
+            prev_ts,
+            prev_ip_address,
             prev_card_present
         FROM lagged_trans
     ;
