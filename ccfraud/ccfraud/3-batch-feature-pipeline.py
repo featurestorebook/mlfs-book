@@ -95,7 +95,7 @@ def main(last_processed_date, current_date, wait=False):
             Feature("time_since_last_trans", type="bigint"),
             Feature("days_to_card_expiry", type="bigint"),
             Feature("is_fraud", type="boolean"),
-            #Feature("haversine_distance", type="boolean"),
+            Feature("haversine_distance", type="boolean"),
             Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],

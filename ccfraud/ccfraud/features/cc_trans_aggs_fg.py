@@ -7,7 +7,7 @@ import geoip2.database
 from datetime import datetime
 
 
-def prev_ts_transaction(df: pd.DataFrame) -> pd.DataFrame:
+def prev_ts(df: pd.DataFrame) -> pd.DataFrame:
     """
     df must have a 'card_id' and 'transaction_time' columns.
     """
@@ -17,7 +17,7 @@ def prev_ts_transaction(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def prev_ip_transaction(df: pd.DataFrame) -> pd.DataFrame:
+def prev_ip_address(df: pd.DataFrame) -> pd.DataFrame:
     """
     df must have a 'card_id' and 'transaction_time' columns.
     """

@@ -43,6 +43,10 @@ VENV_DIR= Path(".venv")
 def check_venv():
     """Check if a virtual environment exists and is active."""
 
+    # Skip this check if you are running the code in a Hopsworks cluster
+    if os.environ.get("PROJECT_PATH"):
+        return
+
     # 1. Create venv if it doesn't exist
     if not VENV_DIR.exists():
         print("🔧 There is no virtual environment. Did you run the setup step yet?")

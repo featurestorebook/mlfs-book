@@ -28,14 +28,14 @@ def amount_deviation_from_avg(amount, statistics: TransformationStatistics = Non
     return np.abs(amount - statistics.amount.mean)
 
 
-#@hopsworks.udf(int, drop=['prev_ts_transaction'], mode="pandas")
-def time_since_last_trans(ts: pd.Series, prev_ts_transaction: pd.Series) -> pd.Series:
+#@hopsworks.udf(int, drop=['prev_ts'], mode="pandas")
+def time_since_last_trans(ts: pd.Series, prev_ts: pd.Series) -> pd.Series:
     """
     Calculate time difference in seconds between current and previous transaction.
     Returns 0 when there is no previous transaction (prev_ts is None/NaT).
     """
     # Compute time difference
-    delta = (ts - prev_ts_transaction).dt.total_seconds()
+    delta = (ts - prev_ts).dt.total_seconds()
 
     # Replace NaN / NaT differences with 0 and cast to int
     return delta.fillna(0).astype(int)

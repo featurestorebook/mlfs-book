@@ -45,6 +45,10 @@ VENV_DIR = Path(".venv")
 def check_venv():
     """Check if a virtual environment exists and is active."""
 
+    # Skip this check if you are running the code in a Hopsworks cluster
+    if os.environ.get("PROJECT_PATH"):
+        return
+
     # 1. Create venv if it doesn't exist
     if not VENV_DIR.exists():
         print("🔧 There is no virtual environment. Did you run the setup step yet?")
@@ -318,6 +322,12 @@ def train(c, model="xgboost", test_start=None):
     run_interruptible(c, cmd)
 
 @task
+def upgrade_hopsworks(c):
+    """Upgrade hopsworks package to latest version."""
+    check_venv()
+    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
+
+@task(pre=[upgrade_hopsworks])
 def inference(c):
     """Launch Streamlit UI for interactive fraud prediction.
 
