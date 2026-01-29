@@ -14,6 +14,7 @@ import hopsworks
 from datetime import datetime
 from hsfs.feature import Feature
 
+
 current_file = Path(__file__).absolute()
 ccfraud_pkg_dir = current_file.parent  # ccfraud/ccfraud/
 ccfraud_project_dir = ccfraud_pkg_dir.parent  # ccfraud/
@@ -137,8 +138,7 @@ def main(last_processed_date, current_date, wait=False):
 
     # Calculate time since last transaction
     print("Calculating time since last transaction...")
-    from ccfraud import features
-    trans_df['time_since_last_trans'] = features.cc_trans_fg.time_since_last_trans(
+    trans_df['time_since_last_trans'] = cc_trans_fg.time_since_last_trans(
         trans_df['ts'],
         trans_df['prev_ts']
     )

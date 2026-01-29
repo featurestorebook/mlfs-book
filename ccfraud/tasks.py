@@ -151,48 +151,6 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
     run_interruptible(c, cmd)
 
 @task
-def batch_transactions(c, start_date=None, end_date=None, num_transactions=20000):
-    """Inserts a batch of synthetic credit card transactions.
-
-    Args:
-        start_date: Start date for transactions in YYYY-MM-DD format (default: 24 hours ago)
-        end_date: End date for transactions in YYYY-MM-DD format (default: now)
-        num_transactions: Number of transactions to generate (default: 20000)
-
-    Examples:
-        inv batch-transactions                                    # Previous 24 hours
-        inv batch-transactions --start-date=2025-12-01 --end-date=2025-12-25
-        inv batch-transactions --num-transactions=50000
-    """
-    from datetime import datetime, timedelta
-
-    check_venv()
-    print("#################################################")
-    print("######### Generate CC Transactions ##############")
-    print("#################################################")
-
-    # Calculate default time range (previous 24 hours)
-    if end_date is None:
-        end_dt = datetime.now()
-        end_date = end_dt.strftime('%Y-%m-%d')
-    else:
-        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-
-    if start_date is None:
-        start_dt = end_dt - timedelta(days=1)
-        start_date = start_dt.strftime('%Y-%m-%d')
-    else:
-        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-
-    cmd = (f"uv run python ccfraud/1_data_generator.py --mode incremental "
-           f"--entities transactions --num-transactions {num_transactions} "
-           f"--start-date {start_date} --end-date {end_date}")
-
-    print(f"Time range: {start_date} to {end_date}")
-    print(f"\nRunning: {cmd}\n")
-    run_interruptible(c, cmd)
-
-@task
 def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
     """Insert stream of cc transactions until Ctrl-C.
 
@@ -249,6 +207,7 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
+    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
 
     # Default to today's date if not provided
     if current_date is None:
@@ -322,12 +281,6 @@ def train(c, model="xgboost", test_start=None):
     run_interruptible(c, cmd)
 
 @task
-def upgrade_hopsworks(c):
-    """Upgrade hopsworks package to latest version."""
-    check_venv()
-    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
-
-@task(pre=[upgrade_hopsworks])
 def inference(c):
     """Launch Streamlit UI for interactive fraud prediction.
 
@@ -346,6 +299,7 @@ def inference(c):
     print("#############  Fraud Prediction UI ###############")
     print("#################################################")
     print("Starting Streamlit app at http://localhost:8501")
+    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
     run_interruptible(c, "uv run streamlit run ccfraud/streamlit_app.py")
 
 @task

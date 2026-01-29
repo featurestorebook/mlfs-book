@@ -25,6 +25,7 @@ class HopsworksSettings(BaseSettings):
     HOPSWORKS_API_KEY: SecretStr | None = None
     HOPSWORKS_PROJECT: str | None = None
     HOPSWORKS_HOST: str | None = None
+    HOPSWORKS_PORT: str | None = None
 
     # Air Quality
     AQICN_API_KEY: SecretStr | None = None
@@ -84,6 +85,9 @@ class HopsworksSettings(BaseSettings):
         if os.getenv("HOPSWORKS_HOST") is None:
             if self.HOPSWORKS_HOST is not None:
                 os.environ['HOPSWORKS_HOST'] = self.HOPSWORKS_HOST
+        if os.getenv("HOPSWORKS_PORT") is None:
+            if self.HOPSWORKS_PORT is not None:
+                os.environ['HOPSWORKS_PORT'] = self.HOPSWORKS_PORT
 
         if missing:
             raise ValueError(

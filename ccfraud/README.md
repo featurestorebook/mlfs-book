@@ -51,33 +51,25 @@ This script will:
 - Install all required dependencies
 - Load environment variables from your .env file
 
-### 2. Backfill historical data
+### 2. Create and backfill our data mart with synthetic data
 
 ```bash
-inv backfill
+inv datamart
 ```
 
 This command generates and loads synthetic historical transaction data (including fraud labels) into the feature store.
 
-### 3. Start Feldera stream processor
-
-```bash
-inv feldera-start
-```
-
-This command starts Feldera in a Docker container. Feldera will run in the foreground and process streaming transactions. Note: Keep this terminal open or run in a separate session.
-
-### 4. Configure Feldera pipelines
-
-In a new terminal (with the environment activated), run:
+### 3. Start Feldera and run the feldera streaming pipeline 
 
 ```bash
 inv feldera
 ```
 
+This command starts Feldera in a Docker container. Feldera will run in the backgorund and process streaming transactions.
+
 This command configures the Feldera streaming pipelines for real-time feature computation.
 
-### 5. Compute features
+### 4. Compute features
 
 ```bash
 inv features
@@ -85,15 +77,19 @@ inv features
 
 This command runs the feature pipeline to compute aggregate and velocity features from historical data and stores them in the feature store.
 
-### 6. Train the model
+### 5. Train the model
 
 ```bash
 inv train
 ```
+This command trains the XGBoost binary classifier using historical features and fraud labels, then registers the model in the model registry, and deploys it to Hopsowrks for serving.
 
-This command trains the XGBoost binary classifier using historical features and fraud labels, then registers the model in the model registry.
+### 6. Inference with the ML systems
 
-## TODO: Real-Time Inference
+```bash
+inv inference
+```
+This command  starts a local streamlit application that invokes the model deployed on Hopsworks.
 
 
 
@@ -103,20 +99,6 @@ Once the system is running, new transactions are processed in real-time:
 3. Features are retrieved from the feature store
 4. Model predicts fraud probability
 5. High-risk transactions are flagged for review
-
-## Project Structure
-
-```
-ccfraud/
-├── features/           # Feature engineering pipeline
-├── training/           # Model training scripts
-├── inference/          # Real-time inference service
-├── notebooks/          # Jupyter notebooks for exploration
-├── feldera/            # Feldera streaming pipeline configs
-├── tasks.py            # Invoke task definitions
-├── setup-env.sh        # Environment setup script
-└── README.md           # This file
-```
 
 ## Monitoring and Operations
 
