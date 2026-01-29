@@ -1089,7 +1089,7 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
     print(f"Creating feature group: {name}")
     # Check if feature group already exists
     fg = fs.get_feature_group(name=name, version=1)
-    fg_already_exists = fg is not None
+    fg_already_exists = fg is not None    
 
     if fg_already_exists:
         print(f"  Feature group '{name}' already exists - skipping description updates")
@@ -1123,9 +1123,9 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 ttl=1800
             )
         fg.insert(df)
-        if fg.online_enabled == True:
-            oi = fg.get_latest_online_ingestion()
-            oi.wait_for_completion()
+        # if fg.online_enabled == True:
+        #     oi = fg.get_latest_online_ingestion()
+        #     oi.wait_for_completion()
         feature_descriptions = {
             "merchant_details": {
                 "merchant_id": "Unique sequential integer identifier for each merchant",
