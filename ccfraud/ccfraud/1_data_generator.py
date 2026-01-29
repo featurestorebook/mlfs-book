@@ -417,7 +417,8 @@ class DataGenerator:
             num_banks=self.args.num_banks,
             current_date=self.current_date,
             issue_date=self.issue_date,
-            expiry_date=self.expiry_date
+            expiry_date=self.expiry_date,
+            transactions_start_date=self.transactions_start_date
         )
 
         if self.mode == 'backfill' or self.should_generate('cards'):

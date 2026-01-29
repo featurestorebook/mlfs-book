@@ -653,10 +653,18 @@ def generate_card_details(
     current_date: datetime,
     issue_date: datetime,
     expiry_date: datetime,
-    transactions_start_date: datetime = None
+    transactions_start_date: datetime = None,
+    update_probability: float = 0.3
 ) -> pl.DataFrame:
     """
-    Generate card details DataFrame.
+    Generate card details DataFrame with initial entries and optional updates.
+
+    Each card gets:
+    - One initial row with last_modified == issue_date (per-card issue date)
+    - Optionally, additional rows with newer last_modified dates (updates)
+
+    This ensures the ASOF JOIN in the Feldera pipeline always finds at least
+    one matching row where last_modified <= transaction.ts.
 
     Args:
         rows: Number of cards to generate
@@ -665,7 +673,9 @@ def generate_card_details(
         current_date: Current date
         issue_date: Earliest card issue date
         expiry_date: Latest card expiry date
-        transactions_start_date: Start date for transactions. If provided, ensures last_modified is before this date
+        transactions_start_date: Start date for transactions. If provided, update entries
+            will have last_modified before this date
+        update_probability: Probability that a card gets an update entry (default 0.3)
     """
     print("Generating card details...")
     if current_date is None or issue_date is None or expiry_date is None:
@@ -675,15 +685,15 @@ def generate_card_details(
     bank_ids = [f"BANK_{i:08d}" for i in range(num_banks)]
 
     rows = int(rows)
-    card_data = {
-        "card_id": [f"CARD_{i:08d}" for i in range(rows)],
-        "cc_num": [
-            f"{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
-            for _ in range(rows)
-        ],
-        "account_id": [random.choice(account_ids) for _ in range(rows)],
-        "bank_id": [random.choice(bank_ids) for _ in range(rows)],
-    }
+
+    # Generate base card data
+    card_ids = [f"CARD_{i:08d}" for i in range(rows)]
+    cc_nums = [
+        f"{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
+        for _ in range(rows)
+    ]
+    card_account_ids = [random.choice(account_ids) for _ in range(rows)]
+    card_bank_ids = [random.choice(bank_ids) for _ in range(rows)]
 
     delta_issue_days = max((current_date - issue_date).days, 0)
     expiry_days_span = max((expiry_date - current_date).days, 0)
@@ -691,24 +701,81 @@ def generate_card_details(
     issue_dates = [(current_date - timedelta(days=random.randint(0, delta_issue_days))).replace(day=1) for _ in range(rows)]
     expiry_dates = [(current_date + timedelta(days=random.randint(0, expiry_days_span))).replace(day=1) for _ in range(rows)]
 
-    card_data["issue_date"] = issue_dates
-    card_data["cc_expiry_date"] = expiry_dates
-
     card_types = ["Credit"] * 60 + ["Debit"] * 35 + ["Prepaid"] * 5
     statuses = ["Active"] * 95 + ["Blocked"] * 4 + ["Lost/Stolen"] * 1
-    card_data["card_type"] = [random.choice(card_types) for _ in range(rows)]
-    card_data["status"] = [random.choice(statuses) for _ in range(rows)]
+    card_type_list = [random.choice(card_types) for _ in range(rows)]
+    status_list = [random.choice(statuses) for _ in range(rows)]
 
-    # Ensure last_modified is always before transactions_start_date if provided
+    # Generate initial entries (one per card with last_modified == issue_date)
+    initial_entries = {
+        "card_id": card_ids.copy(),
+        "cc_num": cc_nums.copy(),
+        "account_id": card_account_ids.copy(),
+        "bank_id": card_bank_ids.copy(),
+        "issue_date": issue_dates.copy(),
+        "cc_expiry_date": expiry_dates.copy(),
+        "card_type": card_type_list.copy(),
+        "status": ["Active"] * rows,  # Initial status is always Active
+        "last_modified": issue_dates.copy(),  # Key: last_modified == issue_date
+    }
+
+    # Generate update entries for some cards
+    update_card_ids = []
+    update_cc_nums = []
+    update_account_ids = []
+    update_bank_ids = []
+    update_issue_dates = []
+    update_expiry_dates = []
+    update_card_types = []
+    update_statuses = []
+    update_last_modified = []
+
+    # Determine the max date for updates
     if transactions_start_date:
-        # Calculate max days to ensure last_modified is before transactions_start_date
-        max_last_modified_date = transactions_start_date - timedelta(days=1)
-        delta_last_modified_days = max((max_last_modified_date - issue_date).days, 0)
-        card_data["last_modified"] = [issue_date + timedelta(days=random.randint(0, delta_last_modified_days)) for _ in range(rows)]
+        max_update_date = transactions_start_date - timedelta(days=1)
     else:
-        card_data["last_modified"] = [current_date - timedelta(days=random.randint(0, delta_issue_days)) for _ in range(rows)]
+        max_update_date = current_date
 
-    return pl.DataFrame(card_data)
+    for i in range(rows):
+        if random.random() < update_probability:
+            # Calculate days range for update date (between issue_date and max_update_date)
+            days_range = (max_update_date - issue_dates[i]).days
+            if days_range > 1:
+                update_date = issue_dates[i] + timedelta(days=random.randint(1, days_range))
+
+                update_card_ids.append(card_ids[i])
+                update_cc_nums.append(cc_nums[i])
+                update_account_ids.append(card_account_ids[i])
+                update_bank_ids.append(card_bank_ids[i])
+                update_issue_dates.append(issue_dates[i])
+                update_expiry_dates.append(expiry_dates[i])
+                update_card_types.append(card_type_list[i])
+                update_statuses.append(status_list[i])  # Could be updated status
+                update_last_modified.append(update_date)
+
+    # Create initial DataFrame
+    initial_df = pl.DataFrame(initial_entries)
+
+    # Create update DataFrame if there are updates
+    if update_card_ids:
+        update_entries = {
+            "card_id": update_card_ids,
+            "cc_num": update_cc_nums,
+            "account_id": update_account_ids,
+            "bank_id": update_bank_ids,
+            "issue_date": update_issue_dates,
+            "cc_expiry_date": update_expiry_dates,
+            "card_type": update_card_types,
+            "status": update_statuses,
+            "last_modified": update_last_modified,
+        }
+        update_df = pl.DataFrame(update_entries)
+        result_df = pl.concat([initial_df, update_df])
+    else:
+        result_df = initial_df
+
+    print(f"  Generated {rows} cards with {len(result_df)} total entries ({len(result_df) - rows} updates)")
+    return result_df
 
 
 # ---------------------------
@@ -880,7 +947,7 @@ def generate_credit_card_transactions_with_location_continuity(
     txn_df = pl.DataFrame({
         "t_id": range(tid_offset, tid_offset + rows),
         "card_idx": card_indices,
-        "random_seconds": rng.integers(0, total_seconds, size=rows),
+        "random_fraction": rng.random(size=rows),  # Use fraction [0, 1) for per-card scaling
     })
 
     # Step 3: Join with card info
@@ -889,10 +956,24 @@ def generate_credit_card_transactions_with_location_continuity(
     txn_df = txn_df.with_columns(pl.col("card_idx").cast(pl.UInt32))
     txn_df = txn_df.join(cards_indexed, on="card_idx", how="left")
 
-    # Step 4: Generate timestamps and sort by card and time
+    # Step 4: Generate timestamps ensuring ts >= max(start_date, issue_date)
+    # Each card's transactions must be after its issue_date
     txn_df = txn_df.with_columns([
-        (pl.lit(start_date) + pl.duration(seconds=pl.col("random_seconds"))).alias("ts")
-    ]).sort(["card_idx", "ts"])
+        # Effective start date is max(global start_date, card's issue_date)
+        pl.when(pl.col("issue_date") > pl.lit(start_date))
+        .then(pl.col("issue_date"))
+        .otherwise(pl.lit(start_date))
+        .alias("effective_start_date")
+    ]).with_columns([
+        # Calculate seconds from effective_start_date to end_date per card
+        ((pl.lit(end_date) - pl.col("effective_start_date")).dt.total_seconds()).alias("card_total_seconds")
+    ]).with_columns([
+        # Scale random fraction to card's valid time range
+        (pl.col("random_fraction") * pl.col("card_total_seconds")).cast(pl.Int64).alias("random_seconds")
+    ]).with_columns([
+        # Generate timestamp from effective_start_date + random_seconds
+        (pl.col("effective_start_date") + pl.duration(seconds=pl.col("random_seconds"))).alias("ts")
+    ]).drop(["effective_start_date", "card_total_seconds", "random_fraction"]).sort(["card_idx", "ts"])
 
     # Step 5: Add transaction sequence number per card
     txn_df = txn_df.with_columns([
@@ -1280,38 +1361,46 @@ def generate_fraud(
     # 1. CHAIN ATTACKS (90%)
     # ===========================
     if chain_attack_transactions > 0:
-        # Get available cards with account_id
-        available_cards = card_df.select(["cc_num", "account_id"]).unique()
-        
+        # Get available cards with account_id and issue_date
+        available_cards = card_df.select(["cc_num", "account_id", "issue_date"]).unique()
+
         # Each chain attack will consist of 5-15 small transactions
         num_chain_attacks = max(chain_attack_transactions // 8, 1)  # Average 8 transactions per attack
-        
+
         # Get time range from transaction_df
         min_ts = transaction_df["ts"].min()
         max_ts = transaction_df["ts"].max()
-        total_seconds = int((max_ts - min_ts).total_seconds())
-        
+
         # Sample merchants with countries
         available_merchants = merchant_df.select(["merchant_id", "country"])
-        
+
         transactions_generated = 0
-        
+
         for attack_idx in range(num_chain_attacks):
             if transactions_generated >= chain_attack_transactions:
                 break
-                
+
             # Select a random card for this attack
             card_sample = available_cards.sample(n=1, shuffle=True, seed=seed + attack_idx)
             cc_num = card_sample["cc_num"][0]
             account_id = card_sample["account_id"][0]
-            
+            card_issue_date = card_sample["issue_date"][0]
+
             # Number of transactions in this chain (5-15)
             num_txns_in_chain = random.randint(5, 15)
             num_txns_in_chain = min(num_txns_in_chain, chain_attack_transactions - transactions_generated)
-            
-            # Start time for this attack (random time within the transaction period)
-            attack_start_seconds = random.randint(0, max(1, total_seconds - 7200))  # Leave room for 2 hours
-            attack_start = min_ts + timedelta(seconds=attack_start_seconds)
+
+            # Start time for this attack must be after card's issue_date
+            # Use max(min_ts, card_issue_date) as the effective start
+            effective_min_ts = max(min_ts, card_issue_date)
+            card_total_seconds = int((max_ts - effective_min_ts).total_seconds())
+
+            # Skip if no valid time range for this card
+            if card_total_seconds < 7200:
+                continue
+
+            attack_start_seconds = random.randint(0, max(1, card_total_seconds - 7200))  # Leave room for 2 hours
+            attack_start = effective_min_ts + timedelta(seconds=attack_start_seconds)
             
             # Duration of attack: 10 minutes to 2 hours
             attack_duration_seconds = random.randint(600, 7200)
@@ -1399,10 +1488,10 @@ def generate_fraud(
     # 2. GEOGRAPHIC FRAUD (10%)
     # ===========================
     if geographic_fraud_transactions > 0:
-        # Get cards and merchants with countries
-        available_cards = card_df.select(["cc_num", "account_id"]).unique()
+        # Get cards and merchants with countries (include issue_date for timestamp validation)
+        available_cards = card_df.select(["cc_num", "account_id", "issue_date"]).unique()
         merchants_with_country = merchant_df.select(["merchant_id", "country"])
-        
+
         # Define pairs of geographically distant countries for impossible travel scenarios
         # These are intentionally far apart to create clear fraud signals
         distant_country_pairs = [
@@ -1419,42 +1508,50 @@ def generate_fraud(
             ("Italy", "Japan"),              # ~9,700 km
             ("Mexico", "India"),             # ~14,500 km
         ]
-        
+
         # Filter to only use country pairs where we have merchants for both countries
         available_countries = set(merchants_with_country["country"].unique().to_list())
         valid_country_pairs = [
-            (c1, c2) for c1, c2 in distant_country_pairs 
+            (c1, c2) for c1, c2 in distant_country_pairs
             if c1 in available_countries and c2 in available_countries
         ]
-        
+
         if not valid_country_pairs:
             print("Warning: No valid distant country pairs found for geographic fraud")
             # Fallback: use any two different countries
             countries_list = list(available_countries)
             if len(countries_list) >= 2:
-                valid_country_pairs = [(countries_list[i], countries_list[j]) 
-                                      for i in range(len(countries_list)) 
+                valid_country_pairs = [(countries_list[i], countries_list[j])
+                                      for i in range(len(countries_list))
                                       for j in range(i+1, len(countries_list))][:10]
             else:
                 valid_country_pairs = []
-        
+
         if not valid_country_pairs:
             print("Warning: Cannot generate geographic fraud - insufficient countries")
         else:
             # Get time range from transaction_df
             min_ts = transaction_df["ts"].min()
             max_ts = transaction_df["ts"].max()
-            total_seconds = int((max_ts - min_ts).total_seconds())
-            
+
             # Each geographic fraud is a pair of transactions
             num_geographic_pairs = max(geographic_fraud_transactions // 2, 1)
-            
+
             for pair_idx in range(num_geographic_pairs):
                 # Select a random card
                 card_sample = available_cards.sample(n=1, shuffle=True, seed=seed + 1000 + pair_idx)
                 cc_num = card_sample["cc_num"][0]
                 account_id = card_sample["account_id"][0]
-                
+                card_issue_date = card_sample["issue_date"][0]
+
+                # Effective min_ts for this card must be after its issue_date
+                effective_min_ts = max(min_ts, card_issue_date)
+                card_total_seconds = int((max_ts - effective_min_ts).total_seconds())
+
+                # Skip if no valid time range for this card
+                if card_total_seconds < 3600:
+                    continue
+
                 # Select two distant countries (cycle through the list)
                 country1, country2 = valid_country_pairs[pair_idx % len(valid_country_pairs)]
                 
@@ -1467,10 +1564,10 @@ def generate_fraud(
                 
                 merchant1 = random.choice(merchants_c1)
                 merchant2 = random.choice(merchants_c2)
-                
-                # First transaction time
-                txn1_seconds = random.randint(0, max(1, total_seconds - 3600))
-                txn1_ts = min_ts + timedelta(seconds=txn1_seconds)
+
+                # First transaction time (using card-specific effective start)
+                txn1_seconds = random.randint(0, max(1, card_total_seconds - 3600))
+                txn1_ts = effective_min_ts + timedelta(seconds=txn1_seconds)
 
                 # Second transaction: VERY short time gap to ensure impossible travel
                 # For distant countries (10,000+ km), even 30 minutes is clearly impossible
