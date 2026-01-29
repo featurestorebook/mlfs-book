@@ -129,7 +129,7 @@ def main(last_processed_date, current_date, wait=False):
     print("Creating lag features...")
     trans_df["prev_ts"] = trans_df["ts"].shift(1)
     trans_df["prev_card_present"] = trans_df["card_present"].shift(1)
-    trans_df["prev_ip_transaction"] = trans_df["ip_address"].shift(1)
+    trans_df["prev_ip_address"] = trans_df["ip_address"].shift(1)
 
     # Mark fraudulent transactions
     print("Marking fraudulent transactions...")

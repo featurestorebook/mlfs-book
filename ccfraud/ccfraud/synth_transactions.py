@@ -715,6 +715,39 @@ def generate_card_details(
 # Transactions: From existing card + merchant (preserves FKs)
 # ---------------------------
 
+def validate_cc_nums_exist(
+    transaction_df: pl.DataFrame,
+    card_df: pl.DataFrame,
+    raise_on_invalid: bool = False
+) -> pl.DataFrame:
+    """
+    Filter transactions to only include cc_nums that exist in card_details.
+
+    This ensures referential integrity between transactions and card_details,
+    which is required for the Feldera streaming pipeline's ASOF JOIN to work
+    correctly (avoiding NULL account_id and bank_id values).
+
+    Args:
+        transaction_df: DataFrame with transactions (must have 'cc_num' column)
+        card_df: DataFrame with card details (must have 'cc_num' column)
+        raise_on_invalid: If True, raise ValueError when invalid cc_nums found.
+                         If False, filter them out with a warning.
+
+    Returns:
+        Filtered DataFrame with only valid cc_nums
+    """
+    valid_cc_nums = set(card_df["cc_num"].to_list())
+    filtered_df = transaction_df.filter(pl.col("cc_num").is_in(valid_cc_nums))
+
+    removed = len(transaction_df) - len(filtered_df)
+    if removed > 0:
+        if raise_on_invalid:
+            raise ValueError(f"{removed} transactions have cc_num values not found in card_details")
+        print(f"  Warning: Removed {removed} transactions with invalid cc_num (not in card_details)")
+
+    return filtered_df
+
+
 def generate_credit_card_transactions_from_existing(
     card_df: pl.DataFrame,
     merchant_df: pl.DataFrame,

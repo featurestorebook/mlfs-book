@@ -124,10 +124,15 @@ def get_max_transaction_id(transactions_fg):
 
 
 def generate_transactions(cards_with_home, merchant_df, num_transactions, fraud_rate, rng, start_t_id):
-    """Generate synthetic transactions DataFrame."""
+    """Generate synthetic transactions DataFrame.
+
+    Note: Since we sample from cards_with_home (which is derived from card_df),
+    all generated cc_nums are guaranteed to exist in card_details. This ensures
+    the Feldera streaming pipeline's ASOF JOIN works correctly.
+    """
     now = datetime.now()
 
-    # Sample cards and merchants randomly
+    # Sample cards from cards_with_home - this ensures all cc_nums exist in card_details
     card_indices = rng.choice(len(cards_with_home), size=num_transactions, replace=True)
     merchant_indices = rng.choice(len(merchant_df), size=num_transactions, replace=True)
 

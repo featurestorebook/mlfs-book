@@ -275,6 +275,9 @@ def train(c, model="xgboost", test_start=None):
     print(f"Test split start date: {test_start}")
     run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
 
+    print("\nInstalling requirements...")
+    run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
+
     cmd = (
         f'uv run papermill {notebook} '
         f'{notebook} '
