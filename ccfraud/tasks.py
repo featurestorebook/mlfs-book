@@ -97,7 +97,7 @@ def clean(c):
 
 
 @task
-def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
+def datamart(c, mode="backfill", entities="all", num_transactions=500000, fraud_rate=0.0001, start_date=None, end_date=None):
     """Generate and insert synthetic data.
 
     Args:
@@ -109,10 +109,10 @@ def backfill(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         end_date: End date for transactions in YYYY-MM-DD format (default: today)
 
     Examples:
-        inv backfill                                    # Full backfill (previous 30 days)
-        inv backfill --start-date=2025-11-01 --end-date=2025-12-01
-        inv backfill --mode=incremental --entities=transactions --num-transactions=10000
-        inv backfill --fraud-rate=0.001                # Higher fraud rate
+        inv datamart                                    # Full backfill (previous 30 days)
+        inv datamart --start-date=2025-11-01 --end-date=2025-12-01
+        inv datamart --mode=incremental --entities=transactions --num-transactions=10000
+        inv datamart --fraud-rate=0.001                # Higher fraud rate
     """
     from datetime import datetime, timedelta
 
@@ -341,7 +341,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, "uv run pytest tests/ -v")
 
-@task(pre=[backfill, feldera, call(features, wait=True), train, inference])
+@task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):
-    """backfill, feldera, features (with wait), train, inference."""
+    """datamart, feldera, features (with wait), train, inference."""
     pass
