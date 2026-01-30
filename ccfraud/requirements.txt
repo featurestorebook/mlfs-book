@@ -18,3 +18,4 @@ seaborn
 Faker==38.2.0
 pytest>=8.0.0
 torch
+jupyter
