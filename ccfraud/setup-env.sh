@@ -773,118 +773,127 @@ else
   echo "⚠️  Warning: $ENV_FILE not found"
 fi
 
-echo ""
-# Create virtual environment if missing, incomplete, or using wrong Python version
-RECREATE_VENV=0
+# Skip venv setup if running inside Hopsworks (PROJECT_PATH is set)
+if [ -n "${PROJECT_PATH:-}" ]; then
+  echo ""
+  echo "✅ Running inside Hopsworks, skipping venv setup"
+  echo ""
+  # Restore shell options to avoid affecting the parent shell
+  set +uo pipefail
+else
+  echo ""
+  # Create virtual environment if missing, incomplete, or using wrong Python version
+  RECREATE_VENV=0
 
-if [ ! -f "$VENV_DIR/bin/activate" ]; then
-  if [ -d "$VENV_DIR" ]; then
-    echo "📦 Removing incomplete virtual environment"
-    rm -rf "$VENV_DIR"
-  fi
-  RECREATE_VENV=1
-elif [ -f "$VENV_DIR/bin/python" ]; then
-  # Check if existing venv uses a valid Python version
-  VENV_PY_VERSION="$(get_python_version "$VENV_DIR/bin/python")"
-  if ! check_python_version "$VENV_DIR/bin/python"; then
-    echo "📦 Existing virtual environment uses Python $VENV_PY_VERSION (requires >= $REQUIRED_MIN and < $REQUIRED_MAX)"
-    echo "📦 Removing virtual environment to recreate with Python $PY_VERSION"
+  if [ ! -f "$VENV_DIR/bin/activate" ]; then
+    if [ -d "$VENV_DIR" ]; then
+      echo "📦 Removing incomplete virtual environment"
+      rm -rf "$VENV_DIR"
+    fi
+    RECREATE_VENV=1
+  elif [ -f "$VENV_DIR/bin/python" ]; then
+    # Check if existing venv uses a valid Python version
+    VENV_PY_VERSION="$(get_python_version "$VENV_DIR/bin/python")"
+    if ! check_python_version "$VENV_DIR/bin/python"; then
+      echo "📦 Existing virtual environment uses Python $VENV_PY_VERSION (requires >= $REQUIRED_MIN and < $REQUIRED_MAX)"
+      echo "📦 Removing virtual environment to recreate with Python $PY_VERSION"
+      rm -rf "$VENV_DIR"
+      RECREATE_VENV=1
+    else
+      echo "📦 Virtual environment already exists with Python $VENV_PY_VERSION"
+    fi
+  else
+    echo "📦 Virtual environment missing Python binary, recreating"
     rm -rf "$VENV_DIR"
     RECREATE_VENV=1
-  else
-    echo "📦 Virtual environment already exists with Python $VENV_PY_VERSION"
   fi
-else
-  echo "📦 Virtual environment missing Python binary, recreating"
-  rm -rf "$VENV_DIR"
-  RECREATE_VENV=1
-fi
 
-if [ "$RECREATE_VENV" -eq 1 ]; then
-  echo "📦 Creating virtual environment in $VENV_DIR with Python $PY_VERSION"
-  if ! "$PYTHON_BIN" -m venv "$VENV_DIR"; then
-    echo "❌ Failed to create virtual environment"
-    exit_script 1
-  fi
-fi
-
-# Activate virtual environment
-# shellcheck disable=SC1091
-if ! source "$VENV_DIR/bin/activate"; then
-  echo "❌ Failed to activate virtual environment"
-  exit_script 1
-fi
-
-echo "⚡ Virtual environment activated: $VENV_DIR"
-
-# Check pip is installed
-# Upgrade pip (safe + recommended)
-if ! python -m pip install --upgrade pip >/dev/null 2>&1; then
-  #echo "⚠️  Warning: Failed to upgrade pip, continuing anyway"
-  python -m ensurepip --upgrade || {
-    echo "❌ Failed to bootstrap pip. Your Python build may be incomplete."
-    echo "   If using conda, try: conda install pip"
-    exit_script 1
-  }
-fi
-
-# Upgrade pip, setuptools, and wheel (best practice for clean venv)
-#echo "📦 Upgrading pip, setuptools, and wheel..."
-if ! python -m pip install -q --upgrade pip setuptools wheel; then
-  echo "⚠️  Warning: Failed to upgrade pip/setuptools/wheel"
-  echo "   This may cause issues with package installations"
-  echo "   Attempting to continue..."
-fi
-
-# Ensure required libraries
-ensure_package() {
-  PKG="$1"
-  if ! python - <<EOF >/dev/null 2>&1
-import importlib.util
-exit(0 if importlib.util.find_spec("$PKG") else 1)
-EOF
-  then
-    echo "📥 Installing $PKG"
-    if ! python -m pip install "$PKG"; then
-      echo "❌ Failed to install $PKG"
+  if [ "$RECREATE_VENV" -eq 1 ]; then
+    echo "📦 Creating virtual environment in $VENV_DIR with Python $PY_VERSION"
+    if ! "$PYTHON_BIN" -m venv "$VENV_DIR"; then
+      echo "❌ Failed to create virtual environment"
       exit_script 1
     fi
   fi
-}
 
-ensure_package invoke
-ensure_package uv
+  # Activate virtual environment
+  # shellcheck disable=SC1091
+  if ! source "$VENV_DIR/bin/activate"; then
+    echo "❌ Failed to activate virtual environment"
+    exit_script 1
+  fi
 
-# Refresh shell's command hash table so uv command is found
-hash -r
+  echo "⚡ Virtual environment activated: $VENV_DIR"
 
-if ! uv pip install -U -r requirements.txt; then
-  echo "❌ Failed to install requirements"
-  exit_script 1
+  # Check pip is installed
+  # Upgrade pip (safe + recommended)
+  if ! python -m pip install --upgrade pip >/dev/null 2>&1; then
+    #echo "⚠️  Warning: Failed to upgrade pip, continuing anyway"
+    python -m ensurepip --upgrade || {
+      echo "❌ Failed to bootstrap pip. Your Python build may be incomplete."
+      echo "   If using conda, try: conda install pip"
+      exit_script 1
+    }
+  fi
+
+  # Upgrade pip, setuptools, and wheel (best practice for clean venv)
+  #echo "📦 Upgrading pip, setuptools, and wheel..."
+  if ! python -m pip install -q --upgrade pip setuptools wheel; then
+    echo "⚠️  Warning: Failed to upgrade pip/setuptools/wheel"
+    echo "   This may cause issues with package installations"
+    echo "   Attempting to continue..."
+  fi
+
+  # Ensure required libraries
+  ensure_package() {
+    PKG="$1"
+    if ! python - <<EOF >/dev/null 2>&1
+import importlib.util
+exit(0 if importlib.util.find_spec("$PKG") else 1)
+EOF
+    then
+      echo "📥 Installing $PKG"
+      if ! python -m pip install "$PKG"; then
+        echo "❌ Failed to install $PKG"
+        exit_script 1
+      fi
+    fi
+  }
+
+  ensure_package invoke
+  ensure_package uv
+
+  # Refresh shell's command hash table so uv command is found
+  hash -r
+
+  if ! uv pip install -U -r requirements.txt; then
+    echo "❌ Failed to install requirements"
+    exit_script 1
+  fi
+
+  # Refresh shell's command hash table so newly installed commands are found
+  hash -r
+
+  echo "🎉 Environment ready!"
+  echo "   Python: $(python --version)"
+  echo "   invoke: $(invoke --version 2>/dev/null || echo installed)"
+  echo "   uv: $(uv --version)"
+  echo ""
+  echo "✅ Virtual environment is active"
+  echo ""
+  echo "Check which tasks you can run with:"
+  echo "   inv --list"
+  echo "Run a task with:"
+  echo "   inv <task_name>"
+  echo "Run the end-to-end example with:"
+  echo "   inv all"
+
+  # Restore shell options to avoid affecting the parent shell
+  set +uo pipefail
+
+  # Ensure venv is activated in the current shell
+  source "$VENV_DIR/bin/activate"
+
+  # Refresh command hash so uv, pip, and other venv commands are found
+  hash -r
 fi
-
-# Refresh shell's command hash table so newly installed commands are found
-hash -r
-
-echo "🎉 Environment ready!"
-echo "   Python: $(python --version)"
-echo "   invoke: $(invoke --version 2>/dev/null || echo installed)"
-echo "   uv: $(uv --version)"
-echo ""
-echo "✅ Virtual environment is active"
-echo ""
-echo "Check which tasks you can run with:"
-echo "   inv --list"
-echo "Run a task with:"
-echo "   inv <task_name>"
-echo "Run the end-to-end example with:"
-echo "   inv all"
-
-# Restore shell options to avoid affecting the parent shell
-set +uo pipefail
-
-# Ensure venv is activated in the current shell
-source "$VENV_DIR/bin/activate"
-
-# Refresh command hash so uv, pip, and other venv commands are found
-hash -r
