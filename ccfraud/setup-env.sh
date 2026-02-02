@@ -777,6 +777,8 @@ fi
 if [ -n "${PROJECT_PATH:-}" ]; then
   echo ""
   echo "✅ Running inside Hopsworks, skipping venv setup"
+  echo "📥 Installing dependencies..."
+  pip install -r requirements.txt
   echo ""
   # Restore shell options to avoid affecting the parent shell
   set +uo pipefail
