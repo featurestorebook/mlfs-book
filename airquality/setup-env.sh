@@ -429,7 +429,11 @@ fi
 
 # Check if HOPSWORKS_API_KEY is set
 if [ -f "$ENV_FILE" ]; then
-  if ! grep -q "^HOPSWORKS_API_KEY=.\+" "$ENV_FILE" 2>/dev/null; then
+  # Skip Hopsworks credential checks if running inside Hopsworks (PROJECT_PATH is set)
+  if [ -n "${PROJECT_PATH:-}" ]; then
+    echo "✅ Running inside Hopsworks, skipping credential checks"
+  else
+    if ! grep -q "^HOPSWORKS_API_KEY=.\+" "$ENV_FILE" 2>/dev/null; then
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "⚠️  IMPORTANT: Hopsworks API Key Required"
@@ -496,7 +500,7 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
     CURRENT_HOST=$(grep "^HOPSWORKS_HOST=" "$ENV_FILE" | cut -d'=' -f2)
     echo "✅ HOPSWORKS_HOST set to: $CURRENT_HOST"
   fi
-
+  fi  # End of PROJECT_PATH check
 else
   echo "⚠️  Warning: $ENV_FILE not found"
 fi
