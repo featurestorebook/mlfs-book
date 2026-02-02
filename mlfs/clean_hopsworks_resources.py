@@ -23,6 +23,15 @@ fs = project.get_feature_store()
 ms = project.get_model_serving()
 mr = project.get_model_registry()
 kafka_api = project.get_kafka_api()
+env_api = project.get_environment_api()
+
+def delete_environment(environment_name):
+    env = env_api.get_environment(name=environment_name)
+    print(f"Deleting environment: {env.name}")
+    try:
+        env.delete()
+    except Exception:
+        print(f"Failed to delete environment {env.name}.")
 
 def delete_deployment(deployment_name):
 
@@ -139,7 +148,8 @@ if files_to_clean == "cc":
         f"{project.name}_credit_card_transactions_onlinefs",
     ]:
         delete_topic(topic_name, project.name)
-    
+
+    delete_environment("sklearn-inference-pipeline")    
 
 elif files_to_clean == "aq":
     delete_model("air_quality_xgboost_model")    

@@ -12,8 +12,8 @@ import warnings
 import argparse
 import hopsworks
 from datetime import datetime
-from hsfs.feature import Feature
-
+#from hsfs.feature import Feature
+import hsfs
 
 current_file = Path(__file__).absolute()
 ccfraud_pkg_dir = current_file.parent  # ccfraud/ccfraud/
@@ -86,18 +86,18 @@ def main(last_processed_date, current_date, wait=False):
         version=1,
         event_time="ts",
         features=[
-            Feature("t_id", type="bigint"),
-            Feature("cc_num", type="string"),
-            Feature("merchant_id", type="string"),
-            Feature("account_id", type="string"),
-            Feature("amount", type="double"),
-            Feature("ip_address", type="string"),
-            Feature("card_present", type="boolean"),
-            Feature("time_since_last_trans", type="bigint"),
-            Feature("days_to_card_expiry", type="bigint"),
-            Feature("is_fraud", type="boolean"),
-            Feature("haversine_distance", type="boolean"),
-            Feature("ts", type="timestamp"),
+            hsfs.feature.Feature("t_id", type="bigint"),
+            hsfs.feature.Feature("cc_num", type="string"),
+            hsfs.feature.Feature("merchant_id", type="string"),
+            hsfs.feature.Feature("account_id", type="string"),
+            hsfs.feature.Feature("amount", type="double"),
+            hsfs.feature.Feature("ip_address", type="string"),
+            hsfs.feature.Feature("card_present", type="boolean"),
+            hsfs.feature.Feature("time_since_last_trans", type="bigint"),
+            hsfs.feature.Feature("days_to_card_expiry", type="bigint"),
+            hsfs.feature.Feature("is_fraud", type="boolean"),
+            hsfs.feature.Feature("haversine_distance", type="boolean"),
+            hsfs.feature.Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],
         parents=[trans_fg]
@@ -112,7 +112,7 @@ def main(last_processed_date, current_date, wait=False):
 
     # Read transaction data filtered by last processed date
     print(f"Reading transactions after {last_processed_date}...")
-    #trans_df = trans_fg.filter(Feature("ts") > last_processed_date).read()
+    #trans_df = trans_fg.filter(hsfs.feature.Feature("ts") > last_processed_date).read()
     trans_df = trans_fg.read()
     print(f"Read {len(trans_df)} transactions")
 

@@ -207,6 +207,8 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
+    run_interruptible(c, "./fix.sh", pty=False)
+
     run_interruptible(c, "uv pip install -U hopsworks", pty=False)
 
     # Default to today's date if not provided
@@ -271,6 +273,7 @@ def train(c, model="xgboost", test_start=None):
     print(f"Model: {model_display[model]}")
     print(f"Notebook: {notebook}")
     print(f"Test split start date: {test_start}")
+    run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
 
     cmd = (
         f'uv run papermill {notebook} '
@@ -298,9 +301,8 @@ def inference(c):
     print("#################################################")
     print("#############  Fraud Prediction UI ###############")
     print("#################################################")
-    print("Starting Streamlit app at http://localhost:8501")
-    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
     run_interruptible(c, "uv run streamlit run ccfraud/streamlit_app.py")
+    print("Starting Streamlit app at http://localhost:8501")
 
 @task
 def feldera_start(c):
