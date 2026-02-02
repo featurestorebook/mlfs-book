@@ -47,6 +47,19 @@ def check_venv():
 
     # Skip this check if you are running the code in a Hopsworks cluster
     if os.environ.get("PROJECT_PATH"):
+        # Disable IPython extension that causes issues in Hopsworks
+        config_path = Path("/srv/hops/anaconda/.ipython/profile_default/ipython_config.py")
+        if config_path.exists():
+            lines = config_path.read_text().splitlines()
+            updated = []
+            target = "c.InteractiveShellApp.extensions = ['attach_config_extension']"
+            for line in lines:
+                stripped = line.strip()
+                if stripped == target:
+                    updated.append(f"# {line}")
+                else:
+                    updated.append(line)
+            config_path.write_text("\n".join(updated) + "\n")
         return
 
     # 1. Create venv if it doesn't exist
