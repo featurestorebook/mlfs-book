@@ -220,7 +220,7 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
-    run_interruptible(c, "./fix.sh", pty=False)
+    #run_interruptible(c, "./fix.sh", pty=False)
 
     run_interruptible(c, "uv pip install -U hopsworks", pty=False)
 
@@ -286,6 +286,9 @@ def train(c, model="xgboost", test_start=None):
     print(f"Model: {model_display[model]}")
     print(f"Notebook: {notebook}")
     print(f"Test split start date: {test_start}")
+    run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
+
+    print("\nInstalling requirements...")
     run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
 
     cmd = (

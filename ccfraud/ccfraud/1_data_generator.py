@@ -417,7 +417,8 @@ class DataGenerator:
             num_banks=self.args.num_banks,
             current_date=self.current_date,
             issue_date=self.issue_date,
-            expiry_date=self.expiry_date
+            expiry_date=self.expiry_date,
+            transactions_start_date=self.transactions_start_date
         )
 
         if self.mode == 'backfill' or self.should_generate('cards'):
@@ -472,6 +473,9 @@ class DataGenerator:
             tid_offset=self.args.tid_offset,
             seed=self.args.seed
         )
+
+        # Validate that all cc_nums exist in card_details (defensive check)
+        self.transaction_df = st.validate_cc_nums_exist(self.transaction_df, self.card_df)
 
         print(f"  Generated {len(self.transaction_df)} transactions")
 
@@ -760,7 +764,8 @@ class StreamingGenerator:
         now = datetime.now()
         timestamps = [now + timedelta(microseconds=i * 1000) for i in range(batch_size)]
 
-        # Sample cards, merchants, accounts randomly
+        # Sample cards from cards_with_home (which is joined from card_df)
+        # This ensures all cc_nums exist in card_details for proper Feldera ASOF JOIN
         card_indices = self.rng.choice(len(self.cards_with_home), size=batch_size, replace=True)
         merchant_indices = self.rng.choice(len(self.merchant_df), size=batch_size, replace=True)
 
