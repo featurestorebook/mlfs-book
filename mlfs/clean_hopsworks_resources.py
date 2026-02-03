@@ -27,11 +27,11 @@ env_api = project.get_environment_api()
 
 def delete_environment(environment_name):
     env = env_api.get_environment(name=environment_name)
-    print(f"Deleting environment: {env.name}")
     try:
         env.delete()
+        print(f"Deleted environment: {environment_name}")
     except Exception:
-        print(f"Failed to delete environment {env.name}.")
+        print(f"Failed to delete environment {environment_name}.")
 
 def delete_deployment(deployment_name):
 

@@ -56,8 +56,4 @@ class Predict(object):
                               serving_keys=[{"cc_num": cc_num, "merchant_id": merchant_id}],
                               event_time=[datetime.now()])
 
-<<<<<<< HEAD
-        return predictions.tolist()
-=======
         return predictions
->>>>>>> 5c8ee0e (manually casting predictions to bool)

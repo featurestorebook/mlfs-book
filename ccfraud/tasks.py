@@ -207,7 +207,7 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     print("######### Incremental Feature Pipeline ##########")
     print("#################################################")
-    run_interruptible(c, "./fix.sh", pty=False)
+    #run_interruptible(c, "./fix.sh", pty=False)
 
     run_interruptible(c, "uv pip install -U hopsworks", pty=False)
 
