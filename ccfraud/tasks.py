@@ -45,6 +45,12 @@ VENV_DIR = Path(".venv")
 def _in_hopsworks():
     return os.environ.get("PROJECT_PATH") is not None
 
+def _require_outside_hopsworks(task_name):
+    """Exit with an error if running inside Hopsworks."""
+    if _in_hopsworks():
+        print(f"ERROR: 'inv {task_name}' can only be run outside Hopsworks.")
+        sys.exit(1)
+
 def uv_run(cmd):
     """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
     if _in_hopsworks():
@@ -338,6 +344,7 @@ def inference(c):
 @task
 def feldera_start(c):
     """Start Feldera Docker container as a background process."""
+    _require_outside_hopsworks("feldera-start")
     check_venv()
     print("#################################################")
     print("#######  Starting Feldera Container  ############")
@@ -347,6 +354,7 @@ def feldera_start(c):
 @task
 def feldera_stop(c):
     """Stop Feldera Docker container."""
+    _require_outside_hopsworks("feldera-stop")
     check_venv()
     print("#################################################")
     print("#######  Stopping Feldera Container  ############")
@@ -356,6 +364,7 @@ def feldera_stop(c):
 @task(pre=[feldera_start])
 def feldera(c):
     """Create/deploy streaming feature pipeline with Feldera."""
+    _require_outside_hopsworks("feldera")
     check_venv()
     print("#################################################")
     print("#######  Feldera Streeaming Pipeline ############")

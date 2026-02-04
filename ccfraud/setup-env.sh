@@ -431,7 +431,7 @@ fi
 if [ -f "$ENV_FILE" ]; then
   # Skip Hopsworks credential checks if running inside Hopsworks (PROJECT_PATH is set)
   if [ -n "${PROJECT_PATH:-}" ]; then
-    echo "✅ Running inside Hopsworks, skipping credential checks"
+    echo "✅ Running inside Hopsworks, skipping credential/Feldera/Docker checks"
   else
     if ! grep -q "^HOPSWORKS_API_KEY=.\+" "$ENV_FILE" 2>/dev/null; then
     echo ""
@@ -501,8 +501,6 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
     CURRENT_HOST=$(grep "^HOPSWORKS_HOST=" "$ENV_FILE" | cut -d'=' -f2)
     echo "✅ HOPSWORKS_HOST set to: $CURRENT_HOST"
   fi
-  fi  # End of PROJECT_PATH check
-
   # Check for FELDERA_DIR
   if ! grep -q "^FELDERA_DIR=.\+" "$ENV_FILE" 2>/dev/null; then
     echo ""
@@ -769,6 +767,7 @@ HOPSWORKS_PROJECT=$PROJECT_NAME" "$ENV_FILE"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
   fi
+  fi  # End of PROJECT_PATH check
 else
   echo "⚠️  Warning: $ENV_FILE not found"
 fi
