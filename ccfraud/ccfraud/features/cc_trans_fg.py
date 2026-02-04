@@ -100,8 +100,8 @@ def haversine_distance(card_present: pd.Series, prev_card_present: pd.Series,
         
 
         # Ensure database is downloaded and get path
-        mmdb_path = "/tmp/GeoLite2-City.mmdb"
-        download_url = "https://repo.hops.works/dev/jdowling/GeoLite2-City.mmdb"
+        mmdb_path = "/tmp/gc.mmdb"
+        download_url = "https://repo.hops.works/dev/jdowling/gc.mmdb"
     
         mmdb_path = os.path.normpath(mmdb_path)
         if not os.path.exists(mmdb_path):
