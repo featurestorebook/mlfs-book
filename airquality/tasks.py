@@ -40,6 +40,21 @@ exceptions.ParseError.__str__ = _custom_parse_error_str
 
 VENV_DIR= Path(".venv")
 
+def _in_hopsworks():
+    return os.environ.get("PROJECT_PATH") is not None
+
+def uv_run(cmd):
+    """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
+    if _in_hopsworks():
+        return cmd
+    return f"uv run {cmd}"
+
+def uv_pip(args):
+    """Wrap 'uv pip <args>' locally, or use 'pip <args>' in Hopsworks."""
+    if _in_hopsworks():
+        return f"pip {args}"
+    return f"uv pip {args}"
+
 def check_venv():
     """Check if a virtual environment exists and is active."""
 
@@ -89,7 +104,7 @@ def clean(c):
         print("#################################################")
         print("################## Cleanup   ####################")
         print("#################################################")
-        c.run("uv run python mlfs/clean_hopsworks_resources.py aq")
+        c.run(uv_run("python mlfs/clean_hopsworks_resources.py aq"))
 
 @task
 def backfill(c):
@@ -98,7 +113,7 @@ def backfill(c):
     print("#################################################")
     print("########## Backfill Feature Pipeline   ##########")
     print("#################################################")
-    c.run("uv run ipython notebooks/1_air_quality_feature_backfill.ipynb")
+    c.run(uv_run("ipython notebooks/1_air_quality_feature_backfill.ipynb"))
 
 @task
 def features(c):
@@ -107,7 +122,7 @@ def features(c):
     print("#################################################")
     print("######### Incremental Feature Pipeline  #########")
     print("#################################################")
-    c.run("uv run ipython notebooks/2_air_quality_feature_pipeline.ipynb")
+    c.run(uv_run("ipython notebooks/2_air_quality_feature_pipeline.ipynb"))
 
 @task
 def train(c, test_days=30, min_train_days=180):
@@ -133,7 +148,7 @@ def train(c, test_days=30, min_train_days=180):
     env['TEST_DAYS'] = str(test_days)
     env['MIN_TRAIN_DAYS'] = str(min_train_days)
 
-    c.run("uv run ipython notebooks/3_air_quality_training_pipeline.ipynb", env=env)
+    c.run(uv_run("ipython notebooks/3_air_quality_training_pipeline.ipynb"), env=env)
 
 @task
 def inference(c):
@@ -142,15 +157,15 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run("uv run ipython notebooks/2_air_quality_feature_pipeline.ipynb")
-    c.run("uv run ipython notebooks/4_air_quality_batch_inference.ipynb")
+    c.run(uv_run("ipython notebooks/2_air_quality_feature_pipeline.ipynb"))
+    c.run(uv_run("ipython notebooks/4_air_quality_batch_inference.ipynb"))
 
 
 @task
 def llm(c):
     """Uses function calling to answer questions about air quality."""
     check_venv()
-    c.run("uv run ipython notebooks/5_function_calling.ipynb")
+    c.run(uv_run("ipython notebooks/5_function_calling.ipynb"))
 
 @task
 def test(c):
@@ -159,7 +174,7 @@ def test(c):
     print("#################################################")
     print("############### Running Tests ###################")
     print("#################################################")
-    c.run("uv run pytest tests/ -v")
+    c.run(uv_run("pytest tests/ -v"))
 
 @task(pre=[backfill, train, features, inference])
 def all(c):

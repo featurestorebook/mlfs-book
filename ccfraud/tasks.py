@@ -42,6 +42,21 @@ exceptions.ParseError.__str__ = _custom_parse_error_str
 
 VENV_DIR = Path(".venv")
 
+def _in_hopsworks():
+    return os.environ.get("PROJECT_PATH") is not None
+
+def uv_run(cmd):
+    """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
+    if _in_hopsworks():
+        return cmd
+    return f"uv run {cmd}"
+
+def uv_pip(args):
+    """Wrap 'uv pip <args>' locally, or use 'pip <args>' in Hopsworks."""
+    if _in_hopsworks():
+        return f"pip {args}"
+    return f"uv pip {args}"
+
 def check_venv():
     """Check if a virtual environment exists and is active."""
 
@@ -106,7 +121,7 @@ def clean(c):
         print("#################################################")
         print("################## Cleanup ######################")
         print("#################################################")
-        run_interruptible(c, "uv run python mlfs/clean_hopsworks_resources.py cc", pty=False)
+        run_interruptible(c, uv_run("python mlfs/clean_hopsworks_resources.py cc"), pty=False)
 
 
 @task
@@ -146,7 +161,7 @@ def datamart(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         start_date = start_dt.strftime('%Y-%m-%d')
 
     # Build command
-    cmd = f"uv run python ccfraud/1_data_generator.py --mode {mode} --start-date {start_date} --end-date {end_date}"
+    cmd = uv_run(f"python ccfraud/1_data_generator.py --mode {mode} --start-date {start_date} --end-date {end_date}")
 
     if entities != "all":
         # Convert comma-separated to space-separated for argparse
@@ -195,9 +210,9 @@ def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
     print(f"Fraud rate: {fraud_rate*100:.2f}%")
     print(f"Publishing to: credit_card_transactions FG → Kafka\n")
 
-    cmd = (f"uv run python ccfraud/1_data_generator.py --mode streaming "
+    cmd = (uv_run(f"python ccfraud/1_data_generator.py --mode streaming "
            f"--transactions-per-sec {transactions_per_sec} "
-           f"--fraud-rate {fraud_rate}")
+           f"--fraud-rate {fraud_rate}"))
 
     run_interruptible(c, cmd)
 
@@ -222,13 +237,13 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     #run_interruptible(c, "./fix.sh", pty=False)
 
-    run_interruptible(c, "uv pip install -U hopsworks", pty=False)
+    run_interruptible(c, uv_pip("install -U hopsworks"), pty=False)
 
     # Default to today's date if not provided
     if current_date is None:
         current_date = datetime.now().strftime('%Y-%m-%d')
 
-    cmd = f"uv run python ccfraud/3-batch-feature-pipeline.py --current-date {current_date}"
+    cmd = uv_run(f"python ccfraud/3-batch-feature-pipeline.py --current-date {current_date}")
     if wait:
         cmd += " --wait"
     print(f"Current date: {current_date}")
@@ -286,13 +301,13 @@ def train(c, model="xgboost", test_start=None):
     print(f"Model: {model_display[model]}")
     print(f"Notebook: {notebook}")
     print(f"Test split start date: {test_start}")
-    run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
+    run_interruptible(c, uv_pip("install -r requirements.txt"), pty=False)
 
     print("\nInstalling requirements...")
-    run_interruptible(c, "uv pip install -r requirements.txt", pty=False)
+    run_interruptible(c, uv_pip("install -r requirements.txt"), pty=False)
 
-    cmd = (
-        f'uv run papermill {notebook} '
+    cmd = uv_run(
+        f'papermill {notebook} '
         f'{notebook} '
         f'-p test_start "{test_start}"'
     )
@@ -317,7 +332,7 @@ def inference(c):
     print("#################################################")
     print("#############  Fraud Prediction UI ###############")
     print("#################################################")
-    run_interruptible(c, "uv run streamlit run ccfraud/streamlit_app.py")
+    run_interruptible(c, uv_run("streamlit run ccfraud/streamlit_app.py"))
     print("Starting Streamlit app at http://localhost:8501")
 
 @task
@@ -346,9 +361,9 @@ def feldera(c):
     print("#######  Feldera Streeaming Pipeline ############")
     print("#################################################")
     print("Upgrading feldera to latest version...")
-    run_interruptible(c, "uv pip install -U feldera", pty=False)
+    run_interruptible(c, uv_pip("install -U feldera"), pty=False)
     print("\nRunning streaming feature pipeline...")
-    run_interruptible(c, "uv run python ccfraud/2-feldera-streaming-feature-pipeline.py")
+    run_interruptible(c, uv_run("python ccfraud/2-feldera-streaming-feature-pipeline.py"))
 
 @task
 def test(c):
@@ -357,7 +372,7 @@ def test(c):
     print("#################################################")
     print("############### Running Tests ###################")
     print("#################################################")
-    run_interruptible(c, "uv run pytest tests/ -v")
+    run_interruptible(c, uv_run("pytest tests/ -v"))
 
 @task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):

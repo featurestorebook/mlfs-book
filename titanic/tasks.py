@@ -40,6 +40,21 @@ exceptions.ParseError.__str__ = _custom_parse_error_str
 
 VENV_DIR= Path(".venv")
 
+def _in_hopsworks():
+    return os.environ.get("PROJECT_PATH") is not None
+
+def uv_run(cmd):
+    """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
+    if _in_hopsworks():
+        return cmd
+    return f"uv run {cmd}"
+
+def uv_pip(args):
+    """Wrap 'uv pip <args>' locally, or use 'pip <args>' in Hopsworks."""
+    if _in_hopsworks():
+        return f"pip {args}"
+    return f"uv pip {args}"
+
 def check_venv():
     """Check if a virtual environment exists and is active."""
 
@@ -89,7 +104,7 @@ def clean(c):
         print("#################################################")
         print("################## Cleanup   ####################")
         print("#################################################")
-        c.run("uv run python mlfs/clean_hopsworks_resources.py titanic")
+        c.run(uv_run("python mlfs/clean_hopsworks_resources.py titanic"))
 
 @task
 def backfill(c):
@@ -98,7 +113,7 @@ def backfill(c):
     print("#################################################")
     print("########## Backfill Feature Pipeline   ##########")
     print("#################################################")
-    c.run("uv run ipython notebooks/1-titanic-feature-group-backfill.ipynb")
+    c.run(uv_run("ipython notebooks/1-titanic-feature-group-backfill.ipynb"))
 
 @task
 def features(c):
@@ -107,7 +122,7 @@ def features(c):
     print("#################################################")
     print("######### Incremental Feature Pipeline  #########")
     print("#################################################")
-    c.run("uv run ipython notebooks/3-scheduled-titanic-feature-pipeline-daily.ipynb")
+    c.run(uv_run("ipython notebooks/3-scheduled-titanic-feature-pipeline-daily.ipynb"))
 
 @task
 def train(c):
@@ -116,7 +131,7 @@ def train(c):
     print("#################################################")
     print("############# Training Pipeline #################")
     print("#################################################")
-    c.run("uv run ipython notebooks/2-titanic-training-pipeline.ipynb")
+    c.run(uv_run("ipython notebooks/2-titanic-training-pipeline.ipynb"))
 
 @task
 def inference(c):
@@ -125,7 +140,7 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run("uv run ipython notebooks/4-scheduled-titanic-batch-inference-daily.ipynb")
+    c.run(uv_run("ipython notebooks/4-scheduled-titanic-batch-inference-daily.ipynb"))
 
 
 @task(pre=[backfill, features, train, inference])
