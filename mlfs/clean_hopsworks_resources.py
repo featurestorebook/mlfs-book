@@ -14,7 +14,7 @@ if len(sys.argv) != 2:
 
 files_to_clean = sys.argv[1]
 
-print(f"Cleaning project: {files_to_clean}")
+print(f"Cleaning: {files_to_clean}")
 
 project = hopsworks.login(engine="python") 
 
@@ -31,8 +31,7 @@ def delete_environment(environment_name):
         env.delete()
         print(f"Deleted environment: {environment_name}")
     except Exception:
-        print(f"Failed to delete environment {environment_name}.")
-
+        pass
 def delete_deployment(deployment_name):
 
     deployment = ms.get_deployment(name=deployment_name)
