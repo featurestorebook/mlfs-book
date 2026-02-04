@@ -127,7 +127,7 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run(uv_run("papermill notebooks/4-scheduled-titanic-batch-inference-daily.ipynb notebooks/4-scheduled-titanic-batch-inference-daily.ipynb"))
+    c.run(uv_run("papermill --log-output notebooks/4-scheduled-titanic-batch-inference-daily.ipynb notebooks/4-scheduled-titanic-batch-inference-daily.ipynb"))
 
 
 @task(pre=[backfill, features, train, inference])

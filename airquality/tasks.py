@@ -145,7 +145,7 @@ def inference(c):
     print("#############  Inference Pipeline ###############")
     print("#################################################")
     c.run(uv_run("papermill notebooks/2_air_quality_feature_pipeline.ipynb notebooks/2_air_quality_feature_pipeline.ipynb"))
-    c.run(uv_run("papermill notebooks/4_air_quality_batch_inference.ipynb notebooks/4_air_quality_batch_inference.ipynb"))
+    c.run(uv_run("papermill --log-output notebooks/4_air_quality_batch_inference.ipynb notebooks/4_air_quality_batch_inference.ipynb"))
 
 
 @task
