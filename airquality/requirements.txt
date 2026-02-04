@@ -11,3 +11,5 @@ matplotlib
 seaborn
 nbformat
 geoip2==5.2.0
+invoke
+uv
