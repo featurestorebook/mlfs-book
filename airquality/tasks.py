@@ -60,19 +60,6 @@ def check_venv():
 
     # Skip this check if you are running the code in a Hopsworks cluster
     if os.environ.get("PROJECT_PATH"):
-        # Disable IPython extension that causes issues in Hopsworks
-        config_path = Path("/srv/hops/anaconda/.ipython/profile_default/ipython_config.py")
-        if config_path.exists():
-            lines = config_path.read_text().splitlines()
-            updated = []
-            target = "c.InteractiveShellApp.extensions = ['attach_config_extension']"
-            for line in lines:
-                stripped = line.strip()
-                if stripped == target:
-                    updated.append(f"# {line}")
-                else:
-                    updated.append(line)
-            config_path.write_text("\n".join(updated) + "\n")
         return
 
     # 1. Create venv if it doesn't exist
@@ -113,7 +100,7 @@ def backfill(c):
     print("#################################################")
     print("########## Backfill Feature Pipeline   ##########")
     print("#################################################")
-    c.run(uv_run("ipython notebooks/1_air_quality_feature_backfill.ipynb"))
+    c.run(uv_run("papermill notebooks/1_air_quality_feature_backfill.ipynb notebooks/1_air_quality_feature_backfill.ipynb"))
 
 @task
 def features(c):
@@ -122,7 +109,7 @@ def features(c):
     print("#################################################")
     print("######### Incremental Feature Pipeline  #########")
     print("#################################################")
-    c.run(uv_run("ipython notebooks/2_air_quality_feature_pipeline.ipynb"))
+    c.run(uv_run("papermill notebooks/2_air_quality_feature_pipeline.ipynb notebooks/2_air_quality_feature_pipeline.ipynb"))
 
 @task
 def train(c, test_days=30, min_train_days=180):
@@ -148,7 +135,7 @@ def train(c, test_days=30, min_train_days=180):
     env['TEST_DAYS'] = str(test_days)
     env['MIN_TRAIN_DAYS'] = str(min_train_days)
 
-    c.run(uv_run("ipython notebooks/3_air_quality_training_pipeline.ipynb"), env=env)
+    c.run(uv_run("papermill notebooks/3_air_quality_training_pipeline.ipynb notebooks/3_air_quality_training_pipeline.ipynb"), env=env)
 
 @task
 def inference(c):
@@ -157,15 +144,15 @@ def inference(c):
     print("#################################################")
     print("#############  Inference Pipeline ###############")
     print("#################################################")
-    c.run(uv_run("ipython notebooks/2_air_quality_feature_pipeline.ipynb"))
-    c.run(uv_run("ipython notebooks/4_air_quality_batch_inference.ipynb"))
+    c.run(uv_run("papermill notebooks/2_air_quality_feature_pipeline.ipynb notebooks/2_air_quality_feature_pipeline.ipynb"))
+    c.run(uv_run("papermill notebooks/4_air_quality_batch_inference.ipynb notebooks/4_air_quality_batch_inference.ipynb"))
 
 
 @task
 def llm(c):
     """Uses function calling to answer questions about air quality."""
     check_venv()
-    c.run(uv_run("ipython notebooks/5_function_calling.ipynb"))
+    c.run(uv_run("papermill notebooks/5_function_calling.ipynb notebooks/5_function_calling.ipynb"))
 
 @task
 def test(c):

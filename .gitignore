@@ -6,6 +6,7 @@ data/aqi-api-key.txt
 .venv
 .claude
 .python-version
+gc.mmdb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
