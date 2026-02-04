@@ -7,8 +7,6 @@ from collections import Counter
 import hopsworks
 from hsfs.transformation_statistics import TransformationStatistics
 
-root_dir=""
-
 
 def time_since_last_trans(ts: pd.Series, prev_ts: pd.Series) -> pd.Series:
     """
@@ -102,8 +100,7 @@ def haversine_distance(card_present: pd.Series, prev_card_present: pd.Series,
         
 
         # Ensure database is downloaded and get path
-        root_dir = "~"
-        mmdb_path = f"{root_dir}/data/GeoLite2-City.mmdb"
+        mmdb_path = "/tmp/GeoLite2-City.mmdb"
         download_url = "https://repo.hops.works/dev/jdowling/GeoLite2-City.mmdb"
     
         mmdb_path = os.path.normpath(mmdb_path)
