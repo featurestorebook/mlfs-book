@@ -438,6 +438,19 @@ class DataGenerator:
         else:
             print(f"  Loaded {len(self.card_df)} cards (not inserted)")
 
+    def _get_max_transaction_id(self) -> int:
+        """Query feature group for max t_id to continue numbering."""
+        try:
+            fg = self.fs.get_feature_group("credit_card_transactions", version=1)
+            df = pl.from_pandas(fg.read())
+            if df.height == 0:
+                return 0
+            max_id = df.select(pl.col("t_id").max()).item()
+            return max_id if max_id is not None else 0
+        except Exception as e:
+            print(f"  Warning: Could not query max t_id, starting from 0: {e}")
+            return 0
+
     def generate_transactions(self):
         """Generate transaction data with realistic location continuity."""
         if not self.should_generate('transactions'):
@@ -460,6 +473,20 @@ class DataGenerator:
                 seed=self.args.seed
             )
 
+        # In incremental mode, ensure new unique transactions by:
+        # 1. Continuing t_id numbering from where existing data left off
+        # 2. Using a different seed so data values are different
+        tid_offset = self.args.tid_offset
+        self._effective_seed = self.args.seed
+        if self.mode == 'incremental':
+            max_existing_tid = self._get_max_transaction_id()
+            if tid_offset <= max_existing_tid:
+                tid_offset = max_existing_tid + 1
+                print(f"  Incremental mode: continuing t_id from {tid_offset}")
+            # Derive a new seed from the offset to ensure different data
+            self._effective_seed = self.args.seed + tid_offset
+            print(f"  Incremental mode: using seed {self._effective_seed} for unique data")
+
         print("\nGenerating transaction data with location continuity...")
         print("  This generates realistic patterns where cardholders stay in their")
         print("  home country most of the time with appropriate travel patterns.")
@@ -470,8 +497,8 @@ class DataGenerator:
             start_date=self.transactions_start_date,
             end_date=self.current_date,
             rows=self.args.num_transactions,
-            tid_offset=self.args.tid_offset,
-            seed=self.args.seed
+            tid_offset=tid_offset,
+            seed=self._effective_seed
         )
 
         # Validate that all cc_nums exist in card_details (defensive check)
@@ -497,13 +524,15 @@ class DataGenerator:
             self.get_or_create_merchants()
 
         print("\nGenerating fraud data...")
+        # Use the effective seed (adjusted in incremental mode to avoid duplicates)
+        fraud_seed = getattr(self, '_effective_seed', self.args.seed)
         self.transaction_df, self.fraud_df = st.generate_fraud(
             transaction_df=self.transaction_df,
             card_df=self.card_df,
             merchant_df=self.merchant_df,
             fraud_rate=self.args.fraud_rate,
             chain_attack_ratio=self.args.chain_attack_ratio,
-            seed=self.args.seed
+            seed=fraud_seed
         )
 
         print(f"  Generated {len(self.fraud_df)} fraudulent transactions")
