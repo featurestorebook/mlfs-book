@@ -370,6 +370,76 @@ def test(c):
     print("#################################################")
     run_interruptible(c, uv_run("pytest tests/ -v"))
 
+@task
+def ndi_datamart(c, num_accounts=10, rows_per_account=1000000, start_date=None, end_date=None):
+    """Generate synthetic credit/debit ledger data for NDI features.
+
+    Args:
+        num_accounts: Number of accounts (default: 10)
+        rows_per_account: Rows per account (default: 1000000)
+        start_date: Start date YYYY-MM-DD (default: 12 months ago)
+        end_date: End date YYYY-MM-DD (default: today)
+
+    Examples:
+        inv ndi-datamart
+        inv ndi-datamart --num-accounts 2 --rows-per-account 1000
+        inv ndi-datamart --start-date=2025-03-01 --end-date=2026-03-01
+    """
+    check_venv()
+    print("#################################################")
+    print("########## NDI Account Ledger Generator ##########")
+    print("#################################################")
+
+    cmd = uv_run(
+        f"python ccfraud/synth_account_ledger.py"
+        f" --num-accounts {num_accounts}"
+        f" --rows-per-account {rows_per_account}"
+    )
+    if start_date:
+        cmd += f" --start-date {start_date}"
+    if end_date:
+        cmd += f" --end-date {end_date}"
+
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
+
+@task(pre=[feldera_start])
+def ndi_feldera(c):
+    """Deploy Feldera streaming pipeline for NDI stability features.
+
+    Requires:
+        - account_ledger feature group (run ndi-datamart first)
+        - Feldera Docker container (started automatically via pre-task)
+
+    Examples:
+        inv ndi-feldera
+    """
+    _require_outside_hopsworks("ndi-feldera")
+    check_venv()
+    print("#################################################")
+    print("######## NDI Feldera Streaming Pipeline ##########")
+    print("#################################################")
+    print("Upgrading feldera to latest version...")
+    run_interruptible(c, uv_pip("install -U feldera"), pty=False)
+    print("\nRunning NDI streaming feature pipeline...")
+    run_interruptible(c, uv_run("python ccfraud/2b-ndi-feldera-pipeline.py"))
+
+@task
+def ndi_features(c):
+    """Run Spark batch pipeline for NDI stability features.
+
+    Requires:
+        - account_ledger feature group (run ndi-datamart first)
+
+    Examples:
+        inv ndi-features
+    """
+    check_venv()
+    print("#################################################")
+    print("######## NDI Spark Feature Pipeline ##############")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/2c-ndi-spark-pipeline.py"))
+
 @task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):
     """datamart, feldera, features (with wait), train, inference."""
