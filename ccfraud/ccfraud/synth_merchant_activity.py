@@ -255,8 +255,6 @@ def upsert_feature_group(fs, name, description, primary_key, features, df):
         description=description,
         primary_key=primary_key,
         event_time="event_time",
-        online_enabled=True,
-        stream=True,
         features=features,
     )
     try:

@@ -129,8 +129,7 @@ def main():
         description="Disputed credit card transactions with card entry mode",
         primary_key=["dispute_id"],
         event_time="event_time",
-        online_enabled=True,
-        stream=True,
+        online_enabled=False,
         features=[
             Feature("dispute_id", type="bigint"),
             Feature("t_id", type="bigint"),

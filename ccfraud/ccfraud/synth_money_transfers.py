@@ -191,8 +191,6 @@ def main():
         ),
         primary_key=["transfer_id"],
         event_time="event_time",
-        online_enabled=True,
-        stream=True,
         features=[
             Feature("transfer_id", type="bigint"),
             Feature("sender_id", type="string"),

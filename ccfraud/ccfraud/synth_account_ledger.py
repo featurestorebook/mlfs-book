@@ -137,8 +137,6 @@ def main():
         description="Credit/debit ledger per account for NDI stability features",
         primary_key=["transaction_id"],
         event_time="event_time",
-        online_enabled=True,
-        stream=True,
         features=[
             Feature("transaction_id", type="bigint"),
             Feature("account_id", type="string"),
