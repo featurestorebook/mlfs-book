@@ -43,7 +43,7 @@ monthly_df = (
     .withColumn('month_bucket', F.floor(F.unix_timestamp('event_time') / SECONDS_PER_MONTH))
     .groupBy('account_id', 'month_bucket')
     .agg(
-        F.max('event_time').alias('event_time'),
+        F.max('event_time').cast('timestamp').alias('event_time'),
         F.max('transaction_id').alias('transaction_id'),
         F.sum('credit').alias('total_credits'),
         F.sum('debit').alias('total_debits'),
