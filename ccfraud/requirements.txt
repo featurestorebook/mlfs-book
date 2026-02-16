@@ -17,6 +17,7 @@ seaborn
 Faker==38.2.0
 pytest>=8.0.0
 jupyter
-torch==2.8.0
 invoke
 uv
+## Uncomment this line and re-install if you train the neural net model
+#torch==2.8.0

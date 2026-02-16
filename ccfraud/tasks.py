@@ -522,6 +522,62 @@ def fan_in_features(c):
     print("#################################################")
     run_interruptible(c, uv_run("python ccfraud/2e-fan-in-spark-pipeline.py"))
 
+@task
+def merchant_datamart(c, num_merchants=200, start_date=None, end_date=None, seed=42):
+    """Generate synthetic merchant activity data (3 feature groups).
+
+    Populates merchant_activity, terminal_events, and support_tickets
+    feature groups with synthetic data for merchant drop detection.
+
+    Args:
+        num_merchants: Number of merchants (default: 200)
+        start_date: Start date YYYY-MM-DD (default: 180 days ago)
+        end_date: End date YYYY-MM-DD (default: today)
+        seed: Random seed (default: 42)
+
+    Examples:
+        inv merchant-datamart
+        inv merchant-datamart --num-merchants 50
+        inv merchant-datamart --start-date=2025-08-01 --end-date=2026-02-01
+    """
+    check_venv()
+    print("#################################################")
+    print("####### Merchant Activity Data Generator #########")
+    print("#################################################")
+
+    cmd = uv_run(
+        f"python ccfraud/synth_merchant_activity.py"
+        f" --num-merchants {num_merchants}"
+        f" --seed {seed}"
+    )
+    if start_date:
+        cmd += f" --start-date {start_date}"
+    if end_date:
+        cmd += f" --end-date {end_date}"
+
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
+
+@task
+def merchant_drop_features(c):
+    """Run Spark batch pipeline for merchant drop detection features.
+
+    Joins merchant_activity, terminal_events, and support_tickets to
+    compute rolling baselines, drop flags, and enrichment signals.
+
+    Requires:
+        - merchant_activity, terminal_events, support_tickets feature groups
+          (run merchant-datamart first)
+
+    Examples:
+        inv merchant-drop-features
+    """
+    check_venv()
+    print("#################################################")
+    print("#### Merchant Drop Spark Feature Pipeline ########")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/2f-merchant-drop-spark-pipeline.py"))
+
 @task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):
     """datamart, feldera, features (with wait), train, inference."""
