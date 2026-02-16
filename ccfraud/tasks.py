@@ -578,6 +578,55 @@ def merchant_drop_features(c):
     print("#################################################")
     run_interruptible(c, uv_run("python ccfraud/2f-merchant-drop-spark-pipeline.py"))
 
+@task
+def disputes_datamart(c, dispute_rate=0.08, seed=42):
+    """Generate synthetic disputed transaction data.
+
+    Reads credit_card_transactions, samples a fraction as disputed,
+    and populates the disputed_transactions feature group.
+
+    Args:
+        dispute_rate: Fraction of transactions to mark as disputed (default: 0.08)
+        seed: Random seed (default: 42)
+
+    Examples:
+        inv disputes-datamart
+        inv disputes-datamart --dispute-rate=0.1 --seed=123
+    """
+    check_venv()
+    print("#################################################")
+    print("####### Disputed Transactions Generator ##########")
+    print("#################################################")
+
+    cmd = uv_run(
+        f"python ccfraud/synth_disputes.py"
+        f" --dispute-rate {dispute_rate}"
+        f" --seed {seed}"
+    )
+
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
+
+@task
+def chargeback_rate_features(c):
+    """Run Spark batch pipeline for chargeback rate features.
+
+    Joins credit_card_transactions and disputed_transactions to compute
+    per-merchant, per-card-entry-mode chargeback rates at 1d/7d/30d windows.
+
+    Requires:
+        - credit_card_transactions feature group (run datamart first)
+        - disputed_transactions feature group (run disputes-datamart first)
+
+    Examples:
+        inv chargeback-rate-features
+    """
+    check_venv()
+    print("#################################################")
+    print("### Chargeback Rate Spark Feature Pipeline #######")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/2g-chargeback-rate-spark-pipeline.py"))
+
 @task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):
     """datamart, feldera, features (with wait), train, inference."""
