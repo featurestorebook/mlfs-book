@@ -21,18 +21,6 @@ import polars as pl
 import hopsworks
 from hsfs.feature import Feature
 
-# Setup paths
-current_file = Path(__file__).absolute()
-ccfraud_pkg_dir = current_file.parent        # ccfraud/ccfraud/
-ccfraud_project_dir = ccfraud_pkg_dir.parent  # ccfraud/
-root_dir = ccfraud_project_dir.parent         # mlfs-book/
-
-sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(ccfraud_project_dir))
-
-from mlfs import config
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate synthetic credit/debit ledger data for NDI features"
@@ -112,11 +100,6 @@ def generate_account_ledger(
 
 def main():
     args = parse_args()
-
-    # Load settings
-    env_file = args.env_file or str(root_dir / ".env")
-    print(f"Loading environment from: {env_file}")
-    settings = config.HopsworksSettings(_env_file=env_file)
 
     # Date range
     if args.end_date:

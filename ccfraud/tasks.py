@@ -440,6 +440,88 @@ def ndi_features(c):
     print("#################################################")
     run_interruptible(c, uv_run("python ccfraud/2c-ndi-spark-pipeline.py"))
 
+@task
+def transfers_datamart(c, num_users=2000, num_banks=50, num_transfers=200000, start_date=None, end_date=None, seed=42):
+    """Generate synthetic money-transfer data for fan-in detection.
+
+    Args:
+        num_users: Number of unique user IDs (default: 2000)
+        num_banks: Number of banks (default: 50)
+        num_transfers: Number of transfers to generate (default: 200000)
+        start_date: Start date YYYY-MM-DD (default: 90 days ago)
+        end_date: End date YYYY-MM-DD (default: today)
+        seed: Random seed (default: 42)
+
+    Examples:
+        inv transfers-datamart
+        inv transfers-datamart --num-users 5000 --num-transfers 500000
+        inv transfers-datamart --start-date=2025-09-01 --end-date=2026-01-01
+    """
+    check_venv()
+    print("#################################################")
+    print("######## Money Transfers Data Generator ##########")
+    print("#################################################")
+
+    cmd = uv_run(
+        f"python ccfraud/synth_money_transfers.py"
+        f" --num-users {num_users}"
+        f" --num-banks {num_banks}"
+        f" --num-transfers {num_transfers}"
+        f" --seed {seed}"
+    )
+    if start_date:
+        cmd += f" --start-date {start_date}"
+    if end_date:
+        cmd += f" --end-date {end_date}"
+
+    print(f"\nRunning: {cmd}\n")
+    run_interruptible(c, cmd)
+
+@task(pre=[feldera_start])
+def fan_in_feldera(c, sleep_secs=120):
+    """Deploy Feldera streaming pipeline for fan-in detection features.
+
+    Reads from the money_transfers feature group, self-joins to detect
+    structuring patterns (multiple senders → same receiver, amounts just
+    below $10K), and writes fan-in features to fan_in_features_fg.
+
+    Requires:
+        - money_transfers feature group (run transfers-datamart first)
+        - Feldera Docker container (started automatically via pre-task)
+
+    Args:
+        sleep_secs: Seconds to wait for Feldera before materializing (default: 120)
+
+    Examples:
+        inv fan-in-feldera
+        inv fan-in-feldera --sleep-secs 180
+    """
+    _require_outside_hopsworks("fan-in-feldera")
+    check_venv()
+    print("#################################################")
+    print("####### Fan-In Feldera Streaming Pipeline ########")
+    print("#################################################")
+    print("Upgrading feldera to latest version...")
+    run_interruptible(c, uv_pip("install -U feldera"), pty=False)
+    print("\nRunning fan-in streaming feature pipeline...")
+    run_interruptible(c, uv_run(f"python ccfraud/2d-fan-in-feldera-pipeline.py --sleep-secs {sleep_secs}"))
+
+@task
+def fan_in_features(c):
+    """Run Spark batch pipeline for fan-in detection features.
+
+    Requires:
+        - money_transfers feature group (run transfers-datamart first)
+
+    Examples:
+        inv fan-in-features
+    """
+    check_venv()
+    print("#################################################")
+    print("####### Fan-In Spark Feature Pipeline ############")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/2e-fan-in-spark-pipeline.py"))
+
 @task(pre=[datamart, feldera, call(features, wait=True), train, inference])
 def all(c):
     """datamart, feldera, features (with wait), train, inference."""

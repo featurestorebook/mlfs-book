@@ -21,21 +21,6 @@ import hopsworks
 from hsfs.feature import Feature
 from feldera import FelderaClient, PipelineBuilder
 
-# Setup paths
-current_file = Path(__file__).absolute()
-ccfraud_pkg_dir = current_file.parent
-ccfraud_project_dir = ccfraud_pkg_dir.parent
-root_dir = ccfraud_project_dir.parent
-
-sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(ccfraud_project_dir))
-
-from mlfs import config
-
-print(f"Root dir: {root_dir}")
-
-settings = config.HopsworksSettings(_env_file=str(root_dir / ".env"))
-
 # ---------------------------------------------------------------------------
 # Step 1: Hopsworks setup
 # ---------------------------------------------------------------------------

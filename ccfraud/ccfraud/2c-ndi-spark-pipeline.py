@@ -20,22 +20,6 @@ from pyspark.sql import Window
 
 import hopsworks
 
-# Setup paths and config
-root_dir = Path().absolute()
-if root_dir.parts[-1:] == ('notebooks',):
-    root_dir = Path(*root_dir.parts[:-1])
-if root_dir.parts[-1:] == ('ccfraud',):
-    root_dir = Path(*root_dir.parts[:-1])
-root_dir = str(root_dir)
-
-sys.path.insert(0, root_dir)
-sys.path.insert(0, str(Path(root_dir) / 'ccfraud'))
-
-print(f'Root dir: {root_dir}')
-
-from mlfs import config
-settings = config.HopsworksSettings(_env_file=f'{root_dir}/.env')
-
 project = hopsworks.login()
 fs = project.get_feature_store()
 
