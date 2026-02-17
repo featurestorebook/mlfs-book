@@ -60,7 +60,7 @@ Follow these steps to run the complete Titanic prediction pipeline:
 ### 1. Set up the environment
 
 ```bash
-source setup-env.sh
+source setup.sh
 ```
 
 This script will:
@@ -130,7 +130,7 @@ titanic/
 ├── notebooks/          # Jupyter notebooks for exploration
 ├── dashboard/          # Web dashboard code
 ├── tasks.py            # Invoke task definitions
-├── setup-env.sh        # Environment setup script
+├── setup.sh        # Environment setup script
 └── README.md           # This file
 ```
 
@@ -159,6 +159,6 @@ This starter project can be extended with:
 ## Troubleshooting
 
 - Verify your Hopsworks credentials are properly configured in .env
-- Ensure all dependencies are installed correctly (check setup-env.sh output)
+- Ensure all dependencies are installed correctly (check setup.sh output)
 - If feature engineering fails, check for missing values in the data
 - For Gradio issues, ensure port 7860 is available

@@ -43,7 +43,7 @@ Follow these steps to run the complete real-time fraud detection pipeline:
 ### 1. Set up the environment
 
 ```bash
-source setup-env.sh
+source setup.sh
 ```
 
 This script will:

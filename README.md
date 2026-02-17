@@ -17,21 +17,21 @@ cp .env-env .env
 To run the starter titanic batch ML system:
 ```bash
 cd titanic 
-source setup-env.sh
+source setup.sh
 inv all
 ```
 
 To run the air quality batch ML system:
 ```bash
 cd airquality
-source setup-env.sh
+source setup.sh
 inv all
 ```
 
 To run the credit-card fraud real-time ML system:
 ```bash
 cd ccfraud
-source setup-env.sh
+source setup.sh
 inv all
 ```
 **Note:** This requires a command line on your laptop and has been tested on Linux, Mac, and Windows Subsystem for Linux (WSL).
