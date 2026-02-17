@@ -206,7 +206,7 @@ activity_df = (
 # ---------------------------------------------------------------------------
 result_df = activity_df.select(
     'merchant_id',
-    'event_time',
+    F.col('event_time').cast('timestamp').alias('event_time'),
     'txn_count',
     'txn_volume',
     'rolling_avg_volume_30d',

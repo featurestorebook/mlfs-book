@@ -126,7 +126,7 @@ result_df = transfers_df.select(
     F.col('transfer_id').alias('t_id'),
     'estimated_cost',
     'region_cross',
-    'event_time',
+    F.col('event_time').cast('timestamp').alias('event_time'),
 )
 
 print(f'\nRouting cost features: {result_df.count()} rows')

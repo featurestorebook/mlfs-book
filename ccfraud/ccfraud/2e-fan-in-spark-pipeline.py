@@ -82,7 +82,7 @@ fan_in_df = (
     fan_in_join_df
     .groupBy('receiver_id', 'day_bucket')
     .agg(
-        F.max('event_time').alias('event_time'),
+        F.max('event_time').cast('timestamp').alias('event_time'),
         F.countDistinct('sender_id').alias('fan_in_sender_count'),
         F.count('*').alias('fan_in_transfer_count'),
         F.sum('amount').alias('fan_in_total_amount'),
