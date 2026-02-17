@@ -34,7 +34,7 @@ Follow these steps to run the complete air quality prediction pipeline:
 ### Quickstart
 
 ```bash
-source setup-env.sh
+source setup.sh
 ```
 
 This script will:
@@ -102,7 +102,7 @@ airquality/
 ├── inference/          # Inference pipeline
 ├── notebooks/          # Jupyter notebooks for exploration
 ├── tasks.py            # Invoke task definitions
-├── setup-env.sh        # Environment setup script
+├── setup.sh        # Environment setup script
 └── README.md           # This file
 ```
 

@@ -65,7 +65,7 @@ def check_venv():
     # 1. Create venv if it doesn't exist
     if not VENV_DIR.exists():
         print("🔧 There is no virtual environment. Did you run the setup step yet?")
-        print("👉 ./setup-env.sh")
+        print("👉 ./setup.sh")
         sys.exit(2) 
 
     virtual_env = os.environ.get("VIRTUAL_ENV")
