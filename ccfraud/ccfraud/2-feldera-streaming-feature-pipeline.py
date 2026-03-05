@@ -98,12 +98,16 @@ container_id = subprocess.check_output(
 ).strip()
 
 print(f"container_id is {container_id}")
-# Run the command inside the container
+# Remove any existing file/symlink at /tmp/<hostname> in the container, then copy certs in
 subprocess.run([
     "docker", "exec", container_id,
-    "bash", "-c",
-    f"rm -f /tmp/{hostname} && ln -s /opt/{hostname}/{hostname} /tmp/{hostname}"
-])
+    "bash", "-c", f"rm -rf /tmp/{hostname}"
+], check=True)
+subprocess.run([
+    "docker", "cp",
+    f"/tmp/{hostname}",
+    f"{container_id}:/tmp/"
+], check=True)
 
 # Step 1.2. Create Feldera pipeline
 # We build a Feldera pipeline to transform raw transaction and profile data into features.

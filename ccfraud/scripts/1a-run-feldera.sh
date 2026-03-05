@@ -38,13 +38,23 @@ if [ "$ACTION" == "stop" ]; then
   exit 0
 fi
 
-# Start action - load environment and start container
-# Check if Feldera is already running
+# Start action - pull latest image, then start container
+echo "Pulling latest Feldera image..."
+docker pull ghcr.io/feldera/pipeline-manager:latest
+
+# Check if already running; restart if image has been updated
 RUNNING_CONTAINER=$(docker ps -q --filter name=feldera-pipeline-manager)
 if [ -n "$RUNNING_CONTAINER" ]; then
-  echo "✓ Feldera container is already running (ID: $RUNNING_CONTAINER)"
-  echo "✓ Container is accessible at http://localhost:8080"
-  exit 0
+  RUNNING_IMAGE=$(docker inspect --format='{{.Image}}' feldera-pipeline-manager)
+  LATEST_IMAGE=$(docker inspect --format='{{.Id}}' ghcr.io/feldera/pipeline-manager:latest)
+  if [ "$RUNNING_IMAGE" = "$LATEST_IMAGE" ]; then
+    echo "✓ Feldera container is already running (ID: $RUNNING_CONTAINER)"
+    echo "✓ Container is accessible at http://localhost:8080"
+    exit 0
+  else
+    echo "Feldera image updated — restarting container..."
+    docker stop feldera-pipeline-manager
+  fi
 fi
 
 # Load environment variables from ../.env (relative to ccfraud directory)
