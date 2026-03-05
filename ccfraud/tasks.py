@@ -55,7 +55,7 @@ def uv_run(cmd):
     """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
     if _in_hopsworks():
         return cmd
-    return f"uv run {cmd}"
+    return f"uv run --active {cmd}"
 
 def uv_pip(args):
     """Wrap 'uv pip <args>' locally, or use 'pip <args>' in Hopsworks."""

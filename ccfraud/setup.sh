@@ -251,10 +251,6 @@ fi
 echo ""
 echo "🐍 Using Python $PY_VERSION at $PYTHON_BIN"
 
-# Create .python-version file so uv uses the correct Python
-echo "$PY_VERSION" > .python-version
-echo "📝 Created .python-version file for uv"
-
 # Check and install system dependencies required for hopsworks (twofish)
 echo ""
 echo "🔧 Checking system dependencies..."
@@ -826,6 +822,8 @@ else
       RECREATE_VENV=1
     else
       echo "📦 Virtual environment already exists with Python $VENV_PY_VERSION"
+      # Use the venv's actual Python so .python-version stays in sync
+      PY_VERSION="$VENV_PY_VERSION"
     fi
   else
     echo "📦 Virtual environment missing Python binary, recreating"
@@ -840,6 +838,10 @@ else
       exit_script 1
     fi
   fi
+
+  # Write .python-version after venv Python is finalised so uv run picks the right interpreter
+  echo "$PY_VERSION" > .python-version
+  echo "📝 Created .python-version ($PY_VERSION) for uv"
 
   # Activate virtual environment
   # shellcheck disable=SC1091
