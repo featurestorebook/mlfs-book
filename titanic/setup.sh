@@ -285,12 +285,11 @@ install_system_deps() {
 
           if [ -n "$MISSING_DEPS" ]; then
             echo "📥 Installing missing dependencies:$MISSING_DEPS"
-            if sudo apt-get update && sudo apt-get install -y $MISSING_DEPS; then
+            if sudo apt-get update && sudo apt-get install -y $MISSING_DEPS 2>/dev/null; then
               echo "✅ Successfully installed system dependencies"
             else
-              echo "❌ Failed to install system dependencies"
-              echo "   Please manually run: sudo apt install build-essential python3-dev"
-              exit_script 1
+              echo "⚠️  Could not install system dependencies (sudo may not be available)"
+              echo "   If you encounter build errors, manually run: sudo apt install build-essential python3-dev"
             fi
           else
             echo "✅ All system dependencies already installed"
@@ -313,12 +312,11 @@ install_system_deps() {
 
           if [ -n "$MISSING_DEPS" ]; then
             echo "📥 Installing missing dependencies:$MISSING_DEPS"
-            if sudo dnf install -y $MISSING_DEPS; then
+            if sudo dnf install -y $MISSING_DEPS 2>/dev/null; then
               echo "✅ Successfully installed system dependencies"
             else
-              echo "❌ Failed to install system dependencies"
-              echo "   Please manually run: sudo dnf install -y @development-tools python3-devel"
-              exit_script 1
+              echo "⚠️  Could not install system dependencies (sudo may not be available)"
+              echo "   If you encounter build errors, manually run: sudo dnf install -y @development-tools python3-devel"
             fi
           else
             echo "✅ All system dependencies already installed"
