@@ -582,9 +582,19 @@ else
   echo "⚡ Virtual environment activated: $VENV_DIR"
 
   # Install requirements with uv
-  if ! uv pip install -r requirements.txt; then
-    echo "❌ Failed to install requirements"
-    exit_script 1
+  # On macOS, use system clang to avoid Homebrew LLVM SDK path issues.
+  # Homebrew LLVM's config files hardcode -isysroot paths that may not exist
+  # on newer macOS versions, causing C extension builds (e.g., twofish) to fail.
+  if [ "$(uname -s)" = "Darwin" ]; then
+    if ! CC=/usr/bin/clang CXX=/usr/bin/clang++ uv pip install -r requirements.txt; then
+      echo "❌ Failed to install requirements"
+      exit_script 1
+    fi
+  else
+    if ! uv pip install -r requirements.txt; then
+      echo "❌ Failed to install requirements"
+      exit_script 1
+    fi
   fi
 
   # Refresh shell's command hash table so newly installed commands are found
