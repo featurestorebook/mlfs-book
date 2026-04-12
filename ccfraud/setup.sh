@@ -26,7 +26,7 @@ exit_script() {
 
 VENV_DIR=".venv"
 REQUIRED_MIN="3.10"
-REQUIRED_MAX="3.13"
+REQUIRED_MAX="3.14"
 PREFERRED_PYTHON="3.12"
 
 echo "🔍 Locating Python..."
@@ -37,7 +37,7 @@ check_python_version() {
   $python_bin - <<EOF 2>/dev/null
 import sys
 min_v = (3, 10)
-max_v = (3, 13)
+max_v = (3, 14)
 cur_v = sys.version_info[:2]
 sys.exit(0 if min_v <= cur_v < max_v else 1)
 EOF
@@ -53,6 +53,7 @@ get_python_version() {
 find_valid_python() {
   # Check common Python installations in order of preference
   local candidates=(
+    "python3.13"
     "python3.12"
     "python3.11"
     "python3.10"
@@ -63,9 +64,11 @@ find_valid_python() {
   # On macOS, also check Homebrew paths
   if [ "$(uname -s)" = "Darwin" ]; then
     candidates=(
+      "/opt/homebrew/bin/python3.13"
       "/opt/homebrew/bin/python3.12"
       "/opt/homebrew/bin/python3.11"
       "/opt/homebrew/bin/python3.10"
+      "/usr/local/bin/python3.13"
       "/usr/local/bin/python3.12"
       "/usr/local/bin/python3.11"
       "/usr/local/bin/python3.10"
@@ -162,7 +165,7 @@ install_valid_python() {
 
         *)
           echo "❌ Unsupported Linux distribution: $distro_id"
-          echo "   Please manually install Python >= $REQUIRED_MIN and < $REQUIRED_MAX"
+          echo "   Please manually install Python >= $REQUIRED_MIN and < $REQUIRED_MAX (3.13 included)"
           return 1
           ;;
       esac
@@ -250,159 +253,6 @@ fi
 
 echo ""
 echo "🐍 Using Python $PY_VERSION at $PYTHON_BIN"
-
-# Check and install system dependencies required for hopsworks (twofish)
-echo ""
-echo "🔧 Checking system dependencies..."
-
-OS_TYPE="$(uname -s)"
-
-install_system_deps() {
-  if [ "$OS_TYPE" = "Linux" ]; then
-    # Detect Linux distribution
-    if [ -f /etc/os-release ]; then
-      . /etc/os-release
-      DISTRO_ID="$ID"
-
-      case "$DISTRO_ID" in
-        ubuntu|debian)
-          echo "📦 Checking Ubuntu/Debian dependencies..."
-          MISSING_DEPS=""
-
-          # Check for build-essential
-          if ! dpkg -s build-essential >/dev/null 2>&1; then
-            MISSING_DEPS="build-essential"
-          fi
-
-          # Check for python3-dev
-          if ! dpkg -s python3-dev >/dev/null 2>&1; then
-            MISSING_DEPS="$MISSING_DEPS python3-dev"
-          fi
-
-          if [ -n "$MISSING_DEPS" ]; then
-            echo "📥 Installing missing dependencies:$MISSING_DEPS"
-            if sudo apt-get update && sudo apt-get install -y $MISSING_DEPS 2>/dev/null; then
-              echo "✅ Successfully installed system dependencies"
-            else
-              echo "⚠️  Could not install system dependencies (sudo may not be available)"
-              echo "   If you encounter build errors, manually run: sudo apt install build-essential python3-dev"
-            fi
-          else
-            echo "✅ All system dependencies already installed"
-          fi
-          ;;
-
-        rhel|centos|fedora|rocky|almalinux)
-          echo "📦 Checking Red Hat/CentOS/Fedora dependencies..."
-          MISSING_DEPS=""
-
-          # Check for Development Tools group (equivalent to build-essential)
-          if ! dnf group list installed 2>/dev/null | grep -q "Development Tools"; then
-            MISSING_DEPS="@development-tools"
-          fi
-
-          # Check for python3-devel
-          if ! rpm -q python3-devel >/dev/null 2>&1; then
-            MISSING_DEPS="$MISSING_DEPS python3-devel"
-          fi
-
-          if [ -n "$MISSING_DEPS" ]; then
-            echo "📥 Installing missing dependencies:$MISSING_DEPS"
-            if sudo dnf install -y $MISSING_DEPS 2>/dev/null; then
-              echo "✅ Successfully installed system dependencies"
-            else
-              echo "⚠️  Could not install system dependencies (sudo may not be available)"
-              echo "   If you encounter build errors, manually run: sudo dnf install -y @development-tools python3-devel"
-            fi
-          else
-            echo "✅ All system dependencies already installed"
-          fi
-          ;;
-
-        *)
-          echo "⚠️  Unknown Linux distribution: $DISTRO_ID"
-          echo "   Please ensure you have C/C++ build tools and Python development headers installed"
-          echo "   These are required for the hopsworks Python client (twofish dependency)"
-          ;;
-      esac
-    else
-      echo "⚠️  Cannot detect Linux distribution"
-      echo "   Please ensure you have C/C++ build tools and Python development headers installed"
-    fi
-
-  elif [ "$OS_TYPE" = "Darwin" ]; then
-    echo "📦 Checking macOS dependencies..."
-
-    # Check for Xcode Command Line Tools
-    if ! xcode-select -p >/dev/null 2>&1; then
-      echo "📥 Installing Xcode Command Line Tools..."
-      echo "   This provides the necessary build tools for Python packages"
-
-      # Trigger the Xcode Command Line Tools installer
-      xcode-select --install
-
-      echo ""
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "⚠️  ACTION REQUIRED"
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo ""
-      echo "Please complete the Xcode Command Line Tools installation in the"
-      echo "popup dialog, then re-run this script."
-      echo ""
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo ""
-      exit_script 1
-    else
-      echo "✅ Xcode Command Line Tools already installed"
-    fi
-
-    # Check for Homebrew
-    if ! command -v brew >/dev/null 2>&1; then
-      echo ""
-      echo "❌ Homebrew is not installed"
-      echo "   Homebrew is required to install librdkafka for confluent-kafka"
-      echo ""
-      echo "   Install Homebrew with:"
-      echo "   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-      echo ""
-      exit_script 1
-    fi
-
-    # Check for librdkafka (required for confluent-kafka)
-    if ! brew list librdkafka >/dev/null 2>&1; then
-      echo "📥 Installing librdkafka (required for confluent-kafka)..."
-      if brew install librdkafka; then
-        echo "✅ Successfully installed librdkafka"
-      else
-        echo "❌ Failed to install librdkafka"
-        echo "   Please manually run: brew install librdkafka"
-        exit_script 1
-      fi
-    else
-      echo "✅ librdkafka already installed"
-    fi
-
-    # Check for libomp (required for LightGBM and other ML libraries)
-    if ! brew list libomp >/dev/null 2>&1; then
-      echo "📥 Installing libomp (required for LightGBM)..."
-      if brew install libomp; then
-        echo "✅ Successfully installed libomp"
-      else
-        echo "❌ Failed to install libomp"
-        echo "   Please manually run: brew install libomp"
-        exit_script 1
-      fi
-    else
-      echo "✅ libomp already installed"
-    fi
-  else
-    echo "⚠️  Unknown operating system: $OS_TYPE"
-    echo "   Please ensure you have C/C++ build tools and Python development headers installed"
-  fi
-}
-
-# Run the system dependency installation
-install_system_deps
 
 # Check and setup .env file
 ENV_FILE="../.env"
@@ -771,7 +621,7 @@ if [ -n "${PROJECT_PATH:-}" ]; then
   echo ""
   echo "✅ Running inside Hopsworks, skipping venv setup"
   echo "📥 Installing dependencies..."
-  pip install -r requirements.txt
+  uv pip install --python "$PYTHON_BIN" -r requirements.txt
   echo ""
   # Restore shell options to avoid affecting the parent shell
   set +uo pipefail
