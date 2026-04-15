@@ -370,7 +370,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, uv_run("pytest tests/ -v"))
 
-@task(pre=[datamart, feldera, call(features, wait=True), train, inference])
+@task(pre=[datamart, feldera_stop, feldera, call(features, wait=True), train, inference])
 def all(c):
     """datamart, feldera, features (with wait), train, inference."""
     pass
