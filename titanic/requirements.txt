@@ -2,7 +2,7 @@ hopsworks[python,great-expectations]
 papermill
 pydantic-settings>=2.6.1
 xgboost>=2.1.0
-scikit-learn
+scikit-learn==1.6.1
 matplotlib
 seaborn
 invoke

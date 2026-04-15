@@ -5,7 +5,7 @@ set -euo pipefail
 
 VENV_DIR=".venv"
 REQUIRED_MIN="3.7"
-REQUIRED_MAX="3.13"
+REQUIRED_MAX="3.14"
 
 echo "🔍 Locating Python..."
 
@@ -27,7 +27,7 @@ echo "🐍 Found Python $PY_VERSION at $PYTHON_BIN"
 $PYTHON_BIN - <<EOF
 import sys
 min_v = (3, 8)
-max_v = (3, 13)
+max_v = (3, 14)
 cur_v = sys.version_info[:2]
 
 if not (min_v <= cur_v < max_v):
@@ -80,14 +80,17 @@ EOF
 }
 
 ensure_package invoke
-ensure_package uv
 
-uv pip install -r requirements.txt
+if command -v uv >/dev/null 2>&1; then
+  uv pip install -r requirements.txt
+else
+  pip install -r requirements.txt
+fi
 
 echo "🎉 Environment ready!"
 echo "   Python: $(python --version)"
 echo "   invoke: $(invoke --version 2>/dev/null || echo installed)"
-echo "   uv: $(uv --version)"
+echo "   uv: $(uv --version 2>/dev/null || echo 'not installed')"
 
 echo "Check which tasks you can run with:"
 echo "   inv --list"

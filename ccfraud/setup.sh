@@ -26,7 +26,7 @@ exit_script() {
 
 VENV_DIR=".venv"
 REQUIRED_MIN="3.10"
-REQUIRED_MAX="3.13"
+REQUIRED_MAX="3.14"
 PREFERRED_PYTHON="3.12"
 
 echo "🔍 Locating Python..."
@@ -37,7 +37,7 @@ check_python_version() {
   $python_bin - <<EOF 2>/dev/null
 import sys
 min_v = (3, 10)
-max_v = (3, 13)
+max_v = (3, 14)
 cur_v = sys.version_info[:2]
 sys.exit(0 if min_v <= cur_v < max_v else 1)
 EOF
@@ -53,6 +53,7 @@ get_python_version() {
 find_valid_python() {
   # Check common Python installations in order of preference
   local candidates=(
+    "python3.13"
     "python3.12"
     "python3.11"
     "python3.10"
@@ -63,9 +64,11 @@ find_valid_python() {
   # On macOS, also check Homebrew paths
   if [ "$(uname -s)" = "Darwin" ]; then
     candidates=(
+      "/opt/homebrew/bin/python3.13"
       "/opt/homebrew/bin/python3.12"
       "/opt/homebrew/bin/python3.11"
       "/opt/homebrew/bin/python3.10"
+      "/usr/local/bin/python3.13"
       "/usr/local/bin/python3.12"
       "/usr/local/bin/python3.11"
       "/usr/local/bin/python3.10"
@@ -401,8 +404,12 @@ install_system_deps() {
   fi
 }
 
-# Run the system dependency installation
-install_system_deps
+# Run the system dependency installation (skip inside Hopsworks)
+if [ -z "${PROJECT_PATH:-}" ]; then
+  install_system_deps
+else
+  echo "✅ Running inside Hopsworks, skipping system dependency installation"
+fi
 
 # Check and setup .env file
 ENV_FILE="../.env"
@@ -771,7 +778,11 @@ if [ -n "${PROJECT_PATH:-}" ]; then
   echo ""
   echo "✅ Running inside Hopsworks, skipping venv setup"
   echo "📥 Installing dependencies..."
-  pip install -r requirements.txt
+  if command -v uv >/dev/null 2>&1; then
+    uv pip install -r requirements.txt
+  else
+    pip install -r requirements.txt
+  fi
   echo ""
   # Restore shell options to avoid affecting the parent shell
   set +uo pipefail
