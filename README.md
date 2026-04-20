@@ -7,7 +7,7 @@ This repository contains three complete machine learning systems demonstrating d
 ```bash
 git clone https://github.com/featurestorebook/mlfs-book.git
 cd mlfs-book
-cp .env-env .env
+cp .env.example .env
 ```
 
 1. Create an account on https://run.hopsworks.ai
