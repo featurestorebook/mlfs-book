@@ -58,9 +58,9 @@ def uv_run(cmd):
     return f"uv run --active {cmd}"
 
 def uv_pip(args):
-    """Wrap 'uv pip <args>' locally, or use 'pip <args>' in Hopsworks."""
+    """Wrap 'uv pip <args>' (Hopsworks venv only has uv, no pip)."""
     if _in_hopsworks():
-        return f"pip {args}"
+        return f"uv pip {args}"
     return f"uv pip {args}"
 
 def check_venv():

@@ -1,5 +1,6 @@
 hopsworks[python,great-expectations]
 papermill
+ipykernel
 pydantic-settings>=2.6.1
 geopy==2.4.1
 openmeteo-requests
