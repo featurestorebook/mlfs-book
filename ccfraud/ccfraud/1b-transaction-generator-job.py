@@ -109,6 +109,12 @@ class LiveTransactionGenerator:
         self._load_entities()
         self.transactions_fg = self.fs.get_feature_group("credit_card_transactions", version=1)
         self.fraud_fg = self.fs.get_feature_group("cc_fraud", version=1)
+        # This job writes every minute: with statistics on, every write would start a Spark
+        # statistics job. Turn them off on tables created before statistics_config=False.
+        for fg in (self.transactions_fg, self.fraud_fg):
+            if fg.statistics_config.enabled:
+                fg.statistics_config = False
+                fg.update_statistics_config()
 
         signal.signal(signal.SIGINT, self._request_shutdown)
         signal.signal(signal.SIGTERM, self._request_shutdown)

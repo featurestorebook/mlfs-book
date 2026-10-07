@@ -101,7 +101,8 @@ def main(last_processed_date, current_date, wait=False):
             hsfs.feature.Feature("ts", type="timestamp"),
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],
-        parents=[trans_fg]
+        parents=[trans_fg],
+        statistics_config=False,
     )
 
     # Save the feature group if it doesn't exist

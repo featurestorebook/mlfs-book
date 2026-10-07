@@ -1212,6 +1212,11 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
 
     if fg_already_exists:
         print(f"  Feature group '{name}' already exists - skipping description updates")
+        # A feature group created with statistics on would start a Spark statistics job on
+        # every insert; these pipelines are Python, so statistics stay off.
+        if fg.statistics_config.enabled:
+            fg.statistics_config = False
+            fg.update_statistics_config()
         fg.insert(df)
     else:
         if features is None:
@@ -1225,7 +1230,8 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 online_enabled=online_enabled,
                 time_travel_format=time_travel_format,
                 ttl_enabled=ttl_enabled,
-                ttl=1800
+                ttl=1800,
+                statistics_config=False,
             )
         else:
             fg = fs.create_feature_group(
@@ -1239,7 +1245,8 @@ def get_or_create_feature_group_with_descriptions(fs, df, name, description, pri
                 time_travel_format=time_travel_format,
                 features=features,
                 ttl_enabled=ttl_enabled,
-                ttl=1800
+                ttl=1800,
+                statistics_config=False,
             )
         fg.insert(df)
         # if fg.online_enabled == True:
