@@ -55,7 +55,7 @@ A batch ML system that forecasts air quality (PM 2.5) for the next 7 days using 
 
 ### 2. Real-Time Credit Card Fraud Detection
 
-A real-time ML system that detects fraudulent credit card transactions using streaming data and real-time feature engineering. This project demonstrates how to build low-latency prediction services that process transactions as they occur, using Feldera for stream processing.
+A real-time ML system that detects fraudulent credit card transactions using streaming data and real-time feature engineering. This project demonstrates how to build low-latency prediction services that process transactions as they occur, using Spark Structured Streaming on Hopsworks for sliding-window features.
 
 **Type:** Real-Time Predictions
 **Model:** Binary Classification (XGBoost)

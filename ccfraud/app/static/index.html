@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Credit card fraud detection</title>
+  <script>
+    // Relative URLs resolve against the proxy mount only with a trailing slash.
+    if (!location.pathname.endsWith("/")) location.replace(location.pathname + "/" + location.search);
+  </script>
+  <link rel="stylesheet" href="static/app.css">
+  <script type="module" src="static/app.js"></script>
+</head>
+<body>
+  <header class="band">
+    <div class="mark" aria-hidden="true">H</div>
+    <div>
+      <h1>Credit card fraud detection</h1>
+      <div class="sub">Generate live transactions and score them with the <strong>ccfraud</strong> deployment</div>
+    </div>
+    <div class="right sub" id="project-band">Connecting…</div>
+  </header>
+  <main>
+    <section class="card" id="status" aria-live="polite">
+      <div class="section-head"><h2>Status</h2><span class="muted" id="status-updated"></span></div>
+      <div class="grid">
+        <div class="stat"><div class="label">Project</div><div class="value small" id="s-project"><div class="loading"></div></div><div class="foot"></div></div>
+        <div class="stat"><div class="label">Merchants</div><div class="value accent" id="s-merchants"><div class="loading"></div></div><div class="foot">merchant_details v1</div></div>
+        <div class="stat"><div class="label">Accounts</div><div class="value accent" id="s-accounts"><div class="loading"></div></div><div class="foot">account_details v1</div></div>
+        <div class="stat"><div class="label">Cards</div><div class="value accent" id="s-cards"><div class="loading"></div></div><div class="foot">card_details v1</div></div>
+      </div>
+      <div id="entities-msg"></div>
+      <div class="services">
+        <div class="service" id="svc-deployment">
+          <span class="dot wait"></span><span class="name">ccfraud</span><span class="kind">model deployment</span>
+          <span class="grow"></span><span class="badge plain">checking…</span>
+          <button type="button" class="secondary hidden" id="start-deployment">Start deployment</button>
+          <div class="msg muted hidden"></div>
+        </div>
+        <div class="service" id="svc-ccfraud-streaming-aggs">
+          <span class="dot wait"></span><span class="name">ccfraud-streaming-aggs</span><span class="kind">Spark streaming features</span>
+          <span class="grow"></span><span class="badge plain">checking…</span>
+        </div>
+        <div class="service" id="svc-ccfraud-transactions">
+          <span class="dot wait"></span><span class="name">ccfraud-transactions</span><span class="kind">live transaction generator</span>
+          <span class="grow"></span><span class="badge plain">checking…</span>
+        </div>
+      </div>
+      <div id="status-error"></div>
+    </section>
+
+    <section class="card">
+      <h2>Generate &amp; predict</h2>
+      <form id="run-form" novalidate>
+        <div class="fields">
+          <label class="field">Number of transactions
+            <input name="n" type="number" min="10" max="500" step="1" value="50" required>
+            <span class="hint">10 – 500</span>
+          </label>
+          <label class="field">Fraud rate (%)
+            <input name="fraud_rate_pct" type="number" min="0" max="10" step="0.1" value="0.5" required>
+            <span class="hint" id="fraud-hint">&nbsp;</span>
+          </label>
+          <label class="field">Random seed
+            <input name="seed" type="number" min="0" step="1" value="42" required>
+            <span class="hint">Same seed, same batch</span>
+          </label>
+        </div>
+        <div class="actions">
+          <label class="check"><input name="write" type="checkbox" checked> Write transactions to feature group</label>
+          <span class="grow"></span>
+          <button type="submit" id="run-button">Generate &amp; predict</button>
+        </div>
+      </form>
+      <div class="progress idle" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="track"><div class="fill"></div></div>
+        <div class="text">&nbsp;</div>
+      </div>
+      <div id="form-error"></div>
+    </section>
+
+    <section class="card" id="results" aria-live="polite">
+      <div class="section-head"><h2>Results</h2><span class="muted" id="results-meta"></span></div>
+      <div id="results-body">
+        <p class="empty">No run yet. Generate a batch to see the predictions.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

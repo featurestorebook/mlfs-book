@@ -1,0 +1,3 @@
+# Only what the environment lacks. python-agent-pipeline already ships fastapi
+# and uvicorn; install this into the clone ccfraud-app-env only if it lacks polars.
+polars

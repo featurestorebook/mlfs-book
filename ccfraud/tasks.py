@@ -45,12 +45,6 @@ VENV_DIR = Path(".venv")
 def _in_hopsworks():
     return os.environ.get("PROJECT_PATH") is not None
 
-def _require_outside_hopsworks(task_name):
-    """Exit with an error if running inside Hopsworks."""
-    if _in_hopsworks():
-        print(f"ERROR: 'inv {task_name}' can only be run outside Hopsworks.")
-        sys.exit(1)
-
 def uv_run(cmd):
     """Wrap a command with 'uv run' locally, or run directly in Hopsworks."""
     if _in_hopsworks():
@@ -168,46 +162,66 @@ def datamart(c, mode="backfill", entities="all", num_transactions=500000, fraud_
         cmd += f" --fraud-rate {fraud_rate}"
 
     print(f"Transaction date range: {start_date} to {end_date}")
+    if _in_hopsworks():
+        # The terminal's memory is too small for a full backfill: run it as a Hopsworks job
+        job_args = cmd.split("1_data_generator.py", 1)[1].strip()
+        cmd = uv_run(f'python ccfraud/jobs.py start datamart --wait --args "{job_args}"')
     print(f"\nRunning: {cmd}\n")
     run_interruptible(c, cmd)
 
 @task
-def stream_transactions(c, transactions_per_sec=10, fraud_rate=0.005):
-    """Insert stream of cc transactions until Ctrl-C.
+def stream_transactions(c, transactions_per_min=100, fraud_rate=0.005):
+    """Start a Hopsworks job that writes a live stream of cc transactions (runs until stopped).
 
-    Publishes to credit_card_transactions feature group, which automatically
-    syncs to Kafka for Feldera real-time pipeline.
+    Writes to the credit_card_transactions feature group, whose Kafka topic feeds the
+    Spark streaming feature pipeline.
 
     Args:
-        transactions_per_sec: Transactions per second (range: 1-100, default: 10)
+        transactions_per_min: Transactions per minute (default: 100)
         fraud_rate: Fraud rate as decimal (default: 0.005 = 0.5%)
 
     Examples:
-        inv stream-transactions                           # 10 TPS
-        inv stream-transactions --transactions-per-sec=50 # 50 TPS
-        inv stream-transactions --transactions-per-sec=1  # 1 TPS
+        inv stream-transactions                              # 100 per minute
+        inv stream-transactions --transactions-per-min=1000
 
-    Press Ctrl-C to stop gracefully.
+    Stop it with: inv stop-streams
     """
     check_venv()
-
-    # Validate parameters
-    if transactions_per_sec < 1 or transactions_per_sec > 100:
-        print(f"ERROR: transactions-per-sec must be between 1-100 (got {transactions_per_sec})")
-        sys.exit(1)
-
     print("#################################################")
     print("######### Streaming Transaction Producer ########")
     print("#################################################")
-    print(f"Rate: {transactions_per_sec} transactions/second")
-    print(f"Fraud rate: {fraud_rate*100:.2f}%")
-    print(f"Publishing to: credit_card_transactions FG → Kafka\n")
+    job_args = f"--transactions-per-min {transactions_per_min} --fraud-rate {fraud_rate}"
+    run_interruptible(c, uv_run(f'python ccfraud/jobs.py start transactions --args "{job_args}"'), pty=False)
 
-    cmd = (uv_run(f"python ccfraud/1_data_generator.py --mode streaming "
-           f"--transactions-per-sec {transactions_per_sec} "
-           f"--fraud-rate {fraud_rate}"))
+@task
+def backfill_aggs(c):
+    """Spark job: sliding-window aggregates over the transaction history (cc_trans_aggs_fg)."""
+    check_venv()
+    print("#################################################")
+    print("####### Backfill Sliding-Window Aggregates ######")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/jobs.py start backfill-aggs --wait"), pty=False)
 
-    run_interruptible(c, cmd)
+@task
+def streaming_features(c):
+    """Start the Spark Structured Streaming feature pipeline job (runs until stopped)."""
+    check_venv()
+    print("#################################################")
+    print("#### Spark Structured Streaming Feature Pipeline #")
+    print("#################################################")
+    run_interruptible(c, uv_run("python ccfraud/jobs.py start streaming-aggs"), pty=False)
+
+@task
+def stop_streams(c):
+    """Stop the transaction generator and the Spark streaming feature pipeline jobs."""
+    check_venv()
+    run_interruptible(c, uv_run("python ccfraud/jobs.py stop transactions streaming-aggs"), pty=False)
+
+@task
+def stream_status(c):
+    """Show the state of the streaming jobs."""
+    check_venv()
+    run_interruptible(c, uv_run("python ccfraud/jobs.py status"), pty=False)
 
 @task
 def features(c, current_date=None, wait=False):
@@ -230,7 +244,8 @@ def features(c, current_date=None, wait=False):
     print("#################################################")
     #run_interruptible(c, "./fix.sh", pty=False)
 
-    run_interruptible(c, uv_pip("install -U hopsworks"), pty=False)
+    if not _in_hopsworks():
+        run_interruptible(c, uv_pip("install -U hopsworks"), pty=False)
 
     # Default to today's date if not provided
     if current_date is None:
@@ -239,6 +254,10 @@ def features(c, current_date=None, wait=False):
     cmd = uv_run(f"python ccfraud/3-batch-feature-pipeline.py --current-date {current_date}")
     if wait:
         cmd += " --wait"
+    if _in_hopsworks():
+        # The terminal's memory is too small for all transactions: run it as a Hopsworks job
+        job_args = cmd.split("3-batch-feature-pipeline.py", 1)[1].strip()
+        cmd = uv_run(f'python ccfraud/jobs.py start features --wait --args "{job_args}"')
     print(f"Current date: {current_date}")
     print(f"Wait for sync: {wait}")
     print(f"\nRunning: {cmd}\n")
@@ -294,16 +313,20 @@ def train(c, model="xgboost", test_start=None):
     print(f"Model: {model_display[model]}")
     print(f"Notebook: {notebook}")
     print(f"Test split start date: {test_start}")
-    run_interruptible(c, uv_pip("install -r requirements.txt"), pty=False)
-
-    print("\nInstalling requirements...")
-    run_interruptible(c, uv_pip("install -r requirements.txt"), pty=False)
+    if not _in_hopsworks():
+        print("\nInstalling requirements...")
+        run_interruptible(c, uv_pip("install -r requirements.txt"), pty=False)
 
     cmd = uv_run(
         f'papermill {notebook} '
         f'{notebook} '
         f'-p test_start "{test_start}"'
     )
+    if _in_hopsworks():
+        # The terminal's memory is too small to train on all transactions: run it as a Hopsworks job
+        # job arguments are split on spaces, so pass the date without its time of day
+        cmd = uv_run(f"python ccfraud/jobs.py start train --wait "
+                     f"--args '{notebook} -p test_start {test_start.split()[0]}'")
     print(f"\nRunning: {cmd}\n")
     run_interruptible(c, cmd)
 
@@ -329,39 +352,6 @@ def inference(c):
     print("Starting Streamlit app at http://localhost:8501")
 
 @task
-def feldera_start(c):
-    """Start Feldera Docker container as a background process."""
-    _require_outside_hopsworks("feldera-start")
-    check_venv()
-    print("#################################################")
-    print("#######  Starting Feldera Container  ############")
-    print("#################################################")
-    run_interruptible(c, "bash scripts/1a-run-feldera.sh start")
-
-@task
-def feldera_stop(c):
-    """Stop Feldera Docker container."""
-    _require_outside_hopsworks("feldera-stop")
-    check_venv()
-    print("#################################################")
-    print("#######  Stopping Feldera Container  ############")
-    print("#################################################")
-    run_interruptible(c, "bash scripts/1a-run-feldera.sh stop")
-
-@task(pre=[feldera_start])
-def feldera(c):
-    """Create/deploy streaming feature pipeline with Feldera."""
-    _require_outside_hopsworks("feldera")
-    check_venv()
-    print("#################################################")
-    print("#######  Feldera Streeaming Pipeline ############")
-    print("#################################################")
-    print("Upgrading feldera to latest version...")
-    run_interruptible(c, uv_pip("install -U feldera"), pty=False)
-    print("\nRunning streaming feature pipeline...")
-    run_interruptible(c, uv_run("python ccfraud/2-feldera-streaming-feature-pipeline.py"))
-
-@task
 def test(c):
     """Run all unit tests using pytest."""
     check_venv()
@@ -370,7 +360,7 @@ def test(c):
     print("#################################################")
     run_interruptible(c, uv_run("pytest tests/ -v"))
 
-@task(pre=[datamart, feldera_stop, feldera, call(features, wait=True), train, inference])
+@task(pre=[datamart, backfill_aggs, streaming_features, stream_transactions, call(features, wait=True), train, inference])
 def all(c):
-    """datamart, feldera, features (with wait), train, inference."""
+    """datamart, backfill-aggs, streaming-features, stream-transactions, features (with wait), train, inference."""
     pass

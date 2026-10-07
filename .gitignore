@@ -183,3 +183,6 @@ DATA_GENERATOR_README.md
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# executed copies of notebooks (ccfraud/ccfraud/run_notebook.py)
+*.output.ipynb

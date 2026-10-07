@@ -1,0 +1,10 @@
+# Extra libraries for the ccfraud-pipeline job environment (cloned from python-feature-pipeline)
+Faker==38.2.0
+geoip2==5.2.0
+# training notebook, run as a job by ccfraud/run_notebook.py
+papermill
+ipykernel
+xgboost>=2.1.0
+scikit-learn==1.6.1
+seaborn
+matplotlib

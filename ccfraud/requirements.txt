@@ -3,7 +3,6 @@ ipython
 nbconvert
 papermill
 streamlit>=1.30.0
-feldera
 pydantic-settings>=2.6.1
 polars==1.36.1
 bottleneck>=1.3.6

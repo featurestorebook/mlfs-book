@@ -128,7 +128,7 @@ def generate_transactions(cards_with_home, merchant_df, num_transactions, fraud_
 
     Note: Since we sample from cards_with_home (which is derived from card_df),
     all generated cc_nums are guaranteed to exist in card_details. This ensures
-    the Feldera streaming pipeline's ASOF JOIN works correctly.
+    the streaming feature pipeline can look up the card's bank_id.
     """
     now = datetime.now()
 

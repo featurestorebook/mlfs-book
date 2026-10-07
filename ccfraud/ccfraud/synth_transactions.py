@@ -1,20 +1,25 @@
 import polars as pl
 import numpy as np
-from faker import Faker
 from datetime import datetime, timedelta
-from geopy.distance import geodesic
 import random
 import uuid
 import hsfs
 import hopsworks
-import geoip2.database
 import os
+from functools import lru_cache
 
 # seeds
-fake = Faker()
-Faker.seed(42)
 np.random.seed(42)
 random.seed(42)
+
+
+@lru_cache(maxsize=1)
+def _faker():
+    """Faker is only needed to generate account names/addresses, so it is imported lazily.
+    This lets the streaming transaction generator job run in an environment without Faker."""
+    from faker import Faker
+    Faker.seed(42)
+    return Faker()
 
 
 # ---------------------------
@@ -577,8 +582,8 @@ def generate_account_details(
     delta_days_lm = max((current_date - account_last_modified_start_date).days, 0)
     account_data = {
         "account_id": [f"ACC_{i:08d}" for i in range(rows)],
-        "name": [fake.name() for _ in range(rows)],
-        "address": [fake.address().replace('\n', ', ') for _ in range(rows)],
+        "name": [_faker().name() for _ in range(rows)],
+        "address": [_faker().address().replace('\n', ', ') for _ in range(rows)],
         "debt_end_prev_month": [round(np.random.normal(2500, 1500), 2) for _ in range(rows)],
         "last_modified": [current_date - timedelta(days=random.randint(0, delta_days_lm)) for _ in range(rows)]
     }
@@ -663,7 +668,7 @@ def generate_card_details(
     - One initial row with last_modified == issue_date (per-card issue date)
     - Optionally, additional rows with newer last_modified dates (updates)
 
-    This ensures the ASOF JOIN in the Feldera pipeline always finds at least
+    This ensures joins on card_details (e.g. in the streaming feature pipeline) always find at least
     one matching row where last_modified <= transaction.ts.
 
     Args:
@@ -791,7 +796,7 @@ def validate_cc_nums_exist(
     Filter transactions to only include cc_nums that exist in card_details.
 
     This ensures referential integrity between transactions and card_details,
-    which is required for the Feldera streaming pipeline's ASOF JOIN to work
+    which is required for the streaming feature pipeline's join on card_details to work
     correctly (avoiding NULL account_id and bank_id values).
 
     Args:

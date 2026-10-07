@@ -24,9 +24,10 @@ root_dir = str(root_dir)
 sys.path.insert(0, str(root_dir))
 sys.path.insert(0, str(ccfraud_project_dir))
 
-# Set the environment variables from the .env file
-from mlfs import config
-settings = config.HopsworksSettings(_env_file=f"{root_dir}/.env")
+# Set the environment variables from the .env file (outside Hopsworks; a job has no .env)
+if Path(f"{root_dir}/.env").exists():
+    from mlfs import config
+    settings = config.HopsworksSettings(_env_file=f"{root_dir}/.env")
 
 from ccfraud.features import cc_trans_fg
 cc_trans_fg.root_dir = str(root_dir)
