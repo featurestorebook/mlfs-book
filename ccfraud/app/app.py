@@ -329,7 +329,7 @@ class RunRequest(BaseModel):
     n: int = Field(50, ge=10, le=500, description="Number of transactions")
     fraud_rate_pct: float = Field(0.5, ge=0, le=10, description="Injected fraud, percent of the batch")
     seed: int = Field(42, ge=0, le=2**31 - 1)
-    write: bool = True
+    write: bool = Field(False, description="Also write the generated transactions to credit_card_transactions")
 
 
 _runs: dict[str, dict] = {}
