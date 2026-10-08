@@ -21,6 +21,7 @@ const money = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maxim
 const pct = (v) => (v === null || v === undefined ? "–" : `${(v * 100).toFixed(1)}%`);
 const fmtInt = (v) => (v === null || v === undefined ? "–" : int.format(v));
 const fmtMoney = (v) => (v === null || v === undefined ? "–" : `$${money.format(v)}`);
+const fmtMs = (v) => (v === null || v === undefined ? "–" : `${v < 10 ? v.toFixed(1) : Math.round(v)} ms`);
 const fmtTime = (iso) => {
   if (!iso) return "–";
   const d = new Date(iso);
@@ -247,6 +248,7 @@ const COLUMNS = [
   { title: "Txns last hour", cls: "num", get: (r) => fmtInt(r.num_trans_last_hour),
     tip: (r) => (r.aggs_event_time ? `sum ${fmtMoney(r.sum_trans_last_hour)} · max ${fmtMoney(r.max_trans_last_hour)} · ${fmtInt(r.num_ip_addresses_last_hour)} IPs` : "no live aggregates for this card") },
   { title: "Injected fraud", node: (r) => (r.injected_fraud ? el("span", "badge warn", "Injected") : el("span", "muted", "–")) },
+  { title: "Latency", cls: "num", get: (r) => fmtMs(r.latency_ms), tip: () => "round trip of the predict request" },
   { title: "Prediction", node: (r) => {
     if (r.prediction === "fraud") return el("span", "badge high", "Fraud");
     if (r.prediction === "legit") return el("span", "badge", "Legitimate");
@@ -295,6 +297,10 @@ function renderResults(run) {
     stat("Injected fraud caught", s.injected_fraud ? `${fmtInt(s.injected_caught)} / ${fmtInt(s.injected_fraud)}` : "–",
       s.injected_fraud && s.injected_caught === s.injected_fraud ? "accent" : s.injected_fraud ? "danger" : "",
       s.injected_fraud ? pct(s.injected_caught / s.injected_fraud) : "no fraud injected"),
+    stat("Prediction latency (p50)", s.latency_ms ? fmtMs(s.latency_ms.p50) : "–", "",
+      s.latency_ms
+        ? `p95 ${fmtMs(s.latency_ms.p95)} · max ${fmtMs(s.latency_ms.max)} · ${fmtInt(s.predict_workers)} in flight`
+        : "no predictions"),
   );
   parts.push(tiles);
 

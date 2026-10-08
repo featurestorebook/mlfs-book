@@ -438,14 +438,28 @@ def _generate(data: dict, n: int, fraud_rate: float, seed: int):
     return df
 
 
-def _predict_one(dep, row: dict):
+def _predict_one(dep, row: dict) -> tuple[bool, float]:
+    """(prediction, latency in ms) of one transaction. The latency is the round trip of the
+    predict request as seen by the app: online feature lookup, transformations and the model."""
     inputs = [[row["cc_num"], float(row["amount"]), row["merchant_id"], row["ip_address"],
                bool(row["card_present"]), int(row["t_id"])]]
+    t0 = time.perf_counter()
     result = dep.predict(inputs=inputs)
+    latency_ms = (time.perf_counter() - t0) * 1000
     preds = result.get("predictions") if isinstance(result, dict) else None
     if not preds:
         raise ValueError(f"unexpected response: {result!r}"[:300])
-    return bool(preds[0])
+    return bool(preds[0]), latency_ms
+
+
+def _latency_summary(latencies_ms: list[float]) -> dict | None:
+    """Percentiles of the prediction round trips, for the run summary."""
+    if not latencies_ms:
+        return None
+    xs = sorted(latencies_ms)
+    q = lambda f: xs[min(len(xs) - 1, int(round(f * (len(xs) - 1))))]  # noqa: E731
+    return {"count": len(xs), "mean": sum(xs) / len(xs), "p50": q(0.5), "p95": q(0.95),
+            "p99": q(0.99), "min": xs[0], "max": xs[-1]}
 
 
 def _lookup_aggs(cc_nums: list[str]) -> dict:
@@ -529,6 +543,7 @@ def _execute_run(run: dict, req: RunRequest) -> None:
         total = len(records)
         preds: list = [None] * total
         errors: list = [None] * total
+        latencies: list = [None] * total
         _progress(run, 45, f"Predicting 0/{total}")
         done = 0
         with ThreadPoolExecutor(max_workers=PREDICT_WORKERS) as pool:
@@ -536,7 +551,7 @@ def _execute_run(run: dict, req: RunRequest) -> None:
             for fut in as_completed(futures):
                 i = futures[fut]
                 try:
-                    preds[i] = fut.result()
+                    preds[i], latencies[i] = fut.result()
                 except Exception as e:  # noqa: BLE001
                     errors[i] = f"{type(e).__name__}: {e}"[:300]
                 done += 1
@@ -570,6 +585,7 @@ def _execute_run(run: dict, req: RunRequest) -> None:
                 "injected_fraud": bool(r["injected_fraud"]),
                 "prediction": "error" if errors[i] else ("fraud" if preds[i] else "legit"),
                 "error": errors[i],
+                "latency_ms": latencies[i],
                 **{col: a.get(col) for col in AGG_COLUMNS},
                 "aggs_event_time": a.get("event_time"),
             })
@@ -588,6 +604,10 @@ def _execute_run(run: dict, req: RunRequest) -> None:
                 "written": written,
                 "cards_with_aggregates": sum(1 for c in {r["cc_num"] for r in rows} if c in aggs),
                 "cards": len({r["cc_num"] for r in rows}),
+                # Round trip of each predict request (ms), as seen by the app; the requests
+                # are sent PREDICT_WORKERS at a time
+                "latency_ms": _latency_summary([x for x in latencies if x is not None]),
+                "predict_workers": PREDICT_WORKERS,
             },
             "rows": rows,
         }
