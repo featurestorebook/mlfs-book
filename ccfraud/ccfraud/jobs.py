@@ -10,10 +10,14 @@ Create, run and stop the Hopsworks jobs of the credit card fraud streaming syste
                  trains, registers and deploys the model (runs to completion)
   transactions   ccfraud-transactions     PYTHON   1b-transaction-generator-job.py
                  writes N transactions/min to credit_card_transactions (runs until stopped)
-  backfill-aggs  ccfraud-backfill-aggs    PYSPARK  2-spark-streaming-feature-pipeline.py --mode backfill
-                 sliding-window aggregates over the transaction history (runs to completion)
+  backfill-aggs  ccfraud-backfill-aggs    PYTHON   2b-backfill-aggs-pipeline.py
+                 sliding-window aggregates over the transaction history, in Polars (runs to completion)
   streaming-aggs ccfraud-streaming-aggs   PYSPARK  2-spark-streaming-feature-pipeline.py --mode stream
                  Spark Structured Streaming job writing cc_trans_aggs_fg (runs until stopped)
+
+All jobs are Python (Polars) jobs except the streaming one, and every feature group they
+write has statistics disabled: with statistics enabled, each insert from Python launches a
+PySpark <feature group>_<version>_compute_stats job.
 
 Inside Hopsworks the repo is on HopsFS, so a job runs the repo's script in place.
 Outside Hopsworks the scripts (and the ccfraud package they import) are uploaded to
@@ -72,10 +76,11 @@ JOBS = {
     },
     "backfill-aggs": {
         "name": "ccfraud-backfill-aggs",
-        "type": "PYSPARK",
-        "script": "2-spark-streaming-feature-pipeline.py",
-        "args": "--mode backfill",
-        "environment": "spark-feature-pipeline",
+        "type": "PYTHON",
+        "script": "2b-backfill-aggs-pipeline.py",
+        "args": "",
+        "environment": "python-feature-pipeline",
+        "memory": 8192,
     },
     "streaming-aggs": {
         "name": "ccfraud-streaming-aggs",
@@ -94,6 +99,8 @@ UPLOAD_FILES = [
     "ccfraud/ccfraud/3-batch-feature-pipeline.py",
     "ccfraud/ccfraud/features/__init__.py",
     "ccfraud/ccfraud/features/cc_trans_fg.py",
+    "ccfraud/ccfraud/features/cc_trans_aggs_fg.py",
+    "ccfraud/ccfraud/features/common.py",
     "ccfraud/ccfraud/run_notebook.py",
     "ccfraud/notebooks/4-training-cc-fraud-pipeline.ipynb",
     "ccfraud/notebooks/4b-training-nn-fraud-model.ipynb",
@@ -102,6 +109,7 @@ UPLOAD_FILES = [
     "ccfraud/requirements.txt",
     "ccfraud/ccfraud/1b-transaction-generator-job.py",
     "ccfraud/ccfraud/2-spark-streaming-feature-pipeline.py",
+    "ccfraud/ccfraud/2b-backfill-aggs-pipeline.py",
 ]
 UPLOAD_ROOT = "Resources/mlfs-book"
 
@@ -143,6 +151,11 @@ def start(project, key: str, args: str | None, wait: bool):
     if job is not None and _running_executions(job):
         print(f"{spec['name']} is already running")
         return
+    if job is not None and job.job_type != spec["type"]:
+        # A job's type cannot change in place (e.g. backfill-aggs moved from PYSPARK to PYTHON)
+        print(f"{spec['name']} is a {job.job_type} job, recreating it as {spec['type']}")
+        job.delete()
+        job = None
     config = job.config if job is not None else job_api.get_configuration(spec["type"])
     config["appPath"] = _app_path(project, spec["script"])
     config["environmentName"] = spec["environment"]

@@ -79,7 +79,9 @@ function renderStatus(s) {
 
   const d = s.deployment;
   const startBtn = $("#start-deployment");
-  if (d.running) {
+  // `running` comes from the API; fall back to the status text so a stale API never shows the button
+  const running = d.running === true || /^running$/i.test(d.status || "");
+  if (running) {
     setService("svc-deployment", { state: "ok", label: d.status, message: "" });
     startBtn.classList.add("hidden");
   } else if (d.starting || /start|creat|updat|pending/i.test(d.status)) {
@@ -103,7 +105,7 @@ function renderStatus(s) {
     });
   }
   $("#status-updated").textContent = `updated ${new Date().toLocaleTimeString()}`;
-  return e.state === "loading" || (!d.running && (d.starting || /start|creat|updat|pending/i.test(d.status)));
+  return e.state === "loading" || (!running && (d.starting || /start|creat|updat|pending/i.test(d.status)));
 }
 
 async function loadStatus() {

@@ -1,11 +1,30 @@
+from __future__ import annotations  # annotations below name hsfs classes that do not all exist
+
 import hopsworks 
 import hsfs.feature_group
 import pandas as pd
 from datetime import timedelta
 import json
 from hsfs.core import kafka_engine
+from hsfs.statistics_config import StatisticsConfig
 import hsfs
 import numpy as np
+
+
+def ensure_statistics_disabled(fg) -> None:
+    """Turn off descriptive statistics on an existing feature group.
+
+    Hopsworks computes statistics after every ingestion into a feature group that has them
+    enabled, and from the Python engine that is a PySpark job (<name>_<version>_compute_stats)
+    per insert: a job writing every minute launched one every minute. New feature groups are
+    created with statistics_config=False; this covers feature groups created before that.
+    """
+    if fg is None or fg.id is None or not fg.statistics_config.enabled:
+        return
+    fg.statistics_config = StatisticsConfig(enabled=False, correlations=False, histograms=False,
+                                            exact_uniqueness=False)
+    fg.update_statistics_config()
+    print(f"  Disabled statistics on feature group {fg.name} v{fg.version}")
 
 
 def fraud_rate_by_num_days(col: str, df: pd.DataFrame, days: int) -> pd.DataFrame:
@@ -102,7 +121,7 @@ def read_fg_connector(fs: hsfs.feature_store.FeatureStore) -> str:
         }
     })
 
-def read_card_details_connector(fg: hsfs.feature_store.FeatureGroup) -> str:
+def read_card_details_connector(fg: hsfs.feature_group.FeatureGroup) -> str:
     return json.dumps({
         "transport": {
             "name": "kafka_input",

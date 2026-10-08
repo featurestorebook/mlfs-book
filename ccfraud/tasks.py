@@ -195,7 +195,7 @@ def stream_transactions(c, transactions_per_min=100, fraud_rate=0.005):
 
 @task
 def backfill_aggs(c):
-    """Spark job: sliding-window aggregates over the transaction history (cc_trans_aggs_fg)."""
+    """Polars job: sliding-window aggregates over the transaction history (cc_trans_aggs_fg)."""
     check_venv()
     print("#################################################")
     print("####### Backfill Sliding-Window Aggregates ######")
@@ -222,6 +222,16 @@ def stream_status(c):
     """Show the state of the streaming jobs."""
     check_venv()
     run_interruptible(c, uv_run("python ccfraud/jobs.py status"), pty=False)
+
+@task
+def monitoring(c, run_now=False, replace=False):
+    """Hourly feature monitoring job: PSI drift (threshold 0.2) of the transaction amount."""
+    check_venv()
+    print("#################################################")
+    print("######## Feature Monitoring (PSI on amount) #####")
+    print("#################################################")
+    flags = (" --run-now" if run_now else "") + (" --replace" if replace else "")
+    run_interruptible(c, uv_run(f"python ccfraud/5-feature-monitoring.py{flags}"), pty=False)
 
 @task
 def features(c, current_date=None, wait=False):

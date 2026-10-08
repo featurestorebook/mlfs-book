@@ -126,9 +126,9 @@ class LiveTransactionGenerator:
     def _load_entities(self):
         """Load the cards, accounts and merchants written by the backfill."""
         try:
-            merchants = pl.from_pandas(self.fs.get_feature_group("merchant_details", version=1).read())
-            accounts = pl.from_pandas(self.fs.get_feature_group("account_details", version=1).read())
-            cards = pl.from_pandas(self.fs.get_feature_group("card_details", version=1).read())
+            merchants = self.fs.get_feature_group("merchant_details", version=1).read(dataframe_type="polars")
+            accounts = self.fs.get_feature_group("account_details", version=1).read(dataframe_type="polars")
+            cards = self.fs.get_feature_group("card_details", version=1).read(dataframe_type="polars")
         except Exception as e:
             print(f"ERROR: could not load entities ({e}). Run the backfill first:\n"
                   "  python ccfraud/1_data_generator.py --mode backfill")
@@ -279,9 +279,9 @@ class LiveTransactionGenerator:
             return
         txns = pl.concat(frames).sort("ts")
 
-        self.transactions_fg.multi_part_insert(txns.to_pandas())
+        self.transactions_fg.multi_part_insert(txns)
         if labels is not None and labels.height > 0:
-            self.fraud_fg.insert(labels.to_pandas(), wait=False)
+            self.fraud_fg.insert(labels, wait=False)
         self.total_transactions += txns.height
         self.total_fraud += 0 if labels is None else labels.height
 
@@ -316,6 +316,9 @@ class LiveTransactionGenerator:
 
 
 def main(argv=None):
+    # Line-buffered stdout: as a Hopsworks job stdout is a file, where Python would otherwise
+    # hold progress lines back for hours until its block buffer fills
+    sys.stdout.reconfigure(line_buffering=True)
     LiveTransactionGenerator(parse_args(argv)).run()
 
 

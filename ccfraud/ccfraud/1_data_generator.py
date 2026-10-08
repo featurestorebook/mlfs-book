@@ -280,7 +280,7 @@ class DataGenerator:
             print("\nLoading existing merchant data...")
             try:
                 self.merchant_fg = self.fs.get_feature_group("merchant_details", version=1)
-                self.merchant_df = pl.from_pandas(self.merchant_fg.read())
+                self.merchant_df = self.merchant_fg.read(dataframe_type="polars")
                 print(f"  Loaded {len(self.merchant_df)} merchants")
                 return
             except Exception as e:
@@ -315,7 +315,7 @@ class DataGenerator:
             print("\nLoading existing bank data...")
             try:
                 self.bank_fg = self.fs.get_feature_group("bank_details", version=1)
-                self.bank_df = pl.from_pandas(self.bank_fg.read())
+                self.bank_df = self.bank_fg.read(dataframe_type="polars")
                 print(f"  Loaded {len(self.bank_df)} banks")
                 return
             except Exception as e:
@@ -350,7 +350,7 @@ class DataGenerator:
             print("\nLoading existing account data...")
             try:
                 self.account_fg = self.fs.get_feature_group("account_details", version=1)
-                self.account_df = pl.from_pandas(self.account_fg.read())
+                self.account_df = self.account_fg.read(dataframe_type="polars")
                 print(f"  Loaded {len(self.account_df)} accounts")
 
                 # Ensure home_country exists for transaction generation
@@ -401,7 +401,7 @@ class DataGenerator:
             print("\nLoading existing card data...")
             try:
                 self.card_fg = self.fs.get_feature_group("card_details", version=1)
-                self.card_df = pl.from_pandas(self.card_fg.read())
+                self.card_df = self.card_fg.read(dataframe_type="polars")
                 print(f"  Loaded {len(self.card_df)} cards")
                 return
             except Exception as e:
@@ -439,7 +439,7 @@ class DataGenerator:
         """Query feature group for max t_id to continue numbering."""
         try:
             fg = self.fs.get_feature_group("credit_card_transactions", version=1)
-            df = pl.from_pandas(fg.read())
+            df = fg.read(dataframe_type="polars")
             if df.height == 0:
                 return 0
             max_id = df.select(pl.col("t_id").max()).item()

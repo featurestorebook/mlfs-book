@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""Batch feature pipeline for credit card transactions.
+"""Batch feature pipeline for credit card transactions (Polars).
 
-This script processes credit card transactions and fraud data, calculates
-features like time since last transaction, and inserts the data into the
-feature store.
+Reads the credit card transactions and the fraud labels, computes per-transaction
+features (time since the card's previous transaction, the fraud label) and inserts them
+into the cc_trans_fg feature group, whose on-demand transformation adds the
+impossible-travel feature (haversine_distance). Runs as a Hopsworks Python job.
 """
 
 import sys
@@ -11,15 +12,15 @@ from pathlib import Path
 import warnings
 import argparse
 import hopsworks
+import polars as pl
 from datetime import datetime
-#from hsfs.feature import Feature
 import hsfs
 
 current_file = Path(__file__).absolute()
 ccfraud_pkg_dir = current_file.parent  # ccfraud/ccfraud/
 ccfraud_project_dir = ccfraud_pkg_dir.parent  # ccfraud/
 root_dir = ccfraud_project_dir.parent  # mlfs-book/
-root_dir = str(root_dir) 
+root_dir = str(root_dir)
 
 sys.path.insert(0, str(root_dir))
 sys.path.insert(0, str(ccfraud_project_dir))
@@ -30,6 +31,7 @@ if Path(f"{root_dir}/.env").exists():
     settings = config.HopsworksSettings(_env_file=f"{root_dir}/.env")
 
 from ccfraud.features import cc_trans_fg
+from ccfraud.features.common import ensure_statistics_disabled
 cc_trans_fg.root_dir = str(root_dir)
 
 
@@ -63,6 +65,28 @@ def parse_args():
         help="Wait for data to be synced to backend (default: False)"
     )
     return parser.parse_args()
+
+
+def transaction_features(trans_df: pl.DataFrame, fraud_df: pl.DataFrame) -> pl.DataFrame:
+    """Per-transaction features: the previous transaction of the same card, the time since it,
+    and the fraud label. One row per (cc_num, ts)."""
+    trans_df = trans_df.sort(["cc_num", "ts"]).with_columns(
+        pl.col("ts").shift(1).over("cc_num").alias("prev_ts"),
+        pl.col("card_present").shift(1).over("cc_num").alias("prev_card_present"),
+        pl.col("ip_address").shift(1).over("cc_num").alias("prev_ip_address"),
+        pl.col("t_id").is_in(fraud_df["t_id"].to_list()).alias("is_fraud"),
+    )
+    trans_df = trans_df.with_columns(
+        time_since_last_trans=cc_trans_fg.time_since_last_trans(trans_df["ts"], trans_df["prev_ts"]),
+        days_to_card_expiry=pl.lit(0, dtype=pl.Int64),  # placeholder for now
+        # A card's first transaction has no previous one. The haversine_distance UDF (pandas)
+        # receives these columns as Arrow-backed pandas series, where a null is pd.NA and cannot
+        # be tested as a boolean, so give it the values it treats as "no previous transaction".
+        prev_ip_address=pl.col("prev_ip_address").fill_null(""),
+        prev_card_present=pl.col("prev_card_present").fill_null(False),
+    ).drop("prev_ts")
+    # Primary key cc_num + event time ts: keep the last of any duplicates
+    return trans_df.unique(subset=["cc_num", "ts"], keep="last", maintain_order=True)
 
 
 def main(last_processed_date, current_date, wait=False):
@@ -102,6 +126,7 @@ def main(last_processed_date, current_date, wait=False):
         ],
         transformation_functions=[cc_trans_fg.haversine_distance],
         parents=[trans_fg],
+        # a Python insert into a feature group with statistics enabled launches a PySpark job
         statistics_config=False,
     )
 
@@ -111,51 +136,24 @@ def main(last_processed_date, current_date, wait=False):
         print("Feature Group created successfully")
     except Exception as e:
         print("Feature Group already exists")
+    ensure_statistics_disabled(cc_trans_fg_group)
 
     # Read transaction data filtered by last processed date
     print(f"Reading transactions after {last_processed_date}...")
-    #trans_df = trans_fg.filter(hsfs.feature.Feature("ts") > last_processed_date).read()
-    trans_df = trans_fg.read()
-    print(f"Read {len(trans_df)} transactions")
+    #trans_df = trans_fg.filter(hsfs.feature.Feature("ts") > last_processed_date).read(dataframe_type="polars")
+    trans_df = trans_fg.read(dataframe_type="polars")
+    print(f"Read {trans_df.height} transactions")
 
     # Read fraud data
     print("Reading fraud data...")
-    fraud_df = cc_fraud_fg.read()
-    print(f"Read {len(fraud_df)} fraud records")
+    fraud_df = cc_fraud_fg.select(["t_id"]).read(dataframe_type="polars")
+    print(f"Read {fraud_df.height} fraud records")
 
-    # Sort by cc_num and ts
-    print("Sorting transactions by cc_num and ts...")
-    trans_df = trans_df.sort_values(["cc_num", "ts"])
-
-    # Create lag features
-    print("Creating lag features...")
-    trans_df["prev_ts"] = trans_df["ts"].shift(1)
-    trans_df["prev_card_present"] = trans_df["card_present"].shift(1)
-    trans_df["prev_ip_address"] = trans_df["ip_address"].shift(1)
-
-    # Mark fraudulent transactions
-    print("Marking fraudulent transactions...")
-    trans_df["is_fraud"] = trans_df["t_id"].isin(fraud_df["t_id"])
+    print("Computing per-card lag features, time since last transaction and the fraud label...")
+    before_dedup = trans_df.height
+    trans_df = transaction_features(trans_df, fraud_df)
     print(f"Fraud count: {trans_df['is_fraud'].sum()}")
-
-    # Calculate time since last transaction
-    print("Calculating time since last transaction...")
-    trans_df['time_since_last_trans'] = cc_trans_fg.time_since_last_trans(
-        trans_df['ts'],
-        trans_df['prev_ts']
-    )
-
-    # Drop intermediate columns
-    trans_df = trans_df.drop(columns=['prev_ts'])
-
-    # Add days_to_card_expiry (placeholder for now)
-    trans_df['days_to_card_expiry'] = 0
-
-    # Remove duplicates based on primary key (cc_num) and event_time (ts)
-    print("Removing duplicates...")
-    before_dedup = len(trans_df)
-    trans_df = trans_df.drop_duplicates(subset=['cc_num', 'ts'], keep='last')
-    print(f"Removed {before_dedup - len(trans_df)} duplicate records")
+    print(f"Removed {before_dedup - trans_df.height} duplicate records")
 
     # Insert into feature store (this will also apply on-demand transformations)
     print("Inserting data into feature store...")

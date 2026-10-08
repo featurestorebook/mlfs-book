@@ -18,9 +18,12 @@ The credit card fraud detection service demonstrates a complete real-time ML sys
 The system follows a real-time feature store-based architecture:
 1. **Backfill Pipeline:** Loads historical transaction data for training (`1_data_generator.py`)
 2. **Transaction Generator (Hopsworks Python job):** Writes a live stream of transactions, 100 per minute by default, to the `credit_card_transactions` feature group (`1b-transaction-generator-job.py`)
-3. **Streaming Feature Pipeline (Hopsworks PySpark job):** Reads the transactions' Kafka topic and computes per-card aggregates over a 1-hour window that slides every minute, written to `cc_trans_aggs_fg` v2 (`2-spark-streaming-feature-pipeline.py`). The same program in `--mode backfill` computes the windows for the transaction history.
-4. **Batch Feature Pipeline:** Creates and stores per-transaction features in the feature store
-5. **Training Pipeline:** Trains XGBoost classifier on historical fraud patterns
+3. **Streaming Feature Pipeline (Hopsworks PySpark job):** Reads the transactions' Kafka topic and computes per-card aggregates over a 1-hour window that slides every minute, written to `cc_trans_aggs_fg` v2 (`2-spark-streaming-feature-pipeline.py`). This is the only Spark job of the example.
+4. **Aggregates Backfill (Hopsworks Python job, Polars):** Computes the same windows over the transaction history for training (`2b-backfill-aggs-pipeline.py`). For every transaction it writes the window a point-in-time join selects, the card's latest window that ended before the transaction, so the offline table holds at most one row per transaction instead of the ~60 windows every transaction falls into; each card's latest window goes to the online store.
+5. **Batch Feature Pipeline (Hopsworks Python job, Polars):** Creates and stores per-transaction features in the feature store (`3-batch-feature-pipeline.py`)
+6. **Training Pipeline:** Trains XGBoost classifier on historical fraud patterns
+
+All jobs are Python jobs computing with Polars, except the streaming job. Every feature group is created with `statistics_config=False`: with statistics enabled, each insert from a Python job launches a PySpark `<feature group>_<version>_compute_stats` job, which for the transaction generator meant one Spark job per minute.
 
 ### Sliding-window features
 
@@ -75,7 +78,7 @@ This command generates and loads synthetic historical transaction data (includin
 ### 3. Run the streaming jobs in Hopsworks
 
 ```bash
-inv backfill-aggs          # Spark job: sliding-window aggregates over the transaction history
+inv backfill-aggs          # Polars job: sliding-window aggregates over the transaction history
 inv streaming-features     # Spark Structured Streaming job (runs until stopped)
 inv stream-transactions    # Python job: 100 transactions/minute (runs until stopped)
 inv stream-transactions --transactions-per-min=1000   # a different rate
@@ -83,7 +86,7 @@ inv stream-status          # state of the jobs
 inv stop-streams           # stop the generator and the streaming job
 ```
 
-These create Hopsworks jobs (`ccfraud-backfill-aggs`, `ccfraud-streaming-aggs`, `ccfraud-transactions`) with `ccfraud/jobs.py`. Inside Hopsworks the jobs run the repo's scripts in place from HopsFS; from a laptop the scripts are uploaded to `Resources/mlfs-book` first. The streaming job checkpoints to `Resources/ccfraud/checkpoints`, so a restart resumes where it stopped, and it schedules the hourly offline materialization of `cc_trans_aggs_fg`.
+These create Hopsworks jobs (`ccfraud-backfill-aggs`, `ccfraud-streaming-aggs`, `ccfraud-transactions`) with `ccfraud/jobs.py`. Run the backfill before the streaming job: it creates the `cc_trans_aggs_fg` feature group, whose schema lives in `ccfraud/features/cc_trans_aggs_fg.py`. Inside Hopsworks the jobs run the repo's scripts in place from HopsFS; from a laptop the scripts are uploaded to `Resources/mlfs-book` first. The streaming job checkpoints to `Resources/ccfraud/checkpoints`, so a restart resumes where it stopped, and it schedules the hourly offline materialization of `cc_trans_aggs_fg`.
 
 ### 4. Compute features
 
@@ -117,6 +120,27 @@ Once the system is running, new transactions are processed in real-time:
 5. High-risk transactions are flagged for review
 
 ## Monitoring and Operations
+
+### Feature monitoring: drift of the transaction amount
+
+```bash
+inv monitoring             # create the hourly monitoring job (idempotent)
+inv monitoring --run-now   # ... and run it once right away
+inv monitoring --replace   # recreate it after changing the parameters in ccfraud/5-feature-monitoring.py
+```
+
+`ccfraud/5-feature-monitoring.py` attaches a feature monitoring configuration (`amount_psi_hourly`) to the
+`credit_card_transactions` feature group. Hopsworks runs it as the job
+`credit_card_transactions_1_run_fm_amount_psi_hourly` at the top of every hour: it computes the distribution of
+`amount` over the last day of transactions (by event time `ts`) and over the week before that, and compares
+them with the Population Stability Index (PSI). A PSI of 0.2 or more marks the run as a detected shift, shown
+on the feature group's monitoring tab, and an alert on `feature_monitor_shift_detected` can notify a receiver.
+
+PSI monitoring needs the feature group's statistics configuration to carry the `kll` flag (the KLL sketch
+the distribution is estimated with); the script sets it. Statistics stay disabled (`enabled=False`), so inserts
+still launch no statistics job: the monitoring job profiles the two windows itself when it runs.
+
+### Operations
 
 - Monitor the `ccfraud-streaming-aggs` job logs (Spark UI) for stream processing metrics
 - Track model performance on fraud detection rate and false positives

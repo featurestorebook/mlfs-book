@@ -1,4 +1,5 @@
 import pandas as pd
+import polars as pl
 import numpy as np
 import os
 import requests
@@ -8,16 +9,13 @@ import hopsworks
 from hsfs.transformation_statistics import TransformationStatistics
 
 
-def time_since_last_trans(ts: pd.Series, prev_ts: pd.Series) -> pd.Series:
+def time_since_last_trans(ts: pl.Series, prev_ts: pl.Series) -> pl.Series:
     """
-    Calculate time difference in seconds between current and previous transaction.
-    Returns 0 when there is no previous transaction (prev_ts is None/NaT).
+    Seconds between the current and the previous transaction, as whole seconds.
+    Returns 0 when there is no previous transaction (prev_ts is null).
     """
-    # Compute time difference
     delta = (ts - prev_ts).dt.total_seconds()
-
-    # Replace NaN / NaT differences with 0 and cast to int
-    return delta.fillna(0).astype(int)
+    return delta.fill_null(0).cast(pl.Int64)
 
     
 @hopsworks.udf(bool, mode="pandas", drop=['card_present', 'prev_card_present', 'ip_address', 'prev_ip_address'])
@@ -41,7 +39,9 @@ def haversine_distance(card_present: pd.Series, prev_card_present: pd.Series,
             tuple: (latitude, longitude) - returns (0.0, 0.0) if IP cannot be resolved
         """
         # Handle None or empty IP addresses
-        if ip_address is None or ip_address == '' or pd.isna(ip_address):
+        # pd.isna first: with Arrow-backed strings a missing value is pd.NA, and `pd.NA == ''`
+        # is itself NA, which cannot be used as a boolean
+        if ip_address is None or pd.isna(ip_address) or ip_address == '':
             return (0.0, 0.0)
     
         try:
