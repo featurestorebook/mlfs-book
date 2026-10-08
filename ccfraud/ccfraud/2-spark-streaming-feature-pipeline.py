@@ -49,6 +49,7 @@ AGGS_FG_VERSION = 2
 WINDOW_LENGTH_MINS = 60
 SLIDE_MINS = 1
 SHORT_WINDOW_MINS = 10
+SHUFFLE_PARTITIONS = 4
 
 # Quartz cron for the aggs feature group's offline materialization (streamed rows reach
 # the online store immediately and the offline store when this job runs).
@@ -162,7 +163,11 @@ def main(argv=None):
     project = hopsworks.login()
     fs = project.get_feature_store()
     spark = hopsworks.build_spark("ccfraud-aggs-stream")
-    spark.conf.set("spark.sql.shuffle.partitions", "16")
+    # Number of state partitions: the state store writes ~7 files per partition per micro-batch
+    # to the checkpoint dir, so keep it small at this volume (a few hundred cards a minute).
+    # Spark fixes it at the first run of a checkpoint: to change it, stop the job, delete the
+    # checkpoint dir (the stream then resumes at the topic's latest offset) and restart.
+    spark.conf.set("spark.sql.shuffle.partitions", str(SHUFFLE_PARTITIONS))
     # Session timezone UTC, so window boundaries line up with the UTC timestamps in the feature store
     spark.conf.set("spark.sql.session.timeZone", "UTC")
 
